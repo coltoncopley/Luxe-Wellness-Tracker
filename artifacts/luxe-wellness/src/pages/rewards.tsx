@@ -242,6 +242,10 @@ export default function Rewards() {
             );
           })}
         </div>
+        <p className="text-xs text-muted-foreground mt-4">
+          Limit one reward redemption per visit — rewards cannot be combined or used together.
+          Points have no monetary value and cannot be transferred, sold, or exchanged for cash.
+        </p>
       </div>
 
       <div>
@@ -291,6 +295,10 @@ export default function Rewards() {
             </div>
             <p className="text-sm text-muted-foreground mt-3">
               Mention this code at the front desk or when booking your next appointment at LUXE.
+            </p>
+            <p className="text-xs text-muted-foreground mt-2">
+              Limit one reward per visit — rewards can't be combined. Points have no monetary
+              value and can't be transferred.
             </p>
           </div>
           <Button onClick={() => setRedemption(null)}>Done</Button>

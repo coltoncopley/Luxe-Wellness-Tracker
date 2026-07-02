@@ -52,7 +52,14 @@ export default function Terms() {
         <section>
           <h2>Rewards program</h2>
           <ul>
-            <li>Points have no cash value and cannot be transferred or sold.</li>
+            <li>
+              Points have no monetary value, cannot be transferred or sold, and cannot be
+              exchanged for cash.
+            </li>
+            <li>
+              Limit one reward redemption per visit. Reward redemptions cannot be combined or
+              added together.
+            </li>
             <li>Redemption codes are single-use and verified by LUXE staff at the front desk.</li>
             <li>
               LUXE may modify reward values, the catalog, or discontinue the program at any time.
