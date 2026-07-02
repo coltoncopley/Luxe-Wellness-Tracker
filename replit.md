@@ -58,6 +58,7 @@ A patient companion app for LUXE Wellness and Aesthetics (physician-owned med sp
 - Meal Scanner: photograph a meal on /food → AI estimates calories/macros → one-tap log
 - Rewards: earn points for healthy habits, redeem for LUXE treatment perks on /rewards
 - Staff Verify (/staff): front desk enters a patient's LUXE code, sees the reward + status, marks it used (one-time use)
+- Legal/support pages: /privacy, /terms, /support (linked from sidebar + mobile menu footer); App Store submission kit in exports/app-store/, marketing screenshots in screenshots/appstore/ (captured with temporary demo data, since removed)
 
 ## User preferences
 

@@ -6,3 +6,45 @@ id = "sJscGYG0bTqmu-VWlL30y"
 uri = "file://attached_assets/stock_images/test_meal_photo.jpg"
 type = "image"
 title = "grilled chicken salad meal on a plate"
+
+[[outputs]]
+id = "3Uvtj0tnN1Y-TpfJGwCYr"
+uri = "file://exports/app-store/app-store-submission-kit.md"
+type = "text"
+title = "App Store Submission Kit (listing copy, privacy answers, checklist)"
+
+[[outputs]]
+id = "QyE0I6QVX13tbabYt5ZP7"
+uri = "file://screenshots/appstore/01-dashboard.jpg"
+type = "image"
+title = "Screenshot 1 — Dashboard"
+
+[[outputs]]
+id = "J4D4WX2oYIQxKkwOGwbUL"
+uri = "file://screenshots/appstore/02-weight.jpg"
+type = "image"
+title = "Screenshot 2 — Weight Tracking"
+
+[[outputs]]
+id = "-577L1iOnsEoCtxEHJ7UO"
+uri = "file://screenshots/appstore/03-glow.jpg"
+type = "image"
+title = "Screenshot 3 — Glow Score"
+
+[[outputs]]
+id = "JLurtO5po1KjpHdresoeP"
+uri = "file://screenshots/appstore/04-food.jpg"
+type = "image"
+title = "Screenshot 4 — Food Log"
+
+[[outputs]]
+id = "806wB6h4becPL47gcRJCy"
+uri = "file://screenshots/appstore/05-rewards.jpg"
+type = "image"
+title = "Screenshot 5 — Rewards"
+
+[[outputs]]
+id = "XyPbd1ZWT58TfRlelXXtJ"
+uri = "file://screenshots/appstore/06-book.jpg"
+type = "image"
+title = "Screenshot 6 — Booking"

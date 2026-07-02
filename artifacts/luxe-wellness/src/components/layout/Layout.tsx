@@ -51,6 +51,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
               </div>
             </Link>
           ))}
+          <div className="mt-auto pt-4 text-center text-xs text-muted-foreground space-x-3">
+            <Link href="/support" onClick={() => setMobileMenuOpen(false)} className="underline">Support</Link>
+            <Link href="/privacy" onClick={() => setMobileMenuOpen(false)} className="underline">Privacy</Link>
+            <Link href="/terms" onClick={() => setMobileMenuOpen(false)} className="underline">Terms</Link>
+          </div>
         </div>
       )}
 
@@ -74,6 +79,11 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </Link>
           ))}
         </nav>
+        <div className="px-6 py-4 text-xs text-muted-foreground space-x-3">
+          <Link href="/support" className="underline hover:text-primary">Support</Link>
+          <Link href="/privacy" className="underline hover:text-primary">Privacy</Link>
+          <Link href="/terms" className="underline hover:text-primary">Terms</Link>
+        </div>
       </aside>
 
       {/* Main Content */}

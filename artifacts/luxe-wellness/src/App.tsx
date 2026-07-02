@@ -13,6 +13,9 @@ import LuxeAI from "@/pages/luxe-ai";
 import Glow from "@/pages/glow";
 import Rewards from "@/pages/rewards";
 import StaffVerify from "@/pages/staff-verify";
+import Privacy from "@/pages/privacy";
+import Terms from "@/pages/terms";
+import Support from "@/pages/support";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
@@ -30,6 +33,9 @@ function Router() {
         <Route path="/glow" component={Glow} />
         <Route path="/rewards" component={Rewards} />
         <Route path="/staff" component={StaffVerify} />
+        <Route path="/privacy" component={Privacy} />
+        <Route path="/terms" component={Terms} />
+        <Route path="/support" component={Support} />
         <Route component={NotFound} />
       </Switch>
     </Layout>
