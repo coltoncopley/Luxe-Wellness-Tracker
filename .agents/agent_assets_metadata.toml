@@ -48,3 +48,9 @@ id = "XyPbd1ZWT58TfRlelXXtJ"
 uri = "file://screenshots/appstore/06-book.jpg"
 type = "image"
 title = "Screenshot 6 — Booking"
+
+[[outputs]]
+id = "yAmAqMQvBh46Nik-7yzo8"
+uri = "file://exports/code-review-bundle.md"
+type = "text"
+title = "Code bundle for ChatGPT review"
