@@ -117,10 +117,10 @@ export default function LuxeAI() {
   }
 
   const starterPrompts = [
+    "How am I doing this week?",
+    "Am I hitting my protein goal?",
     "What helps with nausea on semaglutide?",
-    "How much protein should I eat daily?",
     "What's the difference between Botox and filler?",
-    "Tips for hitting a weight loss plateau?",
   ];
 
   const showWelcome = !convosLoading && (!messages || messages.length === 0) && !streaming;
@@ -151,7 +151,9 @@ export default function LuxeAI() {
             <div>
               <h2 className="font-serif text-xl font-semibold mb-1">Hi, I'm Luxe AI</h2>
               <p className="text-muted-foreground max-w-md">
-                Ask me anything about skincare, treatments, GLP-1 weight loss, nutrition, or wellness.
+                Ask me anything about skincare, treatments, GLP-1 weight loss, nutrition, or
+                wellness. I can see your own logs — weight, meals, Glow check-ins — so ask me how
+                you're doing. Your data stays private to you and is never shared with LUXE staff.
               </p>
             </div>
             <div className="flex items-start gap-2 max-w-lg text-left rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">

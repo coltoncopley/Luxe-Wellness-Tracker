@@ -43,6 +43,7 @@ A patient companion app for LUXE Wellness and Aesthetics (physician-owned med sp
 - mealType values: breakfast/lunch/dinner/snack; measurement areas: waist/hips/arms/thighs/chest/neck.
 - Goal is a singleton row, auto-created on first GET /api/goal.
 - Luxe AI system prompt is built per-request from live services/staff DB rows; safety rules: no diagnosis, soft-sell only (max one treatment suggestion per reply), directs booking to the Aesthetic Record URL.
+- Luxe AI is data-aware: buildUserContext(userId) in routes/openai.ts appends the requesting user's own data (weight trend, goal, 7-day food/glow summaries, next appointment) to the system prompt inside a `<patient_data>` block explicitly marked as data-not-instructions (prompt-injection hardening). Strictly user-scoped queries; context is never persisted to messages and never surfaced to staff.
 - Chat streaming is SSE over POST; Orval can't type SSE, so the client uses raw fetch + ReadableStream (generated hooks for everything else).
 - Glow Score computed server-side (0-100): water 15 + sleep 20 (7-9h full) + stress 15 (lower better) + activity 15 (30min full) + protein 20 (100g full) + skincare 15. One check-in per day (unique date, upsert); streak counts consecutive days back from today (or yesterday if today not yet logged).
 - Meal scanner: client downscales photo to ≤1280px JPEG data URL; POST /api/food/analyze-photo uses gpt-5.4 vision (json_object), zod-parses estimate, 422 if not food. express.json limit is 15mb for this.
@@ -52,7 +53,7 @@ A patient companion app for LUXE Wellness and Aesthetics (physician-owned med sp
 ## Product
 
 - Home (V2): "Good morning, {name}" + Wellness Score (0-100: glow habits 40, meals logged 10, within calorie target 10, weigh-in 15, glow-streak consistency 25) + AI morning briefing (gpt-5.4, cached in-memory per user/day with in-flight dedup, null on failure) + today's to-do checklist + yesterday recap + stat cards + daily tip. GET /api/briefing, patient-private, privacy disclaimer in UI.
-- V2 roadmap (user picked phased build, 2026-07): Phase 1 Home+Briefing DONE → next: data-aware Luxe AI → missions/streaks/reward tiers → weekly AI skin scan. Wearables/community deferred (need native app / bigger lift).
+- V2 roadmap (user picked phased build, 2026-07): Phase 1 Home+Briefing DONE → Phase 2 data-aware Luxe AI DONE → next: missions/streaks/reward tiers → weekly AI skin scan. Wearables/community deferred (need native app / bigger lift).
 - Book: browse services and team, deep-link out to Aesthetic Record, track appointments manually
 - Weight: daily weigh-ins, body-area measurements, goal setting, progress chart
 - Food: meal logging with macros, daily summary, restaurant menu search
