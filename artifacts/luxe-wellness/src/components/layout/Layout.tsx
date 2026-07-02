@@ -1,12 +1,35 @@
 import { Link, useLocation } from "wouter";
-import { User, Calendar, Activity, Utensils, MapPin, Menu, X, Sparkles, Sun, Gift, BadgeCheck } from "lucide-react";
+import { User, Calendar, Activity, Utensils, MapPin, Menu, X, Sparkles, Sun, Gift, BadgeCheck, LogOut } from "lucide-react";
 import { useState } from "react";
+import { Show, useClerk, useUser } from "@clerk/react";
+import { useGetMe, getGetMeQueryKey } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import luxeLogo from "@assets/brand/luxe_logo.jpeg";
+
+const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
+
+function SignOutButton({ className }: { className?: string }) {
+  const { signOut } = useClerk();
+  return (
+    <Button
+      variant="ghost"
+      className={className}
+      onClick={() => signOut({ redirectUrl: basePath || "/" })}
+    >
+      <LogOut className="h-4 w-4 mr-2" />
+      Sign out
+    </Button>
+  );
+}
 
 export function Layout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { user, isSignedIn } = useUser();
+  const { data: me } = useGetMe({
+    query: { queryKey: getGetMeQueryKey(), enabled: !!isSignedIn },
+  });
+  const isStaff = me?.role === "staff";
 
   const navItems = [
     { href: "/", label: "Dashboard", icon: User },
@@ -17,8 +40,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { href: "/glow", label: "Glow Score", icon: Sun },
     { href: "/rewards", label: "Rewards", icon: Gift },
     { href: "/luxe-ai", label: "Luxe AI", icon: Sparkles },
-    { href: "/staff", label: "Staff Verify", icon: BadgeCheck },
+    ...(isStaff ? [{ href: "/staff", label: "Staff Portal", icon: BadgeCheck }] : []),
   ];
+
+  const displayName = user?.firstName ?? me?.firstName ?? user?.primaryEmailAddress?.emailAddress ?? null;
 
   return (
     <div className="min-h-screen bg-background flex flex-col md:flex-row">
@@ -35,7 +60,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 z-40 bg-background pt-20 px-4 pb-6 flex flex-col gap-2">
+        <div className="md:hidden fixed inset-0 z-40 bg-background pt-20 px-4 pb-6 flex flex-col gap-2 overflow-y-auto">
           {navItems.map((item) => (
             <Link key={item.href} href={item.href}>
               <div 
@@ -51,6 +76,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
               </div>
             </Link>
           ))}
+          <Show when="signed-in">
+            <SignOutButton className="justify-start px-4 py-3 h-auto rounded-xl text-muted-foreground" />
+          </Show>
           <div className="mt-auto pt-4 text-center text-xs text-muted-foreground space-x-3">
             <Link href="/support" onClick={() => setMobileMenuOpen(false)} className="underline">Support</Link>
             <Link href="/privacy" onClick={() => setMobileMenuOpen(false)} className="underline">Privacy</Link>
@@ -65,7 +93,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <img src={luxeLogo} alt="LUXE Logo" className="w-10 h-10 rounded-full object-cover shadow-sm" />
           <span className="font-serif font-semibold text-xl tracking-tight">LUXE Wellness</span>
         </div>
-        <nav className="flex-1 px-4 flex flex-col gap-2 mt-4">
+        <nav className="flex-1 px-4 flex flex-col gap-2 mt-4 overflow-y-auto">
           {navItems.map((item) => (
             <Link key={item.href} href={item.href}>
               <div className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all cursor-pointer ${
@@ -79,6 +107,16 @@ export function Layout({ children }: { children: React.ReactNode }) {
             </Link>
           ))}
         </nav>
+        <Show when="signed-in">
+          <div className="px-4 pb-2">
+            {displayName && (
+              <div className="px-4 py-1 text-xs text-muted-foreground truncate">
+                Signed in as <span className="font-medium">{displayName}</span>
+              </div>
+            )}
+            <SignOutButton className="w-full justify-start text-muted-foreground" />
+          </div>
+        </Show>
         <div className="px-6 py-4 text-xs text-muted-foreground space-x-3">
           <Link href="/support" className="underline hover:text-primary">Support</Link>
           <Link href="/privacy" className="underline hover:text-primary">Privacy</Link>

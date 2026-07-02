@@ -1,1 +1,2 @@
 - [Design subagent output verification](design-subagent-verification.md) — always verify page files exist, typecheck passes, and no escaped `\`` template literals after a DESIGN subagent finishes.
+- [Orval + Clerk web quirks](orval-clerk-quirks.md) — generated hooks require queryKey alongside `enabled`; web Clerk auth is cookie-based, never add Bearer/token getters.

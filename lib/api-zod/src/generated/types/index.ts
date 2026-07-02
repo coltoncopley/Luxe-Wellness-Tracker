@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './adminRedemption';
 export * from './appointment';
 export * from './appointmentInput';
 export * from './appointmentUpdate';
@@ -23,12 +24,14 @@ export * from './goalInput';
 export * from './healthStatus';
 export * from './listFoodLogsParams';
 export * from './listTipsParams';
+export * from './me';
 export * from './mealPhotoAnalysis';
 export * from './mealPhotoAnalysisConfidence';
 export * from './mealPhotoAnalysisInput';
 export * from './measurement';
 export * from './measurementInput';
 export * from './menuItem';
+export * from './meRole';
 export * from './openaiConversation';
 export * from './openaiConversationInput';
 export * from './openaiConversationWithMessages';
@@ -41,9 +44,15 @@ export * from './redemptionResult';
 export * from './restaurant';
 export * from './rewardCatalogItem';
 export * from './rewardEvent';
+export * from './rewardItem';
+export * from './rewardItemInput';
+export * from './rewardItemUpdate';
 export * from './rewardsSummary';
 export * from './searchMenuItemsParams';
 export * from './service';
+export * from './serviceInput';
+export * from './serviceUpdate';
+export * from './staffAccessInput';
 export * from './staffMember';
 export * from './weightEntry';
 export * from './weightEntryInput';

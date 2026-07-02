@@ -364,6 +364,100 @@ export interface RedemptionDetail {
   usedAt: string | null;
 }
 
+export type MeRole = typeof MeRole[keyof typeof MeRole];
+
+
+export const MeRole = {
+  patient: 'patient',
+  staff: 'staff',
+} as const;
+
+export interface Me {
+  id: string;
+  /** @nullable */
+  email?: string | null;
+  /** @nullable */
+  firstName?: string | null;
+  role: MeRole;
+}
+
+export interface StaffAccessInput {
+  /** @minLength 1 */
+  code: string;
+}
+
+export interface ServiceInput {
+  /** @minLength 1 */
+  name: string;
+  /** @minLength 1 */
+  category: string;
+  /** @minLength 1 */
+  description: string;
+  /** @nullable */
+  durationMinutes?: number | null;
+  /** @nullable */
+  priceText?: string | null;
+  bookingUrl?: string;
+}
+
+export interface ServiceUpdate {
+  /** @minLength 1 */
+  name?: string;
+  /** @minLength 1 */
+  category?: string;
+  /** @minLength 1 */
+  description?: string;
+  /** @nullable */
+  durationMinutes?: number | null;
+  /** @nullable */
+  priceText?: string | null;
+  bookingUrl?: string;
+}
+
+export interface RewardItem {
+  id: number;
+  title: string;
+  description: string;
+  points: number;
+  active: boolean;
+  sortOrder: number;
+}
+
+export interface RewardItemInput {
+  /** @minLength 1 */
+  title: string;
+  /** @minLength 1 */
+  description: string;
+  /** @minimum 1 */
+  points: number;
+  active?: boolean;
+  sortOrder?: number;
+}
+
+export interface RewardItemUpdate {
+  /** @minLength 1 */
+  title?: string;
+  /** @minLength 1 */
+  description?: string;
+  /** @minimum 1 */
+  points?: number;
+  active?: boolean;
+  sortOrder?: number;
+}
+
+export interface AdminRedemption {
+  code: string;
+  title: string;
+  points: number;
+  date: string;
+  /** @nullable */
+  usedAt: string | null;
+  /** @nullable */
+  patientEmail: string | null;
+  /** @nullable */
+  patientName: string | null;
+}
+
 export type SearchMenuItemsParams = {
 q: string;
 };

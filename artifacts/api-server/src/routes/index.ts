@@ -8,17 +8,27 @@ import wellnessRouter from "./wellness";
 import openaiRouter from "./openai";
 import glowRouter from "./glow";
 import rewardsRouter from "./rewards";
+import meRouter from "./me";
+import adminRouter from "./admin";
+import { requireAuth, requireStaff } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
+// Public: health, service/staff catalog, wellness tips (dashboard summary is authed inside)
 router.use(healthRouter);
 router.use(catalogRouter);
-router.use(appointmentsRouter);
-router.use(trackingRouter);
-router.use(foodRouter);
 router.use(wellnessRouter);
-router.use(openaiRouter);
-router.use(glowRouter);
-router.use(rewardsRouter);
+
+// Authenticated patient routes
+router.use(requireAuth, meRouter);
+router.use(requireAuth, appointmentsRouter);
+router.use(requireAuth, trackingRouter);
+router.use(requireAuth, foodRouter);
+router.use(requireAuth, openaiRouter);
+router.use(requireAuth, glowRouter);
+router.use(requireAuth, rewardsRouter);
+
+// Staff-only management routes
+router.use(requireAuth, requireStaff, adminRouter);
 
 export default router;

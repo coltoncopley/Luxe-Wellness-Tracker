@@ -26,6 +26,10 @@ tags:
     description: Luxe AI chat assistant
   - name: glow
     description: Daily Glow Score check-ins and streaks
+  - name: me
+    description: Current user profile
+  - name: admin
+    description: Staff-only management endpoints
 paths:
   /healthz:
     get:
@@ -598,6 +602,209 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RedemptionDetail"
+  /me:
+    get:
+      operationId: getMe
+      tags: [me]
+      summary: Get the current user's profile
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Me"
+        "401":
+          description: Not signed in
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenaiError"
+  /me/staff-access:
+    post:
+      operationId: activateStaffAccess
+      tags: [me]
+      summary: Unlock staff role with an access code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StaffAccessInput"
+      responses:
+        "200":
+          description: Updated user with staff role
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Me"
+        "403":
+          description: Invalid access code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenaiError"
+  /admin/services:
+    post:
+      operationId: adminCreateService
+      tags: [admin]
+      summary: Create a service (staff)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ServiceInput"
+      responses:
+        "201":
+          description: Created service
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Service"
+  /admin/services/{id}:
+    patch:
+      operationId: adminUpdateService
+      tags: [admin]
+      summary: Update a service (staff)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ServiceUpdate"
+      responses:
+        "200":
+          description: Updated service
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Service"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenaiError"
+    delete:
+      operationId: adminDeleteService
+      tags: [admin]
+      summary: Delete a service (staff)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenaiError"
+  /admin/reward-items:
+    get:
+      operationId: adminListRewardItems
+      tags: [admin]
+      summary: List all reward items including inactive (staff)
+      responses:
+        "200":
+          description: Reward items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RewardItem"
+    post:
+      operationId: adminCreateRewardItem
+      tags: [admin]
+      summary: Create a reward item (staff)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RewardItemInput"
+      responses:
+        "201":
+          description: Created reward item
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RewardItem"
+  /admin/reward-items/{id}:
+    patch:
+      operationId: adminUpdateRewardItem
+      tags: [admin]
+      summary: Update a reward item (staff)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RewardItemUpdate"
+      responses:
+        "200":
+          description: Updated reward item
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RewardItem"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenaiError"
+    delete:
+      operationId: adminDeleteRewardItem
+      tags: [admin]
+      summary: Deactivate a reward item (staff)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deactivated
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenaiError"
+  /admin/redemptions:
+    get:
+      operationId: adminListRedemptions
+      tags: [admin]
+      summary: List all redemptions with patient info (staff)
+      responses:
+        "200":
+          description: Redemptions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminRedemption"
   /openai/conversations:
     get:
       operationId: listOpenaiConversations
@@ -1215,3 +1422,73 @@ components:
         - points
         - date
         - usedAt
+    Me:
+      type: object
+      required: [id, role]
+      properties:
+        id: { type: string }
+        email: { type: ["string", "null"] }
+        firstName: { type: ["string", "null"] }
+        role: { type: string, enum: [patient, staff] }
+    StaffAccessInput:
+      type: object
+      required: [code]
+      properties:
+        code: { type: string, minLength: 1 }
+    ServiceInput:
+      type: object
+      required: [name, category, description]
+      properties:
+        name: { type: string, minLength: 1 }
+        category: { type: string, minLength: 1 }
+        description: { type: string, minLength: 1 }
+        durationMinutes: { type: ["integer", "null"] }
+        priceText: { type: ["string", "null"] }
+        bookingUrl: { type: string }
+    ServiceUpdate:
+      type: object
+      properties:
+        name: { type: string, minLength: 1 }
+        category: { type: string, minLength: 1 }
+        description: { type: string, minLength: 1 }
+        durationMinutes: { type: ["integer", "null"] }
+        priceText: { type: ["string", "null"] }
+        bookingUrl: { type: string }
+    RewardItem:
+      type: object
+      required: [id, title, description, points, active, sortOrder]
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        description: { type: string }
+        points: { type: integer }
+        active: { type: boolean }
+        sortOrder: { type: integer }
+    RewardItemInput:
+      type: object
+      required: [title, description, points]
+      properties:
+        title: { type: string, minLength: 1 }
+        description: { type: string, minLength: 1 }
+        points: { type: integer, minimum: 1 }
+        active: { type: boolean }
+        sortOrder: { type: integer }
+    RewardItemUpdate:
+      type: object
+      properties:
+        title: { type: string, minLength: 1 }
+        description: { type: string, minLength: 1 }
+        points: { type: integer, minimum: 1 }
+        active: { type: boolean }
+        sortOrder: { type: integer }
+    AdminRedemption:
+      type: object
+      required: [code, title, points, date, usedAt, patientEmail, patientName]
+      properties:
+        code: { type: string }
+        title: { type: string }
+        points: { type: integer }
+        date: { type: string }
+        usedAt: { type: ["string", "null"] }
+        patientEmail: { type: ["string", "null"] }
+        patientName: { type: ["string", "null"] }

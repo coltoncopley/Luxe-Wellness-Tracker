@@ -624,6 +624,200 @@ export const MarkRedemptionUsedResponse = zod.object({
 
 
 /**
+ * @summary Get the current user's profile
+ */
+export const GetMeResponse = zod.object({
+  "id": zod.string(),
+  "email": zod.string().nullish(),
+  "firstName": zod.string().nullish(),
+  "role": zod.enum(['patient', 'staff'])
+})
+
+
+/**
+ * @summary Unlock staff role with an access code
+ */
+
+
+
+export const ActivateStaffAccessBody = zod.object({
+  "code": zod.string().min(1)
+})
+
+export const ActivateStaffAccessResponse = zod.object({
+  "id": zod.string(),
+  "email": zod.string().nullish(),
+  "firstName": zod.string().nullish(),
+  "role": zod.enum(['patient', 'staff'])
+})
+
+
+/**
+ * @summary Create a service (staff)
+ */
+
+
+
+
+
+export const AdminCreateServiceBody = zod.object({
+  "name": zod.string().min(1),
+  "category": zod.string().min(1),
+  "description": zod.string().min(1),
+  "durationMinutes": zod.number().nullish(),
+  "priceText": zod.string().nullish(),
+  "bookingUrl": zod.string().optional()
+})
+
+export const AdminCreateServiceResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "category": zod.string(),
+  "description": zod.string(),
+  "durationMinutes": zod.number().nullish(),
+  "priceText": zod.string().nullish(),
+  "bookingUrl": zod.string()
+})
+
+
+/**
+ * @summary Update a service (staff)
+ */
+export const AdminUpdateServiceParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+
+
+
+
+export const AdminUpdateServiceBody = zod.object({
+  "name": zod.string().min(1).optional(),
+  "category": zod.string().min(1).optional(),
+  "description": zod.string().min(1).optional(),
+  "durationMinutes": zod.number().nullish(),
+  "priceText": zod.string().nullish(),
+  "bookingUrl": zod.string().optional()
+})
+
+export const AdminUpdateServiceResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "category": zod.string(),
+  "description": zod.string(),
+  "durationMinutes": zod.number().nullish(),
+  "priceText": zod.string().nullish(),
+  "bookingUrl": zod.string()
+})
+
+
+/**
+ * @summary Delete a service (staff)
+ */
+export const AdminDeleteServiceParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const AdminDeleteServiceResponse = zod.void()
+
+
+/**
+ * @summary List all reward items including inactive (staff)
+ */
+export const AdminListRewardItemsResponseItem = zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "points": zod.number(),
+  "active": zod.boolean(),
+  "sortOrder": zod.number()
+})
+export const AdminListRewardItemsResponse = zod.array(AdminListRewardItemsResponseItem)
+
+
+/**
+ * @summary Create a reward item (staff)
+ */
+
+
+
+
+
+export const AdminCreateRewardItemBody = zod.object({
+  "title": zod.string().min(1),
+  "description": zod.string().min(1),
+  "points": zod.number().min(1),
+  "active": zod.boolean().optional(),
+  "sortOrder": zod.number().optional()
+})
+
+export const AdminCreateRewardItemResponse = zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "points": zod.number(),
+  "active": zod.boolean(),
+  "sortOrder": zod.number()
+})
+
+
+/**
+ * @summary Update a reward item (staff)
+ */
+export const AdminUpdateRewardItemParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+
+
+
+
+export const AdminUpdateRewardItemBody = zod.object({
+  "title": zod.string().min(1).optional(),
+  "description": zod.string().min(1).optional(),
+  "points": zod.number().min(1).optional(),
+  "active": zod.boolean().optional(),
+  "sortOrder": zod.number().optional()
+})
+
+export const AdminUpdateRewardItemResponse = zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "points": zod.number(),
+  "active": zod.boolean(),
+  "sortOrder": zod.number()
+})
+
+
+/**
+ * @summary Deactivate a reward item (staff)
+ */
+export const AdminDeleteRewardItemParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const AdminDeleteRewardItemResponse = zod.void()
+
+
+/**
+ * @summary List all redemptions with patient info (staff)
+ */
+export const AdminListRedemptionsResponseItem = zod.object({
+  "code": zod.string(),
+  "title": zod.string(),
+  "points": zod.number(),
+  "date": zod.string(),
+  "usedAt": zod.string().nullable(),
+  "patientEmail": zod.string().nullable(),
+  "patientName": zod.string().nullable()
+})
+export const AdminListRedemptionsResponse = zod.array(AdminListRedemptionsResponseItem)
+
+
+/**
  * @summary List all conversations
  */
 export const ListOpenaiConversationsResponseItem = zod.object({

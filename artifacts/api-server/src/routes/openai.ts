@@ -1,11 +1,12 @@
 import { Router, type IRouter } from "express";
-import { eq, asc, desc } from "drizzle-orm";
+import { eq, and, asc, desc } from "drizzle-orm";
 import { db, conversations, messages, servicesTable, staffTable } from "@workspace/db";
 import {
   CreateOpenaiConversationBody,
   SendOpenaiMessageBody,
 } from "@workspace/api-zod";
 import { openai } from "@workspace/integrations-openai-ai-server";
+import { userIdOf } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
@@ -43,7 +44,11 @@ Important safety rules:
 }
 
 router.get("/openai/conversations", async (_req, res): Promise<void> => {
-  const rows = await db.select().from(conversations).orderBy(desc(conversations.createdAt));
+  const rows = await db
+    .select()
+    .from(conversations)
+    .where(eq(conversations.userId, userIdOf(res)))
+    .orderBy(desc(conversations.createdAt));
   res.json(rows);
 });
 
@@ -53,13 +58,19 @@ router.post("/openai/conversations", async (req, res): Promise<void> => {
     res.status(400).json({ error: body.error.message });
     return;
   }
-  const [row] = await db.insert(conversations).values({ title: body.data.title }).returning();
+  const [row] = await db
+    .insert(conversations)
+    .values({ title: body.data.title, userId: userIdOf(res) })
+    .returning();
   res.status(201).json(row);
 });
 
 router.get("/openai/conversations/:id", async (req, res): Promise<void> => {
   const id = Number(req.params.id);
-  const [conv] = await db.select().from(conversations).where(eq(conversations.id, id));
+  const [conv] = await db
+    .select()
+    .from(conversations)
+    .where(and(eq(conversations.id, id), eq(conversations.userId, userIdOf(res))));
   if (!conv) {
     res.status(404).json({ error: "Conversation not found" });
     return;
@@ -74,7 +85,10 @@ router.get("/openai/conversations/:id", async (req, res): Promise<void> => {
 
 router.delete("/openai/conversations/:id", async (req, res): Promise<void> => {
   const id = Number(req.params.id);
-  const deleted = await db.delete(conversations).where(eq(conversations.id, id)).returning();
+  const deleted = await db
+    .delete(conversations)
+    .where(and(eq(conversations.id, id), eq(conversations.userId, userIdOf(res))))
+    .returning();
   if (deleted.length === 0) {
     res.status(404).json({ error: "Conversation not found" });
     return;
@@ -84,6 +98,14 @@ router.delete("/openai/conversations/:id", async (req, res): Promise<void> => {
 
 router.get("/openai/conversations/:id/messages", async (req, res): Promise<void> => {
   const id = Number(req.params.id);
+  const [conv] = await db
+    .select()
+    .from(conversations)
+    .where(and(eq(conversations.id, id), eq(conversations.userId, userIdOf(res))));
+  if (!conv) {
+    res.status(404).json({ error: "Conversation not found" });
+    return;
+  }
   const msgs = await db
     .select()
     .from(messages)
@@ -100,7 +122,10 @@ router.post("/openai/conversations/:id/messages", async (req, res): Promise<void
     return;
   }
 
-  const [conv] = await db.select().from(conversations).where(eq(conversations.id, id));
+  const [conv] = await db
+    .select()
+    .from(conversations)
+    .where(and(eq(conversations.id, id), eq(conversations.userId, userIdOf(res))));
   if (!conv) {
     res.status(404).json({ error: "Conversation not found" });
     return;

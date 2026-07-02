@@ -35,7 +35,10 @@ A patient companion app for LUXE Wellness and Aesthetics (physician-owned med sp
 ## Architecture decisions
 
 - Booking is external: bookingUrl fields deep-link to https://hklqy.myaestheticrecord.com/online-booking (Aesthetic Record); appointments are tracked manually in-app.
-- Single-user app, no auth (first build).
+- Auth: Replit-managed Clerk (cookie-based on web — no Bearer token getter). Server: `@clerk/express` clerkMiddleware + proxy route mounted before body parsers in app.ts; `requireAuth` middleware upserts the user row from Clerk claims and sets `res.locals.userId`; `requireStaff` checks `users.role === 'staff'`. All patient data (appointments, tracking, food logs, glow, conversations, rewards) is user-scoped by `user_id`.
+- Roles: everyone signs up as `patient`. Staff role self-activated via POST /api/me/staff-access with the access code stored in `app_settings` (key `staff_access_code`, seeded value `52K33Z`; rate-limited 5/min/IP). Staff see a "Staff Portal" nav item (/staff): tabs for code verification, service CRUD, reward item CRUD (toggle active = hide from patients), and a redemptions table with patient info. Redemption lookup/mark-used endpoints now require staff.
+- Reward catalog moved from static code to `reward_items` table (admin-editable); seed script bootstraps the four original perks + the staff access code idempotently (runs even when other tables are already seeded).
+- Frontend: ClerkProvider in App.tsx (publishableKeyFromHost + proxyUrl, wouter base-path-aware routerPush/routerReplace, branded appearance + shadcn theme, cssLayerName "clerk" with `@layer` order line at top of index.css, tailwindcss({ optimize: false }) in vite.config). Signed-out users on "/" get a public landing page (src/pages/landing.tsx); all app routes are wrapped in a Protected component that redirects signed-out users to "/"; privacy/terms/support stay public. Query cache is cleared on Clerk user change.
 - Calendar dates stored as YYYY-MM-DD strings (`date(..., { mode: "string" })`).
 - mealType values: breakfast/lunch/dinner/snack; measurement areas: waist/hips/arms/thighs/chest/neck.
 - Goal is a singleton row, auto-created on first GET /api/goal.
@@ -59,6 +62,7 @@ A patient companion app for LUXE Wellness and Aesthetics (physician-owned med sp
 - Rewards: earn points for healthy habits, redeem for LUXE treatment perks on /rewards
 - Staff Verify (/staff): front desk enters a patient's LUXE code, sees the reward + status, marks it used (one-time use)
 - Legal/support pages: /privacy, /terms, /support (linked from sidebar + mobile menu footer); App Store submission kit in exports/app-store/, marketing screenshots in screenshots/appstore/ (captured with temporary demo data, since removed)
+- Accounts: patient sign-up/sign-in via Clerk (email + Google); staff unlock the Staff Portal with access code 52K33Z on /staff
 
 ## User preferences
 

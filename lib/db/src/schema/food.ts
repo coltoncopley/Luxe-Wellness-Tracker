@@ -1,6 +1,7 @@
 import { pgTable, text, serial, date, real, integer, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
+import { usersTable } from "./users";
 
 export const restaurantsTable = pgTable("restaurants", {
   id: serial("id").primaryKey(),
@@ -33,6 +34,9 @@ export type MenuItem = typeof menuItemsTable.$inferSelect;
 
 export const foodLogsTable = pgTable("food_logs", {
   id: serial("id").primaryKey(),
+  userId: text("user_id")
+    .notNull()
+    .references(() => usersTable.id),
   date: date("date", { mode: "string" }).notNull(),
   mealType: text("meal_type").notNull(),
   foodName: text("food_name").notNull(),
@@ -43,7 +47,10 @@ export const foodLogsTable = pgTable("food_logs", {
   fatG: real("fat_g"),
 });
 
-export const insertFoodLogSchema = createInsertSchema(foodLogsTable).omit({ id: true });
+export const insertFoodLogSchema = createInsertSchema(foodLogsTable).omit({
+  id: true,
+  userId: true,
+});
 export type InsertFoodLog = z.infer<typeof insertFoodLogSchema>;
 export type FoodLog = typeof foodLogsTable.$inferSelect;
 

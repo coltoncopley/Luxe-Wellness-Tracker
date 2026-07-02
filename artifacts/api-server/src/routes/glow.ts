@@ -1,7 +1,8 @@
 import { Router, type IRouter } from "express";
-import { desc } from "drizzle-orm";
+import { desc, eq } from "drizzle-orm";
 import { db, glowCheckinsTable, type GlowCheckin } from "@workspace/db";
 import { awardOncePerDay, awardStreakMilestone, POINTS } from "../lib/rewards";
+import { userIdOf } from "../middlewares/auth";
 import {
   UpsertGlowCheckinBody,
   UpsertGlowCheckinResponse,
@@ -49,21 +50,10 @@ function isValidCalendarDate(value: string): boolean {
   );
 }
 
-router.get("/glow/summary", async (_req, res): Promise<void> => {
-  const today = todayString();
-  const rows = await db
-    .select()
-    .from(glowCheckinsTable)
-    .orderBy(desc(glowCheckinsTable.date));
-
-  const todayRow = rows.find((r) => r.date === today) ?? null;
-
-  const dateSet = new Set(rows.map((r) => r.date));
+function computeStreak(dateSet: Set<string>): number {
   let streak = 0;
   const cursor = new Date();
-  if (!dateSet.has(today)) {
-    cursor.setDate(cursor.getDate() - 1);
-  }
+  if (!dateSet.has(todayString())) cursor.setDate(cursor.getDate() - 1);
   for (;;) {
     const y = cursor.getFullYear();
     const m = String(cursor.getMonth() + 1).padStart(2, "0");
@@ -72,6 +62,20 @@ router.get("/glow/summary", async (_req, res): Promise<void> => {
     streak += 1;
     cursor.setDate(cursor.getDate() - 1);
   }
+  return streak;
+}
+
+router.get("/glow/summary", async (_req, res): Promise<void> => {
+  const userId = userIdOf(res);
+  const today = todayString();
+  const rows = await db
+    .select()
+    .from(glowCheckinsTable)
+    .where(eq(glowCheckinsTable.userId, userId))
+    .orderBy(desc(glowCheckinsTable.date));
+
+  const todayRow = rows.find((r) => r.date === today) ?? null;
+  const streak = computeStreak(new Set(rows.map((r) => r.date)));
 
   const history = rows
     .slice(0, 14)
@@ -88,6 +92,7 @@ router.get("/glow/summary", async (_req, res): Promise<void> => {
 });
 
 router.put("/glow/checkin", async (req, res): Promise<void> => {
+  const userId = userIdOf(res);
   const body = UpsertGlowCheckinBody.safeParse(req.body);
   if (!body.success) {
     res.status(400).json({ error: body.error.message });
@@ -102,35 +107,28 @@ router.put("/glow/checkin", async (req, res): Promise<void> => {
 
   const [row] = await db
     .insert(glowCheckinsTable)
-    .values({ date: targetDate, ...fields })
+    .values({ userId, date: targetDate, ...fields })
     .onConflictDoUpdate({
-      target: glowCheckinsTable.date,
+      target: [glowCheckinsTable.userId, glowCheckinsTable.date],
       set: fields,
     })
     .returning();
 
   await awardOncePerDay(
+    userId,
     "glow_checkin",
     targetDate,
     POINTS.glowCheckin,
     "Daily Glow check-in",
   );
 
-  const allRows = await db.select({ date: glowCheckinsTable.date }).from(glowCheckinsTable);
-  const dateSet = new Set(allRows.map((r) => r.date));
-  let streak = 0;
-  const cursor = new Date();
-  if (!dateSet.has(todayString())) cursor.setDate(cursor.getDate() - 1);
-  for (;;) {
-    const y = cursor.getFullYear();
-    const m = String(cursor.getMonth() + 1).padStart(2, "0");
-    const d = String(cursor.getDate()).padStart(2, "0");
-    if (!dateSet.has(`${y}-${m}-${d}`)) break;
-    streak += 1;
-    cursor.setDate(cursor.getDate() - 1);
-  }
+  const allRows = await db
+    .select({ date: glowCheckinsTable.date })
+    .from(glowCheckinsTable)
+    .where(eq(glowCheckinsTable.userId, userId));
+  const streak = computeStreak(new Set(allRows.map((r) => r.date)));
   for (let milestone = 7; milestone <= streak; milestone += 7) {
-    await awardStreakMilestone(milestone, todayString(), POINTS.streakBonus);
+    await awardStreakMilestone(userId, milestone, todayString(), POINTS.streakBonus);
   }
 
   res.json(UpsertGlowCheckinResponse.parse(withScore(row)));

@@ -5,11 +5,33 @@ import {
   restaurantsTable,
   menuItemsTable,
   tipsTable,
+  appSettingsTable,
+  rewardItemsTable,
 } from "@workspace/db";
 
 const BOOKING_URL = "https://hklqy.myaestheticrecord.com/online-booking";
 
+async function seedSettingsAndRewards() {
+  await db
+    .insert(appSettingsTable)
+    .values({ key: "staff_access_code", value: "52K33Z" })
+    .onConflictDoNothing();
+
+  const existingRewards = await db.select().from(rewardItemsTable).limit(1);
+  if (existingRewards.length === 0) {
+    await db.insert(rewardItemsTable).values([
+      { title: "Free B12 Energy Shot", description: "A complimentary B12 injection at your next visit", points: 400, active: true, sortOrder: 1 },
+      { title: "$10 Off Any Service", description: "Take $10 off any treatment or service", points: 500, active: true, sortOrder: 2 },
+      { title: "Free Dermaplaning Add-On", description: "Add dermaplaning to any facial, on us", points: 800, active: true, sortOrder: 3 },
+      { title: "$25 Off Botox or Filler", description: "$25 off your next injectable appointment", points: 1200, active: true, sortOrder: 4 },
+    ]);
+    console.log("Seeded reward catalog.");
+  }
+}
+
 async function seed() {
+  await seedSettingsAndRewards();
+
   const existingServices = await db.select().from(servicesTable).limit(1);
   if (existingServices.length > 0) {
     console.log("Already seeded, skipping.");

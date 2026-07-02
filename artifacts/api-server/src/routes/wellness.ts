@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq, asc, desc, gte } from "drizzle-orm";
+import { eq, and, asc, desc, gte } from "drizzle-orm";
 import {
   db,
   tipsTable,
@@ -14,6 +14,7 @@ import {
   GetDailyTipResponse,
   GetDashboardSummaryResponse,
 } from "@workspace/api-zod";
+import { requireAuth, userIdOf } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
@@ -50,16 +51,24 @@ router.get("/tips/daily", async (_req, res): Promise<void> => {
   res.json(GetDailyTipResponse.parse(tip));
 });
 
-router.get("/dashboard/summary", async (_req, res): Promise<void> => {
+router.get("/dashboard/summary", requireAuth, async (_req, res): Promise<void> => {
+  const userId = userIdOf(res);
   const today = todayString();
 
-  const entries = await db.select().from(weightEntriesTable).orderBy(asc(weightEntriesTable.date));
-  const [goal] = await db.select().from(goalsTable).limit(1);
-  const todayLogs = await db.select().from(foodLogsTable).where(eq(foodLogsTable.date, today));
+  const entries = await db
+    .select()
+    .from(weightEntriesTable)
+    .where(eq(weightEntriesTable.userId, userId))
+    .orderBy(asc(weightEntriesTable.date));
+  const [goal] = await db.select().from(goalsTable).where(eq(goalsTable.userId, userId));
+  const todayLogs = await db
+    .select()
+    .from(foodLogsTable)
+    .where(and(eq(foodLogsTable.userId, userId), eq(foodLogsTable.date, today)));
   const upcoming = await db
     .select()
     .from(appointmentsTable)
-    .where(gte(appointmentsTable.date, today))
+    .where(and(eq(appointmentsTable.userId, userId), gte(appointmentsTable.date, today)))
     .orderBy(asc(appointmentsTable.date))
     .limit(5);
 
@@ -79,6 +88,7 @@ router.get("/dashboard/summary", async (_req, res): Promise<void> => {
   const logDates = await db
     .selectDistinct({ date: foodLogsTable.date })
     .from(foodLogsTable)
+    .where(eq(foodLogsTable.userId, userId))
     .orderBy(desc(foodLogsTable.date));
   const dateSet = new Set(logDates.map((r) => r.date));
   let streak = 0;

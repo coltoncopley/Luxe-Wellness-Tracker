@@ -8,7 +8,8 @@ import {
   RedeemRewardResponse,
   LookupRedemptionResponse,
 } from "@workspace/api-zod";
-import { REWARD_CATALOG, getBalance, redeemPoints } from "../lib/rewards";
+import { getActiveCatalog, getBalance, redeemPoints } from "../lib/rewards";
+import { requireStaff, userIdOf } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
@@ -21,34 +22,45 @@ function todayString(): string {
 }
 
 router.get("/rewards/summary", async (_req, res): Promise<void> => {
+  const userId = userIdOf(res);
   const events = await db
     .select()
     .from(rewardEventsTable)
+    .where(eq(rewardEventsTable.userId, userId))
     .orderBy(desc(rewardEventsTable.createdAt), desc(rewardEventsTable.id))
     .limit(50);
 
-  const balance = await getBalance();
+  const balance = await getBalance(userId);
   const totalEarned = (
-    await db.select().from(rewardEventsTable)
+    await db.select().from(rewardEventsTable).where(eq(rewardEventsTable.userId, userId))
   ).reduce((acc, e) => (e.points > 0 ? acc + e.points : acc), 0);
+
+  const catalog = (await getActiveCatalog()).map((item) => ({
+    id: String(item.id),
+    title: item.title,
+    description: item.description,
+    points: item.points,
+  }));
 
   res.json(
     GetRewardsSummaryResponse.parse({
       balance,
       totalEarned,
       history: events,
-      catalog: REWARD_CATALOG,
+      catalog,
     }),
   );
 });
 
 router.post("/rewards/redeem", async (req, res): Promise<void> => {
+  const userId = userIdOf(res);
   const body = RedeemRewardBody.safeParse(req.body);
   if (!body.success) {
     res.status(400).json({ error: body.error.message });
     return;
   }
-  const reward = REWARD_CATALOG.find((r) => r.id === body.data.rewardId);
+  const catalog = await getActiveCatalog();
+  const reward = catalog.find((r) => String(r.id) === body.data.rewardId);
   if (!reward) {
     res.status(400).json({ error: "Unknown reward" });
     return;
@@ -58,7 +70,7 @@ router.post("/rewards/redeem", async (req, res): Promise<void> => {
   for (let attempt = 0; attempt < 3; attempt++) {
     code = generateCode();
     try {
-      result = await redeemPoints(reward, todayString(), code);
+      result = await redeemPoints(userId, reward, todayString(), code);
       break;
     } catch (err) {
       const isUniqueViolation =
@@ -78,7 +90,12 @@ router.post("/rewards/redeem", async (req, res): Promise<void> => {
   res.json(
     RedeemRewardResponse.parse({
       code,
-      reward,
+      reward: {
+        id: String(reward.id),
+        title: reward.title,
+        description: reward.description,
+        points: reward.points,
+      },
       balance: result.balance,
     }),
   );
@@ -134,39 +151,49 @@ function normalizeCode(raw: string): string {
   return `LUXE-${cleaned.slice(0, 4)}-${cleaned.slice(4, 8)}`;
 }
 
-router.get("/rewards/redemptions/:code", rateLimitLookups, async (req, res): Promise<void> => {
-  const code = normalizeCode(String(req.params.code));
-  const [row] = await db
-    .select()
-    .from(redemptionsTable)
-    .where(eq(redemptionsTable.code, code));
-  if (!row) {
-    res.status(404).json({ error: "Code not found" });
-    return;
-  }
-  res.json(toDetail(row));
-});
+router.get(
+  "/rewards/redemptions/:code",
+  requireStaff,
+  rateLimitLookups,
+  async (req, res): Promise<void> => {
+    const code = normalizeCode(String(req.params.code));
+    const [row] = await db
+      .select()
+      .from(redemptionsTable)
+      .where(eq(redemptionsTable.code, code));
+    if (!row) {
+      res.status(404).json({ error: "Code not found" });
+      return;
+    }
+    res.json(toDetail(row));
+  },
+);
 
-router.post("/rewards/redemptions/:code/use", rateLimitLookups, async (req, res): Promise<void> => {
-  const code = normalizeCode(String(req.params.code));
-  const [updated] = await db
-    .update(redemptionsTable)
-    .set({ usedAt: sql`now()` })
-    .where(and(eq(redemptionsTable.code, code), isNull(redemptionsTable.usedAt)))
-    .returning();
-  if (updated) {
-    res.json(toDetail(updated));
-    return;
-  }
-  const [existing] = await db
-    .select()
-    .from(redemptionsTable)
-    .where(eq(redemptionsTable.code, code));
-  if (!existing) {
-    res.status(404).json({ error: "Code not found" });
-    return;
-  }
-  res.status(409).json(toDetail(existing));
-});
+router.post(
+  "/rewards/redemptions/:code/use",
+  requireStaff,
+  rateLimitLookups,
+  async (req, res): Promise<void> => {
+    const code = normalizeCode(String(req.params.code));
+    const [updated] = await db
+      .update(redemptionsTable)
+      .set({ usedAt: sql`now()` })
+      .where(and(eq(redemptionsTable.code, code), isNull(redemptionsTable.usedAt)))
+      .returning();
+    if (updated) {
+      res.json(toDetail(updated));
+      return;
+    }
+    const [existing] = await db
+      .select()
+      .from(redemptionsTable)
+      .where(eq(redemptionsTable.code, code));
+    if (!existing) {
+      res.status(404).json({ error: "Code not found" });
+      return;
+    }
+    res.status(409).json(toDetail(existing));
+  },
+);
 
 export default router;

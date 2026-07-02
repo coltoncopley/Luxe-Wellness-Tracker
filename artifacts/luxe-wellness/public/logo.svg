@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="220" height="64" viewBox="0 0 220 64">
+  <g fill="none" fill-rule="evenodd">
+    <circle cx="32" cy="32" r="26" fill="#101828"/>
+    <path d="M32 14l3.6 10.8L46 28.4l-10.4 3.6L32 42.8l-3.6-10.8L18 28.4l10.4-3.6L32 14z" fill="#E4C165"/>
+    <text x="68" y="40" font-family="Georgia, 'Playfair Display', serif" font-size="26" font-weight="600" letter-spacing="6" fill="#101828">LUXE</text>
+  </g>
+</svg>

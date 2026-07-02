@@ -4,6 +4,7 @@ import { db, restaurantsTable, menuItemsTable, foodLogsTable, goalsTable } from 
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { z } from "zod/v4";
 import { awardWithDailyCap, POINTS, FOOD_LOG_DAILY_CAP } from "../lib/rewards";
+import { userIdOf } from "../middlewares/auth";
 import {
   AnalyzeMealPhotoBody,
   AnalyzeMealPhotoResponse,
@@ -100,13 +101,18 @@ router.get("/food-logs", async (req, res): Promise<void> => {
     res.status(400).json({ error: query.error.message });
     return;
   }
+  const userId = userIdOf(res);
   const rows = query.data.date
     ? await db
         .select()
         .from(foodLogsTable)
-        .where(eq(foodLogsTable.date, query.data.date))
+        .where(and(eq(foodLogsTable.userId, userId), eq(foodLogsTable.date, query.data.date)))
         .orderBy(asc(foodLogsTable.id))
-    : await db.select().from(foodLogsTable).orderBy(desc(foodLogsTable.date), asc(foodLogsTable.id));
+    : await db
+        .select()
+        .from(foodLogsTable)
+        .where(eq(foodLogsTable.userId, userId))
+        .orderBy(desc(foodLogsTable.date), asc(foodLogsTable.id));
   res.json(ListFoodLogsResponse.parse(rows));
 });
 
@@ -116,8 +122,13 @@ router.post("/food-logs", async (req, res): Promise<void> => {
     res.status(400).json({ error: parsed.error.message });
     return;
   }
-  const [row] = await db.insert(foodLogsTable).values(parsed.data).returning();
+  const userId = userIdOf(res);
+  const [row] = await db
+    .insert(foodLogsTable)
+    .values({ ...parsed.data, userId })
+    .returning();
   await awardWithDailyCap(
+    userId,
     "food_log",
     row.date,
     POINTS.foodLog,
@@ -212,7 +223,7 @@ router.delete("/food-logs/:id", async (req, res): Promise<void> => {
   }
   const [row] = await db
     .delete(foodLogsTable)
-    .where(eq(foodLogsTable.id, params.data.id))
+    .where(and(eq(foodLogsTable.id, params.data.id), eq(foodLogsTable.userId, userIdOf(res))))
     .returning();
   if (!row) {
     res.status(404).json({ error: "Food log not found" });
@@ -227,12 +238,13 @@ router.get("/food-logs/daily-summary", async (req, res): Promise<void> => {
     res.status(400).json({ error: query.error.message });
     return;
   }
+  const userId = userIdOf(res);
   const rows = await db
     .select()
     .from(foodLogsTable)
-    .where(eq(foodLogsTable.date, query.data.date));
+    .where(and(eq(foodLogsTable.userId, userId), eq(foodLogsTable.date, query.data.date)));
 
-  const [goal] = await db.select().from(goalsTable).limit(1);
+  const [goal] = await db.select().from(goalsTable).where(eq(goalsTable.userId, userId));
 
   const totals = rows.reduce(
     (acc, r) => {
