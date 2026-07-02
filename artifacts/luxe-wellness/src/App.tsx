@@ -10,6 +10,7 @@ import Weight from "@/pages/weight";
 import Food from "@/pages/food";
 import Restaurants from "@/pages/restaurants";
 import LuxeAI from "@/pages/luxe-ai";
+import Glow from "@/pages/glow";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
@@ -24,6 +25,7 @@ function Router() {
         <Route path="/food" component={Food} />
         <Route path="/restaurants" component={Restaurants} />
         <Route path="/luxe-ai" component={LuxeAI} />
+        <Route path="/glow" component={Glow} />
         <Route component={NotFound} />
       </Switch>
     </Layout>

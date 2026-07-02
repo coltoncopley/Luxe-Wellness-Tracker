@@ -25,10 +25,10 @@ A patient companion app for LUXE Wellness and Aesthetics (physician-owned med sp
 ## Where things live
 
 - `lib/api-spec/openapi.yaml` — source of truth for the API contract
-- `lib/db/src/schema/` — Drizzle tables: services.ts (services, staff), appointments.ts, tracking.ts (weight_entries, measurements, goals), food.ts (restaurants, menu_items, food_logs, tips), conversations.ts + messages.ts (Luxe AI chat)
-- `artifacts/api-server/src/routes/` — catalog.ts, appointments.ts, tracking.ts, food.ts, wellness.ts (tips, dashboard summary), openai.ts (Luxe AI chat: conversation CRUD + SSE streaming)
+- `lib/db/src/schema/` — Drizzle tables: services.ts (services, staff), appointments.ts, tracking.ts (weight_entries, measurements, goals), food.ts (restaurants, menu_items, food_logs, tips), conversations.ts + messages.ts (Luxe AI chat), glow.ts (glow_checkins)
+- `artifacts/api-server/src/routes/` — catalog.ts, appointments.ts, tracking.ts, food.ts, wellness.ts (tips, dashboard summary), openai.ts (Luxe AI chat: conversation CRUD + SSE streaming), glow.ts (Glow Score summary + check-in upsert)
 - `scripts/src/seed.ts` — seed data
-- `artifacts/luxe-wellness/` — patient-facing web app (pages: /, /book, /weight, /food, /restaurants, /luxe-ai)
+- `artifacts/luxe-wellness/` — patient-facing web app (pages: /, /book, /weight, /food, /restaurants, /glow, /luxe-ai)
 - `attached_assets/brand/luxe_logo.jpeg` — brand logo
 
 ## Architecture decisions
@@ -40,6 +40,7 @@ A patient companion app for LUXE Wellness and Aesthetics (physician-owned med sp
 - Goal is a singleton row, auto-created on first GET /api/goal.
 - Luxe AI system prompt is built per-request from live services/staff DB rows; safety rules: no diagnosis, soft-sell only (max one treatment suggestion per reply), directs booking to the Aesthetic Record URL.
 - Chat streaming is SSE over POST; Orval can't type SSE, so the client uses raw fetch + ReadableStream (generated hooks for everything else).
+- Glow Score computed server-side (0-100): water 15 + sleep 20 (7-9h full) + stress 15 (lower better) + activity 15 (30min full) + protein 20 (100g full) + skincare 15. One check-in per day (unique date, upsert); streak counts consecutive days back from today (or yesterday if today not yet logged).
 
 ## Product
 
@@ -49,6 +50,7 @@ A patient companion app for LUXE Wellness and Aesthetics (physician-owned med sp
 - Food: meal logging with macros, daily summary, restaurant menu search
 - Restaurants: local chains with calorie/macro data and healthy pick ordering tips
 - Luxe AI: 24/7 streaming chat assistant grounded in LUXE's service catalog and team; GLP-1 coaching, skincare/treatment Q&A, gentle treatment suggestions
+- Glow Score: daily habit check-in (water, sleep, stress, activity, protein, skincare) → one 0-100 score, streak tracking, 14-day trend chart
 
 ## User preferences
 

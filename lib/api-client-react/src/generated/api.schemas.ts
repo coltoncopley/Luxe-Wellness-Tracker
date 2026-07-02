@@ -211,6 +211,60 @@ export interface DashboardSummary {
   nextAppointment?: Appointment | null;
 }
 
+export interface GlowCheckinInput {
+  /** YYYY-MM-DD; defaults to today */
+  date?: string;
+  /**
+     * @minimum 0
+     * @maximum 30
+     */
+  waterCups: number;
+  /**
+     * @minimum 0
+     * @maximum 24
+     */
+  sleepHours: number;
+  /**
+     * @minimum 1
+     * @maximum 5
+     */
+  stressLevel: number;
+  /**
+     * @minimum 0
+     * @maximum 1440
+     */
+  activityMinutes: number;
+  /**
+     * @minimum 0
+     * @maximum 1000
+     */
+  proteinGrams: number;
+  skincareDone: boolean;
+}
+
+export interface GlowCheckin {
+  id: number;
+  date: string;
+  waterCups: number;
+  sleepHours: number;
+  stressLevel: number;
+  activityMinutes: number;
+  proteinGrams: number;
+  skincareDone: boolean;
+  score: number;
+}
+
+export interface GlowHistoryPoint {
+  date: string;
+  score: number;
+}
+
+export interface GlowSummary {
+  today: GlowCheckin | null;
+  streakDays: number;
+  history: GlowHistoryPoint[];
+}
+
 export interface OpenaiConversation {
   id: number;
   title: string;

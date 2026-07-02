@@ -28,6 +28,9 @@ import type {
   FoodLog,
   FoodLogInput,
   GetDailySummaryParams,
+  GlowCheckin,
+  GlowCheckinInput,
+  GlowSummary,
   Goal,
   GoalInput,
   HealthStatus,
@@ -2117,6 +2120,153 @@ export function useGetDashboardSummary<TData = Awaited<ReturnType<typeof getDash
 
 
 
+
+export const getGetGlowSummaryUrl = () => {
+
+
+
+
+  return `/api/glow/summary`
+}
+
+/**
+ * @summary Today's glow check-in, score, streak, and recent history
+ */
+export const getGlowSummary = async ( options?: RequestInit): Promise<GlowSummary> => {
+
+  return customFetch<GlowSummary>(getGetGlowSummaryUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetGlowSummaryQueryKey = () => {
+    return [
+    `/api/glow/summary`
+    ] as const;
+    }
+
+
+export const getGetGlowSummaryQueryOptions = <TData = Awaited<ReturnType<typeof getGlowSummary>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGlowSummary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetGlowSummaryQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getGlowSummary>>> = ({ signal }) => getGlowSummary({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getGlowSummary>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetGlowSummaryQueryResult = NonNullable<Awaited<ReturnType<typeof getGlowSummary>>>
+export type GetGlowSummaryQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Today's glow check-in, score, streak, and recent history
+ */
+
+export function useGetGlowSummary<TData = Awaited<ReturnType<typeof getGlowSummary>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getGlowSummary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetGlowSummaryQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpsertGlowCheckinUrl = () => {
+
+
+
+
+  return `/api/glow/checkin`
+}
+
+/**
+ * @summary Create or update today's glow check-in
+ */
+export const upsertGlowCheckin = async (glowCheckinInput: GlowCheckinInput, options?: RequestInit): Promise<GlowCheckin> => {
+
+  return customFetch<GlowCheckin>(getUpsertGlowCheckinUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(glowCheckinInput)
+  }
+);}
+
+
+
+
+export const getUpsertGlowCheckinMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof upsertGlowCheckin>>, TError,{data: BodyType<GlowCheckinInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof upsertGlowCheckin>>, TError,{data: BodyType<GlowCheckinInput>}, TContext> => {
+
+const mutationKey = ['upsertGlowCheckin'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof upsertGlowCheckin>>, {data: BodyType<GlowCheckinInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  upsertGlowCheckin(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpsertGlowCheckinMutationResult = NonNullable<Awaited<ReturnType<typeof upsertGlowCheckin>>>
+    export type UpsertGlowCheckinMutationBody = BodyType<GlowCheckinInput>
+    export type UpsertGlowCheckinMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create or update today's glow check-in
+ */
+export const useUpsertGlowCheckin = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof upsertGlowCheckin>>, TError,{data: BodyType<GlowCheckinInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof upsertGlowCheckin>>,
+        TError,
+        {data: BodyType<GlowCheckinInput>},
+        TContext
+      > => {
+      return useMutation(getUpsertGlowCheckinMutationOptions(options));
+    }
 
 export const getListOpenaiConversationsUrl = () => {
 

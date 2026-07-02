@@ -6,6 +6,7 @@ import trackingRouter from "./tracking";
 import foodRouter from "./food";
 import wellnessRouter from "./wellness";
 import openaiRouter from "./openai";
+import glowRouter from "./glow";
 
 const router: IRouter = Router();
 
@@ -16,5 +17,6 @@ router.use(trackingRouter);
 router.use(foodRouter);
 router.use(wellnessRouter);
 router.use(openaiRouter);
+router.use(glowRouter);
 
 export default router;

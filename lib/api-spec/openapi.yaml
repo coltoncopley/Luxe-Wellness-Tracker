@@ -24,6 +24,8 @@ tags:
     description: Dashboard summaries
   - name: openai
     description: Luxe AI chat assistant
+  - name: glow
+    description: Daily Glow Score check-ins and streaks
 paths:
   /healthz:
     get:
@@ -452,6 +454,36 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DashboardSummary"
+  /glow/summary:
+    get:
+      operationId: getGlowSummary
+      tags: [glow]
+      summary: Today's glow check-in, score, streak, and recent history
+      responses:
+        "200":
+          description: Glow summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GlowSummary"
+  /glow/checkin:
+    put:
+      operationId: upsertGlowCheckin
+      tags: [glow]
+      summary: Create or update today's glow check-in
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GlowCheckinInput"
+      responses:
+        "200":
+          description: Saved check-in with computed score
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GlowCheckin"
   /openai/conversations:
     get:
       operationId: listOpenaiConversations
@@ -766,6 +798,99 @@ components:
           oneOf:
             - $ref: "#/components/schemas/Appointment"
             - type: "null"
+    GlowCheckinInput:
+      type: object
+      properties:
+        date:
+          type: string
+          description: YYYY-MM-DD; defaults to today
+        waterCups:
+          type: integer
+          minimum: 0
+          maximum: 30
+        sleepHours:
+          type: number
+          minimum: 0
+          maximum: 24
+        stressLevel:
+          type: integer
+          minimum: 1
+          maximum: 5
+        activityMinutes:
+          type: integer
+          minimum: 0
+          maximum: 1440
+        proteinGrams:
+          type: integer
+          minimum: 0
+          maximum: 1000
+        skincareDone:
+          type: boolean
+      required:
+        - waterCups
+        - sleepHours
+        - stressLevel
+        - activityMinutes
+        - proteinGrams
+        - skincareDone
+    GlowCheckin:
+      type: object
+      properties:
+        id:
+          type: integer
+        date:
+          type: string
+        waterCups:
+          type: integer
+        sleepHours:
+          type: number
+        stressLevel:
+          type: integer
+        activityMinutes:
+          type: integer
+        proteinGrams:
+          type: integer
+        skincareDone:
+          type: boolean
+        score:
+          type: integer
+      required:
+        - id
+        - date
+        - waterCups
+        - sleepHours
+        - stressLevel
+        - activityMinutes
+        - proteinGrams
+        - skincareDone
+        - score
+    GlowHistoryPoint:
+      type: object
+      properties:
+        date:
+          type: string
+        score:
+          type: integer
+      required:
+        - date
+        - score
+    GlowSummary:
+      type: object
+      properties:
+        today:
+          oneOf:
+            - $ref: "#/components/schemas/GlowCheckin"
+            - type: "null"
+        streakDays:
+          type: integer
+        history:
+          type: array
+          items:
+            $ref: "#/components/schemas/GlowHistoryPoint"
+      required:
+        - today
+        - streakDays
+        - history
     OpenaiConversation:
       type: object
       properties:

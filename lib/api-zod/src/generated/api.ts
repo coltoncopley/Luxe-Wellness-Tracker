@@ -465,6 +465,71 @@ export const GetDashboardSummaryResponse = zod.object({
 
 
 /**
+ * @summary Today's glow check-in, score, streak, and recent history
+ */
+export const GetGlowSummaryResponse = zod.object({
+  "today": zod.union([zod.object({
+  "id": zod.number(),
+  "date": zod.string(),
+  "waterCups": zod.number(),
+  "sleepHours": zod.number(),
+  "stressLevel": zod.number(),
+  "activityMinutes": zod.number(),
+  "proteinGrams": zod.number(),
+  "skincareDone": zod.boolean(),
+  "score": zod.number()
+}),zod.null()]),
+  "streakDays": zod.number(),
+  "history": zod.array(zod.object({
+  "date": zod.string(),
+  "score": zod.number()
+}))
+})
+
+
+/**
+ * @summary Create or update today's glow check-in
+ */
+export const upsertGlowCheckinBodyWaterCupsMin = 0;
+export const upsertGlowCheckinBodyWaterCupsMax = 30;
+
+export const upsertGlowCheckinBodySleepHoursMin = 0;
+export const upsertGlowCheckinBodySleepHoursMax = 24;
+
+export const upsertGlowCheckinBodyStressLevelMax = 5;
+
+export const upsertGlowCheckinBodyActivityMinutesMin = 0;
+export const upsertGlowCheckinBodyActivityMinutesMax = 1440;
+
+export const upsertGlowCheckinBodyProteinGramsMin = 0;
+export const upsertGlowCheckinBodyProteinGramsMax = 1000;
+
+
+
+export const UpsertGlowCheckinBody = zod.object({
+  "date": zod.string().optional().describe('YYYY-MM-DD; defaults to today'),
+  "waterCups": zod.number().min(upsertGlowCheckinBodyWaterCupsMin).max(upsertGlowCheckinBodyWaterCupsMax),
+  "sleepHours": zod.number().min(upsertGlowCheckinBodySleepHoursMin).max(upsertGlowCheckinBodySleepHoursMax),
+  "stressLevel": zod.number().min(1).max(upsertGlowCheckinBodyStressLevelMax),
+  "activityMinutes": zod.number().min(upsertGlowCheckinBodyActivityMinutesMin).max(upsertGlowCheckinBodyActivityMinutesMax),
+  "proteinGrams": zod.number().min(upsertGlowCheckinBodyProteinGramsMin).max(upsertGlowCheckinBodyProteinGramsMax),
+  "skincareDone": zod.boolean()
+})
+
+export const UpsertGlowCheckinResponse = zod.object({
+  "id": zod.number(),
+  "date": zod.string(),
+  "waterCups": zod.number(),
+  "sleepHours": zod.number(),
+  "stressLevel": zod.number(),
+  "activityMinutes": zod.number(),
+  "proteinGrams": zod.number(),
+  "skincareDone": zod.boolean(),
+  "score": zod.number()
+})
+
+
+/**
  * @summary List all conversations
  */
 export const ListOpenaiConversationsResponseItem = zod.object({
