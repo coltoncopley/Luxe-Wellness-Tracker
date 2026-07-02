@@ -29,8 +29,215 @@ async function seedSettingsAndRewards() {
   }
 }
 
+type MenuItemSeed = {
+  name: string;
+  calories: number;
+  proteinG: number | null;
+  carbsG: number | null;
+  fatG: number | null;
+  isHealthyPick: boolean;
+  orderingTip: string | null;
+};
+
+const RESTAURANT_SEED: {
+  name: string;
+  cuisine: string;
+  description: string;
+  items: MenuItemSeed[];
+}[] = [
+  {
+    name: "Chipotle", cuisine: "Mexican", description: "Build-your-own bowls, burritos, and salads.",
+    items: [
+      { name: "Chicken Salad Bowl (no rice, light cheese)", calories: 405, proteinG: 45, carbsG: 15, fatG: 18, isHealthyPick: true, orderingTip: "Skip the rice and tortilla; double fajita veggies and use salsa instead of dressing." },
+      { name: "Chicken Burrito Bowl (white rice, black beans)", calories: 665, proteinG: 45, carbsG: 70, fatG: 20, isHealthyPick: false, orderingTip: null },
+      { name: "Steak Bowl (half rice, veggies)", calories: 545, proteinG: 35, carbsG: 45, fatG: 22, isHealthyPick: true, orderingTip: "Ask for half rice and extra veggies to cut ~100 calories." },
+      { name: "Chicken Burrito (full)", calories: 1050, proteinG: 50, carbsG: 105, fatG: 40, isHealthyPick: false, orderingTip: null },
+    ],
+  },
+  {
+    name: "Chick-fil-A", cuisine: "American", description: "Chicken sandwiches, nuggets, and salads.",
+    items: [
+      { name: "Grilled Chicken Sandwich", calories: 390, proteinG: 28, carbsG: 44, fatG: 12, isHealthyPick: true, orderingTip: "Grilled instead of fried saves ~150 calories." },
+      { name: "Grilled Nuggets (12 ct)", calories: 200, proteinG: 38, carbsG: 2, fatG: 5, isHealthyPick: true, orderingTip: "One of the best protein-per-calorie picks anywhere. Pair with a side salad." },
+      { name: "Market Salad with Grilled Chicken", calories: 540, proteinG: 28, carbsG: 41, fatG: 31, isHealthyPick: true, orderingTip: "Use half the dressing packet to save ~120 calories." },
+      { name: "Chick-fil-A Deluxe Sandwich", calories: 490, proteinG: 29, carbsG: 43, fatG: 22, isHealthyPick: false, orderingTip: null },
+      { name: "Waffle Fries (medium)", calories: 420, proteinG: 5, carbsG: 45, fatG: 24, isHealthyPick: false, orderingTip: null },
+    ],
+  },
+  {
+    name: "Panera Bread", cuisine: "Bakery Cafe", description: "Soups, salads, sandwiches, and bowls.",
+    items: [
+      { name: "Mediterranean Bowl with Chicken", calories: 590, proteinG: 33, carbsG: 55, fatG: 27, isHealthyPick: true, orderingTip: "High fiber and protein; ask for light feta to trim calories." },
+      { name: "Turkey Sandwich (half) + Garden Salad", calories: 420, proteinG: 22, carbsG: 40, fatG: 18, isHealthyPick: true, orderingTip: "The half-sandwich combo keeps portions in check." },
+      { name: "Broccoli Cheddar Soup (bowl) in Bread Bowl", calories: 900, proteinG: 25, carbsG: 110, fatG: 38, isHealthyPick: false, orderingTip: null },
+      { name: "Fuji Apple Salad with Chicken", calories: 550, proteinG: 30, carbsG: 38, fatG: 31, isHealthyPick: true, orderingTip: "Dressing on the side; dip your fork instead of pouring." },
+    ],
+  },
+  {
+    name: "Subway", cuisine: "Sandwiches", description: "Custom subs, wraps, and salads.",
+    items: [
+      { name: "6\" Turkey Breast on Wheat (veggies, no cheese)", calories: 280, proteinG: 18, carbsG: 45, fatG: 4, isHealthyPick: true, orderingTip: "Skip cheese and mayo; use mustard or vinegar for flavor." },
+      { name: "Rotisserie Chicken Protein Bowl", calories: 350, proteinG: 39, carbsG: 12, fatG: 16, isHealthyPick: true, orderingTip: "Any footlong can become a lower-carb protein bowl." },
+      { name: "Footlong Spicy Italian", calories: 960, proteinG: 40, carbsG: 92, fatG: 48, isHealthyPick: false, orderingTip: null },
+    ],
+  },
+  {
+    name: "Olive Garden", cuisine: "Italian", description: "Pasta, soups, and salads.",
+    items: [
+      { name: "Herb-Grilled Salmon with Broccoli", calories: 460, proteinG: 43, carbsG: 8, fatG: 28, isHealthyPick: true, orderingTip: "The best entree on the menu for protein and omega-3s." },
+      { name: "Grilled Chicken Margherita", calories: 540, proteinG: 62, carbsG: 10, fatG: 28, isHealthyPick: true, orderingTip: "Skip the breadsticks or limit to one — each is 140 calories." },
+      { name: "Chicken Alfredo", calories: 1310, proteinG: 56, carbsG: 96, fatG: 80, isHealthyPick: false, orderingTip: null },
+      { name: "Minestrone Soup + Side Salad (light dressing)", calories: 260, proteinG: 8, carbsG: 40, fatG: 8, isHealthyPick: true, orderingTip: "Unlimited soup and salad can be a smart choice — go minestrone, light dressing, one breadstick max." },
+    ],
+  },
+  {
+    name: "Texas Roadhouse", cuisine: "Steakhouse", description: "Steaks, grilled chicken, and sides.",
+    items: [
+      { name: "6 oz Sirloin with Steamed Vegetables", calories: 430, proteinG: 45, carbsG: 12, fatG: 22, isHealthyPick: true, orderingTip: "Ask for no butter on the steak and veggies to save ~150 calories." },
+      { name: "Grilled Chicken Salad (dressing on side)", calories: 480, proteinG: 40, carbsG: 20, fatG: 26, isHealthyPick: true, orderingTip: "Skip the buttery rolls — each with cinnamon butter is ~230 calories." },
+      { name: "Country Fried Chicken with Gravy", calories: 990, proteinG: 45, carbsG: 75, fatG: 55, isHealthyPick: false, orderingTip: null },
+    ],
+  },
+  {
+    name: "McDonald's", cuisine: "Fast Food", description: "Burgers, chicken, salads, and breakfast.",
+    items: [
+      { name: "Hamburger + Apple Slices", calories: 265, proteinG: 13, carbsG: 35, fatG: 9, isHealthyPick: true, orderingTip: "The classic hamburger is one of the most calorie-controlled items on the menu." },
+      { name: "Egg McMuffin", calories: 310, proteinG: 17, carbsG: 30, fatG: 13, isHealthyPick: true, orderingTip: "One of the best fast-food breakfasts — balanced protein and portion size." },
+      { name: "Big Mac Meal (medium)", calories: 1100, proteinG: 34, carbsG: 130, fatG: 48, isHealthyPick: false, orderingTip: null },
+    ],
+  },
+  {
+    name: "Wendy's", cuisine: "Fast Food", description: "Burgers, chicken, chili, and salads.",
+    items: [
+      { name: "Grilled Chicken Sandwich", calories: 350, proteinG: 33, carbsG: 37, fatG: 9, isHealthyPick: true, orderingTip: "Ask for no honey mustard to drop another 60 calories." },
+      { name: "Small Chili", calories: 240, proteinG: 16, carbsG: 22, fatG: 10, isHealthyPick: true, orderingTip: "High-protein, high-fiber, and filling — great with a side salad." },
+      { name: "Baconator", calories: 960, proteinG: 58, carbsG: 39, fatG: 66, isHealthyPick: false, orderingTip: null },
+    ],
+  },
+  {
+    name: "Bob Evans", cuisine: "American", description: "Homestyle breakfast, lunch, and dinner.",
+    items: [
+      { name: "Fit from the Farm Breakfast (egg whites, fruit, turkey sausage)", calories: 390, proteinG: 28, carbsG: 40, fatG: 12, isHealthyPick: true, orderingTip: "Ask for egg whites and fruit instead of hash browns." },
+      { name: "Grilled Chicken Dinner with Green Beans", calories: 450, proteinG: 42, carbsG: 20, fatG: 20, isHealthyPick: true, orderingTip: "Choose two vegetable sides instead of mashed potatoes and rolls." },
+      { name: "Rise & Shine Breakfast", calories: 870, proteinG: 30, carbsG: 65, fatG: 52, isHealthyPick: false, orderingTip: null },
+    ],
+  },
+  {
+    name: "Cracker Barrel", cuisine: "Southern", description: "Country cooking and homestyle favorites.",
+    items: [
+      { name: "Grilled Chicken Tenders with Turnip Greens", calories: 380, proteinG: 40, carbsG: 15, fatG: 16, isHealthyPick: true, orderingTip: "Swap biscuits for a side of fresh fruit." },
+      { name: "Lemon Pepper Trout with Green Beans", calories: 420, proteinG: 38, carbsG: 10, fatG: 24, isHealthyPick: true, orderingTip: "One of the lightest dinners on the menu — skip the cornbread." },
+      { name: "Chicken Fried Chicken with Gravy", calories: 1000, proteinG: 48, carbsG: 80, fatG: 54, isHealthyPick: false, orderingTip: null },
+    ],
+  },
+  {
+    name: "Applebee's", cuisine: "American Grill", description: "Grill and bar classics, steaks, and salads.",
+    items: [
+      { name: "6 oz Top Sirloin with Broccoli", calories: 400, proteinG: 42, carbsG: 12, fatG: 20, isHealthyPick: true, orderingTip: "Ask for double broccoli instead of the potato side." },
+      { name: "Grilled Chicken Breast with Veggies", calories: 430, proteinG: 44, carbsG: 18, fatG: 18, isHealthyPick: true, orderingTip: "From the 'Lighter Fare' menu — one of the leanest plates here." },
+      { name: "Fiesta Lime Chicken", calories: 1140, proteinG: 51, carbsG: 88, fatG: 62, isHealthyPick: false, orderingTip: null },
+      { name: "Riblets Platter", calories: 1250, proteinG: 60, carbsG: 95, fatG: 68, isHealthyPick: false, orderingTip: null },
+    ],
+  },
+  {
+    name: "Buffalo Wild Wings", cuisine: "Wings & Sports Bar", description: "Wings, burgers, and shareables.",
+    items: [
+      { name: "Traditional Wings (6 ct, dry rub)", calories: 430, proteinG: 42, carbsG: 2, fatG: 28, isHealthyPick: true, orderingTip: "Traditional beats boneless — no breading. Pick a dry rub over sauce to skip ~100 calories." },
+      { name: "Naked Chicken Tenders with Side Salad", calories: 380, proteinG: 45, carbsG: 12, fatG: 16, isHealthyPick: true, orderingTip: "Ask for grilled 'naked' tenders and dressing on the side." },
+      { name: "Boneless Wings (10 ct, honey BBQ)", calories: 860, proteinG: 46, carbsG: 78, fatG: 40, isHealthyPick: false, orderingTip: null },
+      { name: "Cheese Curds", calories: 940, proteinG: 28, carbsG: 70, fatG: 60, isHealthyPick: false, orderingTip: null },
+    ],
+  },
+  {
+    name: "Panda Express", cuisine: "Chinese", description: "American Chinese classics and build-your-own plates.",
+    items: [
+      { name: "String Bean Chicken Breast + Super Greens", calories: 300, proteinG: 21, carbsG: 22, fatG: 12, isHealthyPick: true, orderingTip: "Swap rice for super greens to save ~300 calories." },
+      { name: "Grilled Teriyaki Chicken + Super Greens", calories: 405, proteinG: 40, carbsG: 22, fatG: 17, isHealthyPick: true, orderingTip: "One of the highest-protein plates — ask for sauce on the side." },
+      { name: "Orange Chicken with Fried Rice", calories: 1010, proteinG: 30, carbsG: 125, fatG: 42, isHealthyPick: false, orderingTip: null },
+      { name: "Beijing Beef", calories: 690, proteinG: 26, carbsG: 57, fatG: 40, isHealthyPick: false, orderingTip: null },
+    ],
+  },
+  {
+    name: "Taco Bell", cuisine: "Mexican Fast Food", description: "Tacos, burritos, and bowls.",
+    items: [
+      { name: "Chicken Soft Taco (Fresco Style), 2 ct", calories: 300, proteinG: 24, carbsG: 36, fatG: 7, isHealthyPick: true, orderingTip: "Say 'Fresco style' — swaps cheese and sauce for pico de gallo." },
+      { name: "Power Menu Bowl with Chicken", calories: 470, proteinG: 26, carbsG: 41, fatG: 21, isHealthyPick: true, orderingTip: "Skip the rice for a lower-carb bowl around 360 calories." },
+      { name: "Crunchwrap Supreme", calories: 530, proteinG: 16, carbsG: 71, fatG: 21, isHealthyPick: false, orderingTip: null },
+      { name: "Nachos BellGrande", calories: 740, proteinG: 16, carbsG: 82, fatG: 39, isHealthyPick: false, orderingTip: null },
+    ],
+  },
+  {
+    name: "Arby's", cuisine: "Sandwiches", description: "Roast beef, turkey, and market fresh sandwiches.",
+    items: [
+      { name: "Classic Roast Beef", calories: 360, proteinG: 23, carbsG: 37, fatG: 14, isHealthyPick: true, orderingTip: "The classic size keeps portions sensible — skip the cheese sauce." },
+      { name: "Roast Turkey Farmhouse Salad", calories: 240, proteinG: 22, carbsG: 12, fatG: 13, isHealthyPick: true, orderingTip: "Light Italian dressing keeps the whole meal under 300 calories." },
+      { name: "Half Pound Beef 'N Cheddar", calories: 740, proteinG: 40, carbsG: 47, fatG: 42, isHealthyPick: false, orderingTip: null },
+      { name: "Curly Fries (medium)", calories: 550, proteinG: 6, carbsG: 65, fatG: 29, isHealthyPick: false, orderingTip: null },
+    ],
+  },
+  {
+    name: "Fazoli's", cuisine: "Italian Fast Food", description: "Fast Italian pasta, subs, and salads.",
+    items: [
+      { name: "Grilled Chicken Caesar Salad (dressing on side)", calories: 400, proteinG: 33, carbsG: 15, fatG: 24, isHealthyPick: true, orderingTip: "Skip the free breadsticks — each is 150 calories with garlic butter." },
+      { name: "Spaghetti with Marinara (small)", calories: 430, proteinG: 14, carbsG: 84, fatG: 4, isHealthyPick: true, orderingTip: "Small marinara is the leanest pasta — add grilled chicken for protein." },
+      { name: "Fettuccine Alfredo (regular)", calories: 880, proteinG: 25, carbsG: 115, fatG: 35, isHealthyPick: false, orderingTip: null },
+    ],
+  },
+  {
+    name: "Outback Steakhouse", cuisine: "Steakhouse", description: "Steaks, seafood, and Aussie-themed classics.",
+    items: [
+      { name: "6 oz Victoria's Filet with Broccoli", calories: 450, proteinG: 40, carbsG: 12, fatG: 26, isHealthyPick: true, orderingTip: "Ask for no butter finish; the filet is the leanest cut." },
+      { name: "Grilled Chicken on the Barbie with Veggies", calories: 480, proteinG: 48, carbsG: 20, fatG: 22, isHealthyPick: true, orderingTip: "Sauce on the side keeps this under 500 calories." },
+      { name: "Bloomin' Onion", calories: 1950, proteinG: 18, carbsG: 123, fatG: 155, isHealthyPick: false, orderingTip: null },
+      { name: "Alice Springs Chicken", calories: 940, proteinG: 71, carbsG: 20, fatG: 63, isHealthyPick: false, orderingTip: null },
+    ],
+  },
+  {
+    name: "Jimmy John's", cuisine: "Sandwiches", description: "Fast sub sandwiches and unwiches.",
+    items: [
+      { name: "Turkey Tom Unwich (lettuce wrap)", calories: 250, proteinG: 15, carbsG: 8, fatG: 18, isHealthyPick: true, orderingTip: "Any sub as an 'Unwich' lettuce wrap cuts 250+ calories of bread." },
+      { name: "#4 Turkey Tom (8-inch)", calories: 510, proteinG: 24, carbsG: 66, fatG: 17, isHealthyPick: true, orderingTip: "Skip mayo and add extra veggies to bring it near 400 calories." },
+      { name: "#9 Italian Night Club", calories: 950, proteinG: 42, carbsG: 71, fatG: 55, isHealthyPick: false, orderingTip: null },
+    ],
+  },
+];
+
+async function seedRestaurants() {
+  const existing = await db.select().from(restaurantsTable);
+  const rid = new Map(existing.map((r) => [r.name, r.id]));
+
+  const missing = RESTAURANT_SEED.filter((r) => !rid.has(r.name));
+  if (missing.length > 0) {
+    const inserted = await db
+      .insert(restaurantsTable)
+      .values(missing.map(({ name, cuisine, description }) => ({ name, cuisine, description })))
+      .returning();
+    for (const r of inserted) rid.set(r.name, r.id);
+  }
+
+  const existingItems = await db.select().from(menuItemsTable);
+  const itemKeys = new Set(existingItems.map((i) => `${i.restaurantId}:${i.name}`));
+  const itemRows = RESTAURANT_SEED.flatMap((r) => {
+    const restaurantId = rid.get(r.name);
+    if (restaurantId == null) return [];
+    return r.items
+      .filter((item) => !itemKeys.has(`${restaurantId}:${item.name}`))
+      .map((item) => ({ ...item, restaurantId }));
+  });
+  if (itemRows.length > 0) {
+    await db.insert(menuItemsTable).values(itemRows);
+  }
+
+  if (missing.length === 0 && itemRows.length === 0) {
+    console.log("Restaurants already seeded.");
+  } else {
+    console.log(`Seeded ${missing.length} restaurants and ${itemRows.length} menu items.`);
+  }
+}
+
 async function seed() {
   await seedSettingsAndRewards();
+  await seedRestaurants();
 
   const existingServices = await db.select().from(servicesTable).limit(1);
   if (existingServices.length > 0) {
@@ -56,72 +263,6 @@ async function seed() {
     { name: "Harlee", title: "APRN, Aesthetic Injector", bio: "Advanced practice nurse specializing in neurotoxin and dermal filler treatments with a natural-results philosophy.", photoUrl: null, bookingUrl: BOOKING_URL },
     { name: "Natalie", title: "Licensed Esthetician", bio: "Skincare specialist offering facials, peels, and personalized skin health plans.", photoUrl: null, bookingUrl: BOOKING_URL },
     { name: "Bethany", title: "Wax Specialist", bio: "Professional waxing specialist dedicated to comfortable, high-quality smooth-skin services.", photoUrl: null, bookingUrl: BOOKING_URL },
-  ]);
-
-  const restaurantRows = await db
-    .insert(restaurantsTable)
-    .values([
-      { name: "Chipotle", cuisine: "Mexican", description: "Build-your-own bowls, burritos, and salads." },
-      { name: "Chick-fil-A", cuisine: "American", description: "Chicken sandwiches, nuggets, and salads." },
-      { name: "Panera Bread", cuisine: "Bakery Cafe", description: "Soups, salads, sandwiches, and bowls." },
-      { name: "Subway", cuisine: "Sandwiches", description: "Custom subs, wraps, and salads." },
-      { name: "Olive Garden", cuisine: "Italian", description: "Pasta, soups, and salads." },
-      { name: "Texas Roadhouse", cuisine: "Steakhouse", description: "Steaks, grilled chicken, and sides." },
-      { name: "McDonald's", cuisine: "Fast Food", description: "Burgers, chicken, salads, and breakfast." },
-      { name: "Wendy's", cuisine: "Fast Food", description: "Burgers, chicken, chili, and salads." },
-      { name: "Bob Evans", cuisine: "American", description: "Homestyle breakfast, lunch, and dinner." },
-      { name: "Cracker Barrel", cuisine: "Southern", description: "Country cooking and homestyle favorites." },
-    ])
-    .returning();
-
-  const rid = new Map(restaurantRows.map((r) => [r.name, r.id]));
-
-  await db.insert(menuItemsTable).values([
-    // Chipotle
-    { restaurantId: rid.get("Chipotle")!, name: "Chicken Salad Bowl (no rice, light cheese)", calories: 405, proteinG: 45, carbsG: 15, fatG: 18, isHealthyPick: true, orderingTip: "Skip the rice and tortilla; double fajita veggies and use salsa instead of dressing." },
-    { restaurantId: rid.get("Chipotle")!, name: "Chicken Burrito Bowl (white rice, black beans)", calories: 665, proteinG: 45, carbsG: 70, fatG: 20, isHealthyPick: false, orderingTip: null },
-    { restaurantId: rid.get("Chipotle")!, name: "Steak Bowl (half rice, veggies)", calories: 545, proteinG: 35, carbsG: 45, fatG: 22, isHealthyPick: true, orderingTip: "Ask for half rice and extra veggies to cut ~100 calories." },
-    { restaurantId: rid.get("Chipotle")!, name: "Chicken Burrito (full)", calories: 1050, proteinG: 50, carbsG: 105, fatG: 40, isHealthyPick: false, orderingTip: null },
-    // Chick-fil-A
-    { restaurantId: rid.get("Chick-fil-A")!, name: "Grilled Chicken Sandwich", calories: 390, proteinG: 28, carbsG: 44, fatG: 12, isHealthyPick: true, orderingTip: "Grilled instead of fried saves ~150 calories." },
-    { restaurantId: rid.get("Chick-fil-A")!, name: "Grilled Nuggets (12 ct)", calories: 200, proteinG: 38, carbsG: 2, fatG: 5, isHealthyPick: true, orderingTip: "One of the best protein-per-calorie picks anywhere. Pair with a side salad." },
-    { restaurantId: rid.get("Chick-fil-A")!, name: "Market Salad with Grilled Chicken", calories: 540, proteinG: 28, carbsG: 41, fatG: 31, isHealthyPick: true, orderingTip: "Use half the dressing packet to save ~120 calories." },
-    { restaurantId: rid.get("Chick-fil-A")!, name: "Chick-fil-A Deluxe Sandwich", calories: 490, proteinG: 29, carbsG: 43, fatG: 22, isHealthyPick: false, orderingTip: null },
-    { restaurantId: rid.get("Chick-fil-A")!, name: "Waffle Fries (medium)", calories: 420, proteinG: 5, carbsG: 45, fatG: 24, isHealthyPick: false, orderingTip: null },
-    // Panera
-    { restaurantId: rid.get("Panera Bread")!, name: "Mediterranean Bowl with Chicken", calories: 590, proteinG: 33, carbsG: 55, fatG: 27, isHealthyPick: true, orderingTip: "High fiber and protein; ask for light feta to trim calories." },
-    { restaurantId: rid.get("Panera Bread")!, name: "Turkey Sandwich (half) + Garden Salad", calories: 420, proteinG: 22, carbsG: 40, fatG: 18, isHealthyPick: true, orderingTip: "The half-sandwich combo keeps portions in check." },
-    { restaurantId: rid.get("Panera Bread")!, name: "Broccoli Cheddar Soup (bowl) in Bread Bowl", calories: 900, proteinG: 25, carbsG: 110, fatG: 38, isHealthyPick: false, orderingTip: null },
-    { restaurantId: rid.get("Panera Bread")!, name: "Fuji Apple Salad with Chicken", calories: 550, proteinG: 30, carbsG: 38, fatG: 31, isHealthyPick: true, orderingTip: "Dressing on the side; dip your fork instead of pouring." },
-    // Subway
-    { restaurantId: rid.get("Subway")!, name: "6\" Turkey Breast on Wheat (veggies, no cheese)", calories: 280, proteinG: 18, carbsG: 45, fatG: 4, isHealthyPick: true, orderingTip: "Skip cheese and mayo; use mustard or vinegar for flavor." },
-    { restaurantId: rid.get("Subway")!, name: "Rotisserie Chicken Protein Bowl", calories: 350, proteinG: 39, carbsG: 12, fatG: 16, isHealthyPick: true, orderingTip: "Any footlong can become a lower-carb protein bowl." },
-    { restaurantId: rid.get("Subway")!, name: "Footlong Spicy Italian", calories: 960, proteinG: 40, carbsG: 92, fatG: 48, isHealthyPick: false, orderingTip: null },
-    // Olive Garden
-    { restaurantId: rid.get("Olive Garden")!, name: "Herb-Grilled Salmon with Broccoli", calories: 460, proteinG: 43, carbsG: 8, fatG: 28, isHealthyPick: true, orderingTip: "The best entree on the menu for protein and omega-3s." },
-    { restaurantId: rid.get("Olive Garden")!, name: "Grilled Chicken Margherita", calories: 540, proteinG: 62, carbsG: 10, fatG: 28, isHealthyPick: true, orderingTip: "Skip the breadsticks or limit to one — each is 140 calories." },
-    { restaurantId: rid.get("Olive Garden")!, name: "Chicken Alfredo", calories: 1310, proteinG: 56, carbsG: 96, fatG: 80, isHealthyPick: false, orderingTip: null },
-    { restaurantId: rid.get("Olive Garden")!, name: "Minestrone Soup + Side Salad (light dressing)", calories: 260, proteinG: 8, carbsG: 40, fatG: 8, isHealthyPick: true, orderingTip: "Unlimited soup and salad can be a smart choice — go minestrone, light dressing, one breadstick max." },
-    // Texas Roadhouse
-    { restaurantId: rid.get("Texas Roadhouse")!, name: "6 oz Sirloin with Steamed Vegetables", calories: 430, proteinG: 45, carbsG: 12, fatG: 22, isHealthyPick: true, orderingTip: "Ask for no butter on the steak and veggies to save ~150 calories." },
-    { restaurantId: rid.get("Texas Roadhouse")!, name: "Grilled Chicken Salad (dressing on side)", calories: 480, proteinG: 40, carbsG: 20, fatG: 26, isHealthyPick: true, orderingTip: "Skip the buttery rolls — each with cinnamon butter is ~230 calories." },
-    { restaurantId: rid.get("Texas Roadhouse")!, name: "Country Fried Chicken with Gravy", calories: 990, proteinG: 45, carbsG: 75, fatG: 55, isHealthyPick: false, orderingTip: null },
-    // McDonald's
-    { restaurantId: rid.get("McDonald's")!, name: "Hamburger + Apple Slices", calories: 265, proteinG: 13, carbsG: 35, fatG: 9, isHealthyPick: true, orderingTip: "The classic hamburger is one of the most calorie-controlled items on the menu." },
-    { restaurantId: rid.get("McDonald's")!, name: "Egg McMuffin", calories: 310, proteinG: 17, carbsG: 30, fatG: 13, isHealthyPick: true, orderingTip: "One of the best fast-food breakfasts — balanced protein and portion size." },
-    { restaurantId: rid.get("McDonald's")!, name: "Big Mac Meal (medium)", calories: 1100, proteinG: 34, carbsG: 130, fatG: 48, isHealthyPick: false, orderingTip: null },
-    // Wendy's
-    { restaurantId: rid.get("Wendy's")!, name: "Grilled Chicken Sandwich", calories: 350, proteinG: 33, carbsG: 37, fatG: 9, isHealthyPick: true, orderingTip: "Ask for no honey mustard to drop another 60 calories." },
-    { restaurantId: rid.get("Wendy's")!, name: "Small Chili", calories: 240, proteinG: 16, carbsG: 22, fatG: 10, isHealthyPick: true, orderingTip: "High-protein, high-fiber, and filling — great with a side salad." },
-    { restaurantId: rid.get("Wendy's")!, name: "Baconator", calories: 960, proteinG: 58, carbsG: 39, fatG: 66, isHealthyPick: false, orderingTip: null },
-    // Bob Evans
-    { restaurantId: rid.get("Bob Evans")!, name: "Fit from the Farm Breakfast (egg whites, fruit, turkey sausage)", calories: 390, proteinG: 28, carbsG: 40, fatG: 12, isHealthyPick: true, orderingTip: "Ask for egg whites and fruit instead of hash browns." },
-    { restaurantId: rid.get("Bob Evans")!, name: "Grilled Chicken Dinner with Green Beans", calories: 450, proteinG: 42, carbsG: 20, fatG: 20, isHealthyPick: true, orderingTip: "Choose two vegetable sides instead of mashed potatoes and rolls." },
-    { restaurantId: rid.get("Bob Evans")!, name: "Rise & Shine Breakfast", calories: 870, proteinG: 30, carbsG: 65, fatG: 52, isHealthyPick: false, orderingTip: null },
-    // Cracker Barrel
-    { restaurantId: rid.get("Cracker Barrel")!, name: "Grilled Chicken Tenders with Turnip Greens", calories: 380, proteinG: 40, carbsG: 15, fatG: 16, isHealthyPick: true, orderingTip: "Swap biscuits for a side of fresh fruit." },
-    { restaurantId: rid.get("Cracker Barrel")!, name: "Lemon Pepper Trout with Green Beans", calories: 420, proteinG: 38, carbsG: 10, fatG: 24, isHealthyPick: true, orderingTip: "One of the lightest dinners on the menu — skip the cornbread." },
-    { restaurantId: rid.get("Cracker Barrel")!, name: "Chicken Fried Chicken with Gravy", calories: 1000, proteinG: 48, carbsG: 80, fatG: 54, isHealthyPick: false, orderingTip: null },
   ]);
 
   await db.insert(tipsTable).values([

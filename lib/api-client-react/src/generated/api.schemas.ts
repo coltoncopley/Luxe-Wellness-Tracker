@@ -133,6 +133,29 @@ export interface Restaurant {
   description?: string | null;
 }
 
+export interface RestaurantInput {
+  /** @minLength 1 */
+  name: string;
+  /** @minLength 1 */
+  cuisine: string;
+  description?: string;
+}
+
+export interface MenuItemInput {
+  /** @minLength 1 */
+  name: string;
+  /** @minimum 0 */
+  calories: number;
+  /** @minimum 0 */
+  proteinG?: number;
+  /** @minimum 0 */
+  carbsG?: number;
+  /** @minimum 0 */
+  fatG?: number;
+  isHealthyPick?: boolean;
+  orderingTip?: string;
+}
+
 export interface MenuItem {
   id: number;
   restaurantId: number;

@@ -17,9 +17,18 @@ import {
   useAdminUpdateRewardItem,
   useAdminListRedemptions,
   getAdminListRedemptionsQueryKey,
+  useListRestaurants,
+  getListRestaurantsQueryKey,
+  useListMenuItems,
+  getListMenuItemsQueryKey,
+  useAdminCreateRestaurant,
+  useAdminDeleteRestaurant,
+  useAdminCreateMenuItem,
+  useAdminDeleteMenuItem,
   type RedemptionDetail,
   type Service,
   type RewardItem,
+  type Restaurant,
 } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -49,6 +58,9 @@ import {
   Trash2,
   Gift,
   Sparkles,
+  UtensilsCrossed,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -477,6 +489,396 @@ function ServicesTab() {
   );
 }
 
+/* ---------- Restaurants tab ---------- */
+
+type RestaurantFormState = { name: string; cuisine: string; description: string };
+const emptyRestaurantForm: RestaurantFormState = { name: "", cuisine: "", description: "" };
+
+type MenuItemFormState = {
+  name: string;
+  calories: string;
+  proteinG: string;
+  carbsG: string;
+  fatG: string;
+  isHealthyPick: boolean;
+  orderingTip: string;
+};
+const emptyMenuItemForm: MenuItemFormState = {
+  name: "",
+  calories: "",
+  proteinG: "",
+  carbsG: "",
+  fatG: "",
+  isHealthyPick: false,
+  orderingTip: "",
+};
+
+function RestaurantMenuManager({ restaurant }: { restaurant: Restaurant }) {
+  const queryClient = useQueryClient();
+  const { data: items, isLoading } = useListMenuItems(restaurant.id);
+  const createItem = useAdminCreateMenuItem();
+  const deleteItem = useAdminDeleteMenuItem();
+
+  const [adding, setAdding] = useState(false);
+  const [form, setForm] = useState<MenuItemFormState>(emptyMenuItemForm);
+
+  function invalidate() {
+    void queryClient.invalidateQueries({ queryKey: getListMenuItemsQueryKey(restaurant.id) });
+  }
+
+  function handleAdd(e: React.FormEvent) {
+    e.preventDefault();
+    const calories = Number(form.calories);
+    if (!form.name.trim() || !Number.isFinite(calories) || form.calories === "") {
+      toast.error("Item name and calories are required");
+      return;
+    }
+    createItem.mutate(
+      {
+        id: restaurant.id,
+        data: {
+          name: form.name.trim(),
+          calories: Math.round(calories),
+          ...(form.proteinG !== "" ? { proteinG: Number(form.proteinG) } : {}),
+          ...(form.carbsG !== "" ? { carbsG: Number(form.carbsG) } : {}),
+          ...(form.fatG !== "" ? { fatG: Number(form.fatG) } : {}),
+          isHealthyPick: form.isHealthyPick,
+          ...(form.orderingTip.trim() ? { orderingTip: form.orderingTip.trim() } : {}),
+        },
+      },
+      {
+        onSuccess: () => {
+          toast.success("Menu item added");
+          setForm(emptyMenuItemForm);
+          setAdding(false);
+          invalidate();
+        },
+        onError: () => toast.error("Couldn't add the menu item"),
+      },
+    );
+  }
+
+  function handleDelete(itemId: number, name: string) {
+    if (!window.confirm(`Remove "${name}" from ${restaurant.name}?`)) return;
+    deleteItem.mutate(
+      { id: itemId },
+      {
+        onSuccess: () => {
+          toast.success("Menu item removed");
+          invalidate();
+        },
+        onError: () => toast.error("Couldn't remove the menu item"),
+      },
+    );
+  }
+
+  return (
+    <div className="border-t border-border mt-3 pt-3 space-y-3">
+      <div className="flex items-center justify-between">
+        <p className="text-sm font-medium">Menu items</p>
+        <Button size="sm" variant="outline" onClick={() => setAdding((v) => !v)}>
+          <Plus className="h-4 w-4 mr-1" /> Add item
+        </Button>
+      </div>
+
+      {adding && (
+        <form className="space-y-3 rounded-xl border border-primary/30 p-3" onSubmit={handleAdd}>
+          <div className="grid sm:grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label htmlFor={`mi-name-${restaurant.id}`}>Item name</Label>
+              <Input
+                id={`mi-name-${restaurant.id}`}
+                value={form.name}
+                onChange={(e) => setForm({ ...form, name: e.target.value })}
+                placeholder="e.g. Grilled Chicken Salad"
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor={`mi-cal-${restaurant.id}`}>Calories</Label>
+              <Input
+                id={`mi-cal-${restaurant.id}`}
+                type="number"
+                min={0}
+                value={form.calories}
+                onChange={(e) => setForm({ ...form, calories: e.target.value })}
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            <div className="space-y-1">
+              <Label htmlFor={`mi-protein-${restaurant.id}`}>Protein (g)</Label>
+              <Input
+                id={`mi-protein-${restaurant.id}`}
+                type="number"
+                min={0}
+                value={form.proteinG}
+                onChange={(e) => setForm({ ...form, proteinG: e.target.value })}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor={`mi-carbs-${restaurant.id}`}>Carbs (g)</Label>
+              <Input
+                id={`mi-carbs-${restaurant.id}`}
+                type="number"
+                min={0}
+                value={form.carbsG}
+                onChange={(e) => setForm({ ...form, carbsG: e.target.value })}
+              />
+            </div>
+            <div className="space-y-1">
+              <Label htmlFor={`mi-fat-${restaurant.id}`}>Fat (g)</Label>
+              <Input
+                id={`mi-fat-${restaurant.id}`}
+                type="number"
+                min={0}
+                value={form.fatG}
+                onChange={(e) => setForm({ ...form, fatG: e.target.value })}
+              />
+            </div>
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor={`mi-tip-${restaurant.id}`}>Ordering tip (optional)</Label>
+            <Input
+              id={`mi-tip-${restaurant.id}`}
+              value={form.orderingTip}
+              onChange={(e) => setForm({ ...form, orderingTip: e.target.value })}
+              placeholder="e.g. Dressing on the side saves ~120 calories"
+            />
+          </div>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Switch
+                id={`mi-healthy-${restaurant.id}`}
+                checked={form.isHealthyPick}
+                onCheckedChange={(v) => setForm({ ...form, isHealthyPick: v })}
+              />
+              <Label htmlFor={`mi-healthy-${restaurant.id}`}>Healthy pick</Label>
+            </div>
+            <div className="flex gap-2">
+              <Button type="submit" size="sm" disabled={createItem.isPending}>
+                {createItem.isPending ? "Saving..." : "Save item"}
+              </Button>
+              <Button type="button" size="sm" variant="outline" onClick={() => setAdding(false)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        </form>
+      )}
+
+      {isLoading ? (
+        <p className="text-sm text-muted-foreground">Loading menu…</p>
+      ) : (items ?? []).length === 0 ? (
+        <p className="text-sm text-muted-foreground">No menu items yet.</p>
+      ) : (
+        <div className="space-y-1">
+          {(items ?? []).map((item) => (
+            <div
+              key={item.id}
+              className="flex items-center justify-between gap-3 rounded-lg px-3 py-2 hover:bg-muted/50"
+            >
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-sm font-medium">{item.name}</span>
+                  {item.isHealthyPick && (
+                    <Badge variant="secondary" className="text-emerald-700 bg-emerald-50">
+                      Healthy pick
+                    </Badge>
+                  )}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {item.calories} cal
+                  {item.proteinG != null && ` · ${item.proteinG}g protein`}
+                  {item.carbsG != null && ` · ${item.carbsG}g carbs`}
+                  {item.fatG != null && ` · ${item.fatG}g fat`}
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => handleDelete(item.id, item.name)}
+                disabled={deleteItem.isPending}
+                aria-label={`Delete ${item.name}`}
+              >
+                <Trash2 className="h-4 w-4 text-rose-500" />
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function RestaurantsTab() {
+  const queryClient = useQueryClient();
+  const { data: restaurants, isLoading } = useListRestaurants();
+  const createRestaurant = useAdminCreateRestaurant();
+  const deleteRestaurant = useAdminDeleteRestaurant();
+
+  const [adding, setAdding] = useState(false);
+  const [form, setForm] = useState<RestaurantFormState>(emptyRestaurantForm);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
+
+  function invalidate() {
+    void queryClient.invalidateQueries({ queryKey: getListRestaurantsQueryKey() });
+  }
+
+  function handleAdd(e: React.FormEvent) {
+    e.preventDefault();
+    if (!form.name.trim() || !form.cuisine.trim()) {
+      toast.error("Name and cuisine are required");
+      return;
+    }
+    createRestaurant.mutate(
+      {
+        data: {
+          name: form.name.trim(),
+          cuisine: form.cuisine.trim(),
+          ...(form.description.trim() ? { description: form.description.trim() } : {}),
+        },
+      },
+      {
+        onSuccess: (created) => {
+          toast.success("Restaurant added — now add its menu items");
+          setForm(emptyRestaurantForm);
+          setAdding(false);
+          setExpandedId(created.id);
+          invalidate();
+        },
+        onError: () => toast.error("Couldn't add the restaurant"),
+      },
+    );
+  }
+
+  function handleDelete(r: Restaurant) {
+    if (!window.confirm(`Remove "${r.name}" and all of its menu items?`)) return;
+    deleteRestaurant.mutate(
+      { id: r.id },
+      {
+        onSuccess: () => {
+          toast.success("Restaurant removed");
+          if (expandedId === r.id) setExpandedId(null);
+          invalidate();
+        },
+        onError: () => toast.error("Couldn't remove the restaurant"),
+      },
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <p className="text-sm text-muted-foreground">
+          These restaurants and menus appear on the patient Restaurants page and in menu search.
+        </p>
+        <Button size="sm" onClick={() => setAdding((v) => !v)}>
+          <Plus className="h-4 w-4 mr-1" /> Add restaurant
+        </Button>
+      </div>
+
+      {adding && (
+        <Card className="border-primary/30">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Add a restaurant</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form className="space-y-4" onSubmit={handleAdd}>
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="rest-name">Name</Label>
+                  <Input
+                    id="rest-name"
+                    value={form.name}
+                    onChange={(e) => setForm({ ...form, name: e.target.value })}
+                    placeholder="e.g. Longhorn Steakhouse"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="rest-cuisine">Cuisine</Label>
+                  <Input
+                    id="rest-cuisine"
+                    value={form.cuisine}
+                    onChange={(e) => setForm({ ...form, cuisine: e.target.value })}
+                    placeholder="e.g. Steakhouse"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="rest-desc">Description (optional)</Label>
+                <Input
+                  id="rest-desc"
+                  value={form.description}
+                  onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  placeholder="Short description patients will see"
+                />
+              </div>
+              <div className="flex gap-2">
+                <Button type="submit" disabled={createRestaurant.isPending}>
+                  {createRestaurant.isPending ? "Saving..." : "Save"}
+                </Button>
+                <Button type="button" variant="outline" onClick={() => setAdding(false)}>
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
+      )}
+
+      {isLoading ? (
+        <p className="text-muted-foreground text-sm">Loading restaurants…</p>
+      ) : (
+        <div className="space-y-2">
+          {(restaurants ?? []).map((r) => (
+            <Card key={r.id}>
+              <CardContent className="py-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="font-medium">{r.name}</span>
+                      <Badge variant="secondary">{r.cuisine}</Badge>
+                    </div>
+                    {r.description && (
+                      <p className="text-sm text-muted-foreground mt-1 line-clamp-2">
+                        {r.description}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex gap-1 shrink-0">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => setExpandedId(expandedId === r.id ? null : r.id)}
+                      aria-label={`${expandedId === r.id ? "Hide" : "Manage"} menu for ${r.name}`}
+                    >
+                      {expandedId === r.id ? (
+                        <ChevronUp className="h-4 w-4" />
+                      ) : (
+                        <ChevronDown className="h-4 w-4" />
+                      )}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => handleDelete(r)}
+                      disabled={deleteRestaurant.isPending}
+                      aria-label={`Delete ${r.name}`}
+                    >
+                      <Trash2 className="h-4 w-4 text-rose-500" />
+                    </Button>
+                  </div>
+                </div>
+                {expandedId === r.id && <RestaurantMenuManager restaurant={r} />}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ---------- Rewards tab ---------- */
 
 type RewardFormState = {
@@ -784,6 +1186,9 @@ export default function StaffVerify() {
           <TabsTrigger value="services">
             <Sparkles className="h-4 w-4 mr-1" /> Services
           </TabsTrigger>
+          <TabsTrigger value="restaurants">
+            <UtensilsCrossed className="h-4 w-4 mr-1" /> Restaurants
+          </TabsTrigger>
           <TabsTrigger value="rewards">
             <Gift className="h-4 w-4 mr-1" /> Rewards
           </TabsTrigger>
@@ -796,6 +1201,9 @@ export default function StaffVerify() {
         </TabsContent>
         <TabsContent value="services" className="mt-6">
           <ServicesTab />
+        </TabsContent>
+        <TabsContent value="restaurants" className="mt-6">
+          <RestaurantsTab />
         </TabsContent>
         <TabsContent value="rewards" className="mt-6">
           <RewardsTab />

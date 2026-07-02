@@ -44,6 +44,7 @@ import type {
   Measurement,
   MeasurementInput,
   MenuItem,
+  MenuItemInput,
   OpenaiConversation,
   OpenaiConversationInput,
   OpenaiConversationWithMessages,
@@ -54,6 +55,7 @@ import type {
   RedemptionDetail,
   RedemptionResult,
   Restaurant,
+  RestaurantInput,
   RewardItem,
   RewardItemInput,
   RewardItemUpdate,
@@ -3080,6 +3082,287 @@ export const useAdminDeleteService = <TError = ErrorType<OpenaiError>,
         TContext
       > => {
       return useMutation(getAdminDeleteServiceMutationOptions(options));
+    }
+
+export const getAdminCreateRestaurantUrl = () => {
+
+
+
+
+  return `/api/admin/restaurants`
+}
+
+/**
+ * @summary Create a restaurant (staff)
+ */
+export const adminCreateRestaurant = async (restaurantInput: RestaurantInput, options?: RequestInit): Promise<Restaurant> => {
+
+  return customFetch<Restaurant>(getAdminCreateRestaurantUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(restaurantInput)
+  }
+);}
+
+
+
+
+export const getAdminCreateRestaurantMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminCreateRestaurant>>, TError,{data: BodyType<RestaurantInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminCreateRestaurant>>, TError,{data: BodyType<RestaurantInput>}, TContext> => {
+
+const mutationKey = ['adminCreateRestaurant'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminCreateRestaurant>>, {data: BodyType<RestaurantInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  adminCreateRestaurant(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminCreateRestaurantMutationResult = NonNullable<Awaited<ReturnType<typeof adminCreateRestaurant>>>
+    export type AdminCreateRestaurantMutationBody = BodyType<RestaurantInput>
+    export type AdminCreateRestaurantMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create a restaurant (staff)
+ */
+export const useAdminCreateRestaurant = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminCreateRestaurant>>, TError,{data: BodyType<RestaurantInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminCreateRestaurant>>,
+        TError,
+        {data: BodyType<RestaurantInput>},
+        TContext
+      > => {
+      return useMutation(getAdminCreateRestaurantMutationOptions(options));
+    }
+
+export const getAdminDeleteRestaurantUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/restaurants/${id}`
+}
+
+/**
+ * @summary Delete a restaurant and its menu items (staff)
+ */
+export const adminDeleteRestaurant = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getAdminDeleteRestaurantUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getAdminDeleteRestaurantMutationOptions = <TError = ErrorType<OpenaiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminDeleteRestaurant>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminDeleteRestaurant>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['adminDeleteRestaurant'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminDeleteRestaurant>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  adminDeleteRestaurant(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminDeleteRestaurantMutationResult = NonNullable<Awaited<ReturnType<typeof adminDeleteRestaurant>>>
+
+    export type AdminDeleteRestaurantMutationError = ErrorType<OpenaiError>
+
+    /**
+ * @summary Delete a restaurant and its menu items (staff)
+ */
+export const useAdminDeleteRestaurant = <TError = ErrorType<OpenaiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminDeleteRestaurant>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminDeleteRestaurant>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getAdminDeleteRestaurantMutationOptions(options));
+    }
+
+export const getAdminCreateMenuItemUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/restaurants/${id}/menu-items`
+}
+
+/**
+ * @summary Add a menu item to a restaurant (staff)
+ */
+export const adminCreateMenuItem = async (id: number,
+    menuItemInput: MenuItemInput, options?: RequestInit): Promise<MenuItem> => {
+
+  return customFetch<MenuItem>(getAdminCreateMenuItemUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(menuItemInput)
+  }
+);}
+
+
+
+
+export const getAdminCreateMenuItemMutationOptions = <TError = ErrorType<OpenaiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminCreateMenuItem>>, TError,{id: number;data: BodyType<MenuItemInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminCreateMenuItem>>, TError,{id: number;data: BodyType<MenuItemInput>}, TContext> => {
+
+const mutationKey = ['adminCreateMenuItem'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminCreateMenuItem>>, {id: number;data: BodyType<MenuItemInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  adminCreateMenuItem(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminCreateMenuItemMutationResult = NonNullable<Awaited<ReturnType<typeof adminCreateMenuItem>>>
+    export type AdminCreateMenuItemMutationBody = BodyType<MenuItemInput>
+    export type AdminCreateMenuItemMutationError = ErrorType<OpenaiError>
+
+    /**
+ * @summary Add a menu item to a restaurant (staff)
+ */
+export const useAdminCreateMenuItem = <TError = ErrorType<OpenaiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminCreateMenuItem>>, TError,{id: number;data: BodyType<MenuItemInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminCreateMenuItem>>,
+        TError,
+        {id: number;data: BodyType<MenuItemInput>},
+        TContext
+      > => {
+      return useMutation(getAdminCreateMenuItemMutationOptions(options));
+    }
+
+export const getAdminDeleteMenuItemUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/menu-items/${id}`
+}
+
+/**
+ * @summary Delete a menu item (staff)
+ */
+export const adminDeleteMenuItem = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getAdminDeleteMenuItemUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getAdminDeleteMenuItemMutationOptions = <TError = ErrorType<OpenaiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminDeleteMenuItem>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminDeleteMenuItem>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['adminDeleteMenuItem'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminDeleteMenuItem>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  adminDeleteMenuItem(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminDeleteMenuItemMutationResult = NonNullable<Awaited<ReturnType<typeof adminDeleteMenuItem>>>
+
+    export type AdminDeleteMenuItemMutationError = ErrorType<OpenaiError>
+
+    /**
+ * @summary Delete a menu item (staff)
+ */
+export const useAdminDeleteMenuItem = <TError = ErrorType<OpenaiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminDeleteMenuItem>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminDeleteMenuItem>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getAdminDeleteMenuItemMutationOptions(options));
     }
 
 export const getAdminListRewardItemsUrl = () => {

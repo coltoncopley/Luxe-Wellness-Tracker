@@ -762,6 +762,89 @@ export const AdminDeleteServiceResponse = zod.void()
 
 
 /**
+ * @summary Create a restaurant (staff)
+ */
+
+
+
+
+export const AdminCreateRestaurantBody = zod.object({
+  "name": zod.string().min(1),
+  "cuisine": zod.string().min(1),
+  "description": zod.string().optional()
+})
+
+export const AdminCreateRestaurantResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "cuisine": zod.string(),
+  "description": zod.string().nullish()
+})
+
+
+/**
+ * @summary Delete a restaurant and its menu items (staff)
+ */
+export const AdminDeleteRestaurantParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const AdminDeleteRestaurantResponse = zod.void()
+
+
+/**
+ * @summary Add a menu item to a restaurant (staff)
+ */
+export const AdminCreateMenuItemParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+export const adminCreateMenuItemBodyCaloriesMin = 0;
+
+export const adminCreateMenuItemBodyProteinGMin = 0;
+
+export const adminCreateMenuItemBodyCarbsGMin = 0;
+
+export const adminCreateMenuItemBodyFatGMin = 0;
+
+
+
+export const AdminCreateMenuItemBody = zod.object({
+  "name": zod.string().min(1),
+  "calories": zod.number().min(adminCreateMenuItemBodyCaloriesMin),
+  "proteinG": zod.number().min(adminCreateMenuItemBodyProteinGMin).optional(),
+  "carbsG": zod.number().min(adminCreateMenuItemBodyCarbsGMin).optional(),
+  "fatG": zod.number().min(adminCreateMenuItemBodyFatGMin).optional(),
+  "isHealthyPick": zod.boolean().optional(),
+  "orderingTip": zod.string().optional()
+})
+
+export const AdminCreateMenuItemResponse = zod.object({
+  "id": zod.number(),
+  "restaurantId": zod.number(),
+  "restaurantName": zod.string(),
+  "name": zod.string(),
+  "calories": zod.number(),
+  "proteinG": zod.number().nullish(),
+  "carbsG": zod.number().nullish(),
+  "fatG": zod.number().nullish(),
+  "isHealthyPick": zod.boolean(),
+  "orderingTip": zod.string().nullish()
+})
+
+
+/**
+ * @summary Delete a menu item (staff)
+ */
+export const AdminDeleteMenuItemParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const AdminDeleteMenuItemResponse = zod.void()
+
+
+/**
  * @summary List all reward items including inactive (staff)
  */
 export const AdminListRewardItemsResponseItem = zod.object({

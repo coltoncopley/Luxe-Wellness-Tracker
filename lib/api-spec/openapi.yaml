@@ -723,6 +723,94 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/OpenaiError"
+  /admin/restaurants:
+    post:
+      operationId: adminCreateRestaurant
+      tags: [admin]
+      summary: Create a restaurant (staff)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RestaurantInput"
+      responses:
+        "201":
+          description: Created restaurant
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Restaurant"
+  /admin/restaurants/{id}:
+    delete:
+      operationId: adminDeleteRestaurant
+      tags: [admin]
+      summary: Delete a restaurant and its menu items (staff)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenaiError"
+  /admin/restaurants/{id}/menu-items:
+    post:
+      operationId: adminCreateMenuItem
+      tags: [admin]
+      summary: Add a menu item to a restaurant (staff)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MenuItemInput"
+      responses:
+        "201":
+          description: Created menu item
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MenuItem"
+        "404":
+          description: Restaurant not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenaiError"
+  /admin/menu-items/{id}:
+    delete:
+      operationId: adminDeleteMenuItem
+      tags: [admin]
+      summary: Delete a menu item (staff)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenaiError"
   /admin/reward-items:
     get:
       operationId: adminListRewardItems
@@ -1059,6 +1147,24 @@ components:
         name: { type: string }
         cuisine: { type: string }
         description: { type: ["string", "null"] }
+    RestaurantInput:
+      type: object
+      required: [name, cuisine]
+      properties:
+        name: { type: string, minLength: 1 }
+        cuisine: { type: string, minLength: 1 }
+        description: { type: string }
+    MenuItemInput:
+      type: object
+      required: [name, calories]
+      properties:
+        name: { type: string, minLength: 1 }
+        calories: { type: integer, minimum: 0 }
+        proteinG: { type: number, minimum: 0 }
+        carbsG: { type: number, minimum: 0 }
+        fatG: { type: number, minimum: 0 }
+        isHealthyPick: { type: boolean }
+        orderingTip: { type: string }
     MenuItem:
       type: object
       required: [id, restaurantId, restaurantName, name, calories, isHealthyPick]

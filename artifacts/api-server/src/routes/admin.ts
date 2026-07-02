@@ -6,6 +6,8 @@ import {
   rewardItemsTable,
   redemptionsTable,
   usersTable,
+  restaurantsTable,
+  menuItemsTable,
 } from "@workspace/db";
 import {
   AdminCreateServiceBody,
@@ -18,6 +20,10 @@ import {
   AdminUpdateRewardItemResponse,
   AdminListRewardItemsResponse,
   AdminListRedemptionsResponse,
+  AdminCreateRestaurantBody,
+  AdminCreateRestaurantResponse,
+  AdminCreateMenuItemBody,
+  AdminCreateMenuItemResponse,
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -76,6 +82,75 @@ router.delete("/admin/services/:id", async (req, res): Promise<void> => {
   const [row] = await db.delete(servicesTable).where(eq(servicesTable.id, id)).returning();
   if (!row) {
     res.status(404).json({ error: "Service not found" });
+    return;
+  }
+  res.sendStatus(204);
+});
+
+router.post("/admin/restaurants", async (req, res): Promise<void> => {
+  const body = AdminCreateRestaurantBody.safeParse(req.body);
+  if (!body.success) {
+    res.status(400).json({ error: body.error.message });
+    return;
+  }
+  const [row] = await db.insert(restaurantsTable).values(body.data).returning();
+  res.status(201).json(AdminCreateRestaurantResponse.parse(row));
+});
+
+router.delete("/admin/restaurants/:id", async (req, res): Promise<void> => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) {
+    res.status(400).json({ error: "Invalid id" });
+    return;
+  }
+  const deleted = await db.transaction(async (tx) => {
+    await tx.delete(menuItemsTable).where(eq(menuItemsTable.restaurantId, id));
+    return tx.delete(restaurantsTable).where(eq(restaurantsTable.id, id)).returning();
+  });
+  if (deleted.length === 0) {
+    res.status(404).json({ error: "Restaurant not found" });
+    return;
+  }
+  res.sendStatus(204);
+});
+
+router.post("/admin/restaurants/:id/menu-items", async (req, res): Promise<void> => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) {
+    res.status(400).json({ error: "Invalid id" });
+    return;
+  }
+  const body = AdminCreateMenuItemBody.safeParse(req.body);
+  if (!body.success) {
+    res.status(400).json({ error: body.error.message });
+    return;
+  }
+  const [restaurant] = await db
+    .select()
+    .from(restaurantsTable)
+    .where(eq(restaurantsTable.id, id));
+  if (!restaurant) {
+    res.status(404).json({ error: "Restaurant not found" });
+    return;
+  }
+  const [row] = await db
+    .insert(menuItemsTable)
+    .values({ ...body.data, restaurantId: id })
+    .returning();
+  res
+    .status(201)
+    .json(AdminCreateMenuItemResponse.parse({ ...row, restaurantName: restaurant.name }));
+});
+
+router.delete("/admin/menu-items/:id", async (req, res): Promise<void> => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) {
+    res.status(400).json({ error: "Invalid id" });
+    return;
+  }
+  const [row] = await db.delete(menuItemsTable).where(eq(menuItemsTable.id, id)).returning();
+  if (!row) {
+    res.status(404).json({ error: "Menu item not found" });
     return;
   }
   res.sendStatus(204);
