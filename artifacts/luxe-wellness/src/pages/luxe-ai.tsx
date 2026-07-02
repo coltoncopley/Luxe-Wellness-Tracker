@@ -8,7 +8,7 @@ import {
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Sparkles, Send, Plus } from "lucide-react";
+import { Sparkles, Send, Plus, Info } from "lucide-react";
 import { toast } from "sonner";
 
 interface StreamingState {
@@ -154,6 +154,15 @@ export default function LuxeAI() {
                 Ask me anything about skincare, treatments, GLP-1 weight loss, nutrition, or wellness.
               </p>
             </div>
+            <div className="flex items-start gap-2 max-w-lg text-left rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+              <Info className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+              <p className="text-xs text-amber-800 leading-relaxed">
+                <span className="font-medium">Not medical advice.</span> Luxe AI provides general
+                wellness information only. It is not direct medical advice and should never be a
+                substitute for advice from Dr. Copley or another qualified healthcare professional.
+                Always consult your provider about medications, symptoms, or health decisions.
+              </p>
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-lg">
               {starterPrompts.map((p) => (
                 <button
@@ -213,7 +222,8 @@ export default function LuxeAI() {
         </Button>
       </div>
       <p className="text-xs text-muted-foreground text-center mt-2">
-        Luxe AI offers general wellness guidance, not medical advice. For medical concerns, contact the clinic.
+        Luxe AI is not direct medical advice and is no substitute for professional care. For
+        medical concerns, always consult Dr. Copley or your healthcare provider.
       </p>
     </div>
   );
