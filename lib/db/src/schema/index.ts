@@ -6,4 +6,5 @@ export * from "./food";
 export * from "./glow";
 export * from "./rewards";
 export * from "./conversations";
+export * from "./social";
 export * from "./messages";

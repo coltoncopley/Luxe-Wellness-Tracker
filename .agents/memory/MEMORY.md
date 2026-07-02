@@ -1,2 +1,3 @@
 - [Design subagent output verification](design-subagent-verification.md) — always verify page files exist, typecheck passes, and no escaped `\`` template literals after a DESIGN subagent finishes.
 - [Orval + Clerk web quirks](orval-clerk-quirks.md) — generated hooks require queryKey alongside `enabled`; web Clerk auth is cookie-based, never add Bearer/token getters.
+- [Code-based endpoint hardening](code-endpoint-hardening.md) — any endpoint accepting a guessable code (invite, claim, redemption) needs rate limiting + minimal response disclosure, and patient-data routes need explicit staff exclusion, or review will block it.

@@ -20,6 +20,7 @@ import LuxeAI from "@/pages/luxe-ai";
 import Glow from "@/pages/glow";
 import Bhrt from "@/pages/bhrt";
 import Rewards from "@/pages/rewards";
+import Friends from "@/pages/friends";
 import StaffVerify from "@/pages/staff-verify";
 import Privacy from "@/pages/privacy";
 import Terms from "@/pages/terms";
@@ -263,6 +264,7 @@ function ClerkProviderWithRoutes() {
             <Route path="/glow">{() => <Protected component={Glow} />}</Route>
             <Route path="/bhrt">{() => <Protected component={Bhrt} />}</Route>
             <Route path="/rewards">{() => <Protected component={Rewards} />}</Route>
+            <Route path="/friends">{() => <Protected component={Friends} />}</Route>
             <Route path="/staff">{() => <Protected component={StaffVerify} />}</Route>
             <Route path="/privacy">{() => <PublicPage component={Privacy} />}</Route>
             <Route path="/terms">{() => <PublicPage component={Terms} />}</Route>

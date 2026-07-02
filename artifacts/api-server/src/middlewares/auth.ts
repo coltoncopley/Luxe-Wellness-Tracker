@@ -64,6 +64,28 @@ export async function requireStaff(
   }
 }
 
+export async function requirePatient(
+  _req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  const userId = res.locals.userId as string | undefined;
+  if (!userId) {
+    res.status(401).json({ error: "Not signed in" });
+    return;
+  }
+  try {
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+    if (!user || user.role === "staff") {
+      res.status(403).json({ error: "This feature is only available to patient accounts" });
+      return;
+    }
+    next();
+  } catch (err) {
+    next(err);
+  }
+}
+
 export function userIdOf(res: Response): string {
   const userId = res.locals.userId as string | undefined;
   if (!userId) throw new Error("userIdOf called without requireAuth");

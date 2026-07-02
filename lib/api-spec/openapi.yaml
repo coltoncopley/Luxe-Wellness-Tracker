@@ -26,6 +26,8 @@ tags:
     description: Luxe AI chat assistant
   - name: glow
     description: Daily Glow Score check-ins and streaks
+  - name: social
+    description: Friend follows, shared journeys, and cheers
   - name: me
     description: Current user profile
   - name: admin
@@ -644,6 +646,148 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ClaimReferralResult"
+  /follows:
+    get:
+      operationId: getFollows
+      tags: [social]
+      summary: The current user's follows, followers, and pending requests
+      responses:
+        "200":
+          description: Follows overview
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FollowsOverview"
+  /follows/request:
+    post:
+      operationId: requestFollow
+      tags: [social]
+      summary: Request to follow a friend using their invite code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FollowRequestInput"
+      responses:
+        "200":
+          description: Request outcome (requested=false includes a reason)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FollowRequestResult"
+  /follows/{id}/respond:
+    post:
+      operationId: respondToFollow
+      tags: [social]
+      summary: Accept or decline an incoming follow request
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RespondFollowInput"
+      responses:
+        "200":
+          description: Updated request status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FollowActionResult"
+        "404":
+          description: Request not found
+  /follows/{id}:
+    delete:
+      operationId: removeFollow
+      tags: [social]
+      summary: Unfollow, cancel a request, or remove a follower
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "204":
+          description: Removed
+        "404":
+          description: Follow not found
+  /friends/journeys:
+    get:
+      operationId: getFriendJourneys
+      tags: [social]
+      summary: Journey cards for friends you follow (respects their sharing settings)
+      responses:
+        "200":
+          description: Friend journeys
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FriendJourneysResponse"
+  /social/settings:
+    get:
+      operationId: getSharingSettings
+      tags: [social]
+      summary: What the current user shares with approved followers
+      responses:
+        "200":
+          description: Sharing settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SharingSettings"
+    put:
+      operationId: updateSharingSettings
+      tags: [social]
+      summary: Update sharing settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SharingSettings"
+      responses:
+        "200":
+          description: Updated sharing settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SharingSettings"
+  /cheers:
+    get:
+      operationId: getCheers
+      tags: [social]
+      summary: Recent cheers received from friends
+      responses:
+        "200":
+          description: Cheers received
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheerList"
+    post:
+      operationId: sendCheer
+      tags: [social]
+      summary: Send a cheer to a friend you follow
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SendCheerInput"
+      responses:
+        "200":
+          description: Cheer sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SendCheerResult"
+        "403":
+          description: Not following this user
   /me:
     get:
       operationId: getMe
@@ -1710,3 +1854,102 @@ components:
         claimed: { type: boolean }
         pointsAwarded: { type: integer }
         reason: { type: ["string", "null"] }
+    FollowEntry:
+      type: object
+      required: [id, userId, name, status, direction]
+      properties:
+        id: { type: integer }
+        userId: { type: string }
+        name: { type: string }
+        status: { type: string, enum: [pending, accepted] }
+        direction: { type: string, enum: [following, follower] }
+    FollowsOverview:
+      type: object
+      required: [following, followers, incomingRequests, outgoingRequests]
+      properties:
+        following:
+          type: array
+          items: { $ref: "#/components/schemas/FollowEntry" }
+        followers:
+          type: array
+          items: { $ref: "#/components/schemas/FollowEntry" }
+        incomingRequests:
+          type: array
+          items: { $ref: "#/components/schemas/FollowEntry" }
+        outgoingRequests:
+          type: array
+          items: { $ref: "#/components/schemas/FollowEntry" }
+    FollowRequestInput:
+      type: object
+      required: [code]
+      properties:
+        code: { type: string, minLength: 1 }
+    FollowRequestResult:
+      type: object
+      required: [requested]
+      properties:
+        requested: { type: boolean }
+        reason: { type: ["string", "null"] }
+    RespondFollowInput:
+      type: object
+      required: [accept]
+      properties:
+        accept: { type: boolean }
+    FollowActionResult:
+      type: object
+      required: [status]
+      properties:
+        status: { type: string, enum: [accepted, declined] }
+    FriendJourney:
+      type: object
+      required: [userId, name]
+      properties:
+        userId: { type: string }
+        name: { type: string }
+        streakDays: { type: ["integer", "null"] }
+        glowScoreToday: { type: ["integer", "null"] }
+        checkinsLast7Days: { type: ["integer", "null"] }
+        weightProgressPct: { type: ["number", "null"] }
+        lastActiveDate: { type: ["string", "null"] }
+    FriendJourneysResponse:
+      type: object
+      required: [journeys]
+      properties:
+        journeys:
+          type: array
+          items: { $ref: "#/components/schemas/FriendJourney" }
+    SharingSettings:
+      type: object
+      required: [shareGlow, shareWeightProgress, shareStreak]
+      properties:
+        shareGlow: { type: boolean }
+        shareWeightProgress: { type: boolean }
+        shareStreak: { type: boolean }
+    SendCheerInput:
+      type: object
+      required: [toUserId, emoji]
+      properties:
+        toUserId: { type: string }
+        emoji: { type: string, minLength: 1, maxLength: 16 }
+        message: { type: ["string", "null"], maxLength: 200 }
+    CheerItem:
+      type: object
+      required: [id, fromName, emoji, createdAt]
+      properties:
+        id: { type: integer }
+        fromName: { type: string }
+        emoji: { type: string }
+        message: { type: ["string", "null"] }
+        createdAt: { type: string }
+    CheerList:
+      type: object
+      required: [cheers]
+      properties:
+        cheers:
+          type: array
+          items: { $ref: "#/components/schemas/CheerItem" }
+    SendCheerResult:
+      type: object
+      required: [sent]
+      properties:
+        sent: { type: boolean }

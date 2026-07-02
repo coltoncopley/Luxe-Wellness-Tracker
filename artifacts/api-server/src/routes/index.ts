@@ -10,9 +10,10 @@ import glowRouter from "./glow";
 import briefingRouter from "./briefing";
 import rewardsRouter from "./rewards";
 import referralsRouter from "./referrals";
+import socialRouter from "./social";
 import meRouter from "./me";
 import adminRouter from "./admin";
-import { requireAuth, requireStaff } from "../middlewares/auth";
+import { requireAuth, requireStaff, requirePatient } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
@@ -31,6 +32,7 @@ router.use(requireAuth, glowRouter);
 router.use(requireAuth, briefingRouter);
 router.use(requireAuth, rewardsRouter);
 router.use(requireAuth, referralsRouter);
+router.use(requireAuth, requirePatient, socialRouter);
 
 // Staff-only management routes
 router.use(requireAuth, requireStaff, adminRouter);

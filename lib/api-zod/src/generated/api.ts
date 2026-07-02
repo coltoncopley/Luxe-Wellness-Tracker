@@ -692,6 +692,159 @@ export const ClaimReferralResponse = zod.object({
 
 
 /**
+ * @summary The current user's follows, followers, and pending requests
+ */
+export const GetFollowsResponse = zod.object({
+  "following": zod.array(zod.object({
+  "id": zod.number(),
+  "userId": zod.string(),
+  "name": zod.string(),
+  "status": zod.enum(['pending', 'accepted']),
+  "direction": zod.enum(['following', 'follower'])
+})),
+  "followers": zod.array(zod.object({
+  "id": zod.number(),
+  "userId": zod.string(),
+  "name": zod.string(),
+  "status": zod.enum(['pending', 'accepted']),
+  "direction": zod.enum(['following', 'follower'])
+})),
+  "incomingRequests": zod.array(zod.object({
+  "id": zod.number(),
+  "userId": zod.string(),
+  "name": zod.string(),
+  "status": zod.enum(['pending', 'accepted']),
+  "direction": zod.enum(['following', 'follower'])
+})),
+  "outgoingRequests": zod.array(zod.object({
+  "id": zod.number(),
+  "userId": zod.string(),
+  "name": zod.string(),
+  "status": zod.enum(['pending', 'accepted']),
+  "direction": zod.enum(['following', 'follower'])
+}))
+})
+
+
+/**
+ * @summary Request to follow a friend using their invite code
+ */
+
+
+
+export const RequestFollowBody = zod.object({
+  "code": zod.string().min(1)
+})
+
+export const RequestFollowResponse = zod.object({
+  "requested": zod.boolean(),
+  "reason": zod.string().nullish()
+})
+
+
+/**
+ * @summary Accept or decline an incoming follow request
+ */
+export const RespondToFollowParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const RespondToFollowBody = zod.object({
+  "accept": zod.boolean()
+})
+
+export const RespondToFollowResponse = zod.object({
+  "status": zod.enum(['accepted', 'declined'])
+})
+
+
+/**
+ * @summary Unfollow, cancel a request, or remove a follower
+ */
+export const RemoveFollowParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const RemoveFollowResponse = zod.void()
+
+
+/**
+ * @summary Journey cards for friends you follow (respects their sharing settings)
+ */
+export const GetFriendJourneysResponse = zod.object({
+  "journeys": zod.array(zod.object({
+  "userId": zod.string(),
+  "name": zod.string(),
+  "streakDays": zod.number().nullish(),
+  "glowScoreToday": zod.number().nullish(),
+  "checkinsLast7Days": zod.number().nullish(),
+  "weightProgressPct": zod.number().nullish(),
+  "lastActiveDate": zod.string().nullish()
+}))
+})
+
+
+/**
+ * @summary What the current user shares with approved followers
+ */
+export const GetSharingSettingsResponse = zod.object({
+  "shareGlow": zod.boolean(),
+  "shareWeightProgress": zod.boolean(),
+  "shareStreak": zod.boolean()
+})
+
+
+/**
+ * @summary Update sharing settings
+ */
+export const UpdateSharingSettingsBody = zod.object({
+  "shareGlow": zod.boolean(),
+  "shareWeightProgress": zod.boolean(),
+  "shareStreak": zod.boolean()
+})
+
+export const UpdateSharingSettingsResponse = zod.object({
+  "shareGlow": zod.boolean(),
+  "shareWeightProgress": zod.boolean(),
+  "shareStreak": zod.boolean()
+})
+
+
+/**
+ * @summary Recent cheers received from friends
+ */
+export const GetCheersResponse = zod.object({
+  "cheers": zod.array(zod.object({
+  "id": zod.number(),
+  "fromName": zod.string(),
+  "emoji": zod.string(),
+  "message": zod.string().nullish(),
+  "createdAt": zod.string()
+}))
+})
+
+
+/**
+ * @summary Send a cheer to a friend you follow
+ */
+export const sendCheerBodyEmojiMax = 16;
+
+export const sendCheerBodyMessageMax = 200;
+
+
+
+export const SendCheerBody = zod.object({
+  "toUserId": zod.string(),
+  "emoji": zod.string().min(1).max(sendCheerBodyEmojiMax),
+  "message": zod.string().max(sendCheerBodyMessageMax).nullish()
+})
+
+export const SendCheerResponse = zod.object({
+  "sent": zod.boolean()
+})
+
+
+/**
  * @summary Get the current user's profile
  */
 export const GetMeResponse = zod.object({

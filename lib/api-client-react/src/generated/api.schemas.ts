@@ -546,6 +546,120 @@ export interface ClaimReferralResult {
   reason?: string | null;
 }
 
+export type FollowEntryStatus = typeof FollowEntryStatus[keyof typeof FollowEntryStatus];
+
+
+export const FollowEntryStatus = {
+  pending: 'pending',
+  accepted: 'accepted',
+} as const;
+
+export type FollowEntryDirection = typeof FollowEntryDirection[keyof typeof FollowEntryDirection];
+
+
+export const FollowEntryDirection = {
+  following: 'following',
+  follower: 'follower',
+} as const;
+
+export interface FollowEntry {
+  id: number;
+  userId: string;
+  name: string;
+  status: FollowEntryStatus;
+  direction: FollowEntryDirection;
+}
+
+export interface FollowsOverview {
+  following: FollowEntry[];
+  followers: FollowEntry[];
+  incomingRequests: FollowEntry[];
+  outgoingRequests: FollowEntry[];
+}
+
+export interface FollowRequestInput {
+  /** @minLength 1 */
+  code: string;
+}
+
+export interface FollowRequestResult {
+  requested: boolean;
+  /** @nullable */
+  reason?: string | null;
+}
+
+export interface RespondFollowInput {
+  accept: boolean;
+}
+
+export type FollowActionResultStatus = typeof FollowActionResultStatus[keyof typeof FollowActionResultStatus];
+
+
+export const FollowActionResultStatus = {
+  accepted: 'accepted',
+  declined: 'declined',
+} as const;
+
+export interface FollowActionResult {
+  status: FollowActionResultStatus;
+}
+
+export interface FriendJourney {
+  userId: string;
+  name: string;
+  /** @nullable */
+  streakDays?: number | null;
+  /** @nullable */
+  glowScoreToday?: number | null;
+  /** @nullable */
+  checkinsLast7Days?: number | null;
+  /** @nullable */
+  weightProgressPct?: number | null;
+  /** @nullable */
+  lastActiveDate?: string | null;
+}
+
+export interface FriendJourneysResponse {
+  journeys: FriendJourney[];
+}
+
+export interface SharingSettings {
+  shareGlow: boolean;
+  shareWeightProgress: boolean;
+  shareStreak: boolean;
+}
+
+export interface SendCheerInput {
+  toUserId: string;
+  /**
+     * @minLength 1
+     * @maxLength 16
+     */
+  emoji: string;
+  /**
+     * @maxLength 200
+     * @nullable
+     */
+  message?: string | null;
+}
+
+export interface CheerItem {
+  id: number;
+  fromName: string;
+  emoji: string;
+  /** @nullable */
+  message?: string | null;
+  createdAt: string;
+}
+
+export interface CheerList {
+  cheers: CheerItem[];
+}
+
+export interface SendCheerResult {
+  sent: boolean;
+}
+
 export type SearchMenuItemsParams = {
 q: string;
 };

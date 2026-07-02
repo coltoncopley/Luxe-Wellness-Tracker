@@ -25,12 +25,18 @@ import type {
   AppointmentInput,
   AppointmentUpdate,
   Briefing,
+  CheerList,
   ClaimReferralInput,
   ClaimReferralResult,
   DailySummary,
   DashboardSummary,
+  FollowActionResult,
+  FollowRequestInput,
+  FollowRequestResult,
+  FollowsOverview,
   FoodLog,
   FoodLogInput,
+  FriendJourneysResponse,
   GetDailySummaryParams,
   GlowCheckin,
   GlowCheckinInput,
@@ -57,6 +63,7 @@ import type {
   RedemptionDetail,
   RedemptionResult,
   ReferralSummary,
+  RespondFollowInput,
   Restaurant,
   RestaurantInput,
   RewardItem,
@@ -64,9 +71,12 @@ import type {
   RewardItemUpdate,
   RewardsSummary,
   SearchMenuItemsParams,
+  SendCheerInput,
+  SendCheerResult,
   Service,
   ServiceInput,
   ServiceUpdate,
+  SharingSettings,
   StaffAccessInput,
   StaffMember,
   WeightEntry,
@@ -2874,6 +2884,665 @@ export const useClaimReferral = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getClaimReferralMutationOptions(options));
+    }
+
+export const getGetFollowsUrl = () => {
+
+
+
+
+  return `/api/follows`
+}
+
+/**
+ * @summary The current user's follows, followers, and pending requests
+ */
+export const getFollows = async ( options?: RequestInit): Promise<FollowsOverview> => {
+
+  return customFetch<FollowsOverview>(getGetFollowsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFollowsQueryKey = () => {
+    return [
+    `/api/follows`
+    ] as const;
+    }
+
+
+export const getGetFollowsQueryOptions = <TData = Awaited<ReturnType<typeof getFollows>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFollows>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFollowsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFollows>>> = ({ signal }) => getFollows({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFollows>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetFollowsQueryResult = NonNullable<Awaited<ReturnType<typeof getFollows>>>
+export type GetFollowsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary The current user's follows, followers, and pending requests
+ */
+
+export function useGetFollows<TData = Awaited<ReturnType<typeof getFollows>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFollows>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetFollowsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getRequestFollowUrl = () => {
+
+
+
+
+  return `/api/follows/request`
+}
+
+/**
+ * @summary Request to follow a friend using their invite code
+ */
+export const requestFollow = async (followRequestInput: FollowRequestInput, options?: RequestInit): Promise<FollowRequestResult> => {
+
+  return customFetch<FollowRequestResult>(getRequestFollowUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(followRequestInput)
+  }
+);}
+
+
+
+
+export const getRequestFollowMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestFollow>>, TError,{data: BodyType<FollowRequestInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof requestFollow>>, TError,{data: BodyType<FollowRequestInput>}, TContext> => {
+
+const mutationKey = ['requestFollow'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof requestFollow>>, {data: BodyType<FollowRequestInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  requestFollow(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RequestFollowMutationResult = NonNullable<Awaited<ReturnType<typeof requestFollow>>>
+    export type RequestFollowMutationBody = BodyType<FollowRequestInput>
+    export type RequestFollowMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Request to follow a friend using their invite code
+ */
+export const useRequestFollow = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestFollow>>, TError,{data: BodyType<FollowRequestInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof requestFollow>>,
+        TError,
+        {data: BodyType<FollowRequestInput>},
+        TContext
+      > => {
+      return useMutation(getRequestFollowMutationOptions(options));
+    }
+
+export const getRespondToFollowUrl = (id: number,) => {
+
+
+
+
+  return `/api/follows/${id}/respond`
+}
+
+/**
+ * @summary Accept or decline an incoming follow request
+ */
+export const respondToFollow = async (id: number,
+    respondFollowInput: RespondFollowInput, options?: RequestInit): Promise<FollowActionResult> => {
+
+  return customFetch<FollowActionResult>(getRespondToFollowUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(respondFollowInput)
+  }
+);}
+
+
+
+
+export const getRespondToFollowMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof respondToFollow>>, TError,{id: number;data: BodyType<RespondFollowInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof respondToFollow>>, TError,{id: number;data: BodyType<RespondFollowInput>}, TContext> => {
+
+const mutationKey = ['respondToFollow'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof respondToFollow>>, {id: number;data: BodyType<RespondFollowInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  respondToFollow(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RespondToFollowMutationResult = NonNullable<Awaited<ReturnType<typeof respondToFollow>>>
+    export type RespondToFollowMutationBody = BodyType<RespondFollowInput>
+    export type RespondToFollowMutationError = ErrorType<void>
+
+    /**
+ * @summary Accept or decline an incoming follow request
+ */
+export const useRespondToFollow = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof respondToFollow>>, TError,{id: number;data: BodyType<RespondFollowInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof respondToFollow>>,
+        TError,
+        {id: number;data: BodyType<RespondFollowInput>},
+        TContext
+      > => {
+      return useMutation(getRespondToFollowMutationOptions(options));
+    }
+
+export const getRemoveFollowUrl = (id: number,) => {
+
+
+
+
+  return `/api/follows/${id}`
+}
+
+/**
+ * @summary Unfollow, cancel a request, or remove a follower
+ */
+export const removeFollow = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getRemoveFollowUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getRemoveFollowMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeFollow>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof removeFollow>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['removeFollow'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeFollow>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  removeFollow(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemoveFollowMutationResult = NonNullable<Awaited<ReturnType<typeof removeFollow>>>
+
+    export type RemoveFollowMutationError = ErrorType<void>
+
+    /**
+ * @summary Unfollow, cancel a request, or remove a follower
+ */
+export const useRemoveFollow = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeFollow>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof removeFollow>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getRemoveFollowMutationOptions(options));
+    }
+
+export const getGetFriendJourneysUrl = () => {
+
+
+
+
+  return `/api/friends/journeys`
+}
+
+/**
+ * @summary Journey cards for friends you follow (respects their sharing settings)
+ */
+export const getFriendJourneys = async ( options?: RequestInit): Promise<FriendJourneysResponse> => {
+
+  return customFetch<FriendJourneysResponse>(getGetFriendJourneysUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFriendJourneysQueryKey = () => {
+    return [
+    `/api/friends/journeys`
+    ] as const;
+    }
+
+
+export const getGetFriendJourneysQueryOptions = <TData = Awaited<ReturnType<typeof getFriendJourneys>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFriendJourneys>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFriendJourneysQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFriendJourneys>>> = ({ signal }) => getFriendJourneys({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFriendJourneys>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetFriendJourneysQueryResult = NonNullable<Awaited<ReturnType<typeof getFriendJourneys>>>
+export type GetFriendJourneysQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Journey cards for friends you follow (respects their sharing settings)
+ */
+
+export function useGetFriendJourneys<TData = Awaited<ReturnType<typeof getFriendJourneys>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFriendJourneys>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetFriendJourneysQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetSharingSettingsUrl = () => {
+
+
+
+
+  return `/api/social/settings`
+}
+
+/**
+ * @summary What the current user shares with approved followers
+ */
+export const getSharingSettings = async ( options?: RequestInit): Promise<SharingSettings> => {
+
+  return customFetch<SharingSettings>(getGetSharingSettingsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSharingSettingsQueryKey = () => {
+    return [
+    `/api/social/settings`
+    ] as const;
+    }
+
+
+export const getGetSharingSettingsQueryOptions = <TData = Awaited<ReturnType<typeof getSharingSettings>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSharingSettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSharingSettingsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSharingSettings>>> = ({ signal }) => getSharingSettings({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSharingSettings>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSharingSettingsQueryResult = NonNullable<Awaited<ReturnType<typeof getSharingSettings>>>
+export type GetSharingSettingsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary What the current user shares with approved followers
+ */
+
+export function useGetSharingSettings<TData = Awaited<ReturnType<typeof getSharingSettings>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSharingSettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSharingSettingsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateSharingSettingsUrl = () => {
+
+
+
+
+  return `/api/social/settings`
+}
+
+/**
+ * @summary Update sharing settings
+ */
+export const updateSharingSettings = async (sharingSettings: SharingSettings, options?: RequestInit): Promise<SharingSettings> => {
+
+  return customFetch<SharingSettings>(getUpdateSharingSettingsUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(sharingSettings)
+  }
+);}
+
+
+
+
+export const getUpdateSharingSettingsMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateSharingSettings>>, TError,{data: BodyType<SharingSettings>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateSharingSettings>>, TError,{data: BodyType<SharingSettings>}, TContext> => {
+
+const mutationKey = ['updateSharingSettings'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateSharingSettings>>, {data: BodyType<SharingSettings>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateSharingSettings(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateSharingSettingsMutationResult = NonNullable<Awaited<ReturnType<typeof updateSharingSettings>>>
+    export type UpdateSharingSettingsMutationBody = BodyType<SharingSettings>
+    export type UpdateSharingSettingsMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Update sharing settings
+ */
+export const useUpdateSharingSettings = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateSharingSettings>>, TError,{data: BodyType<SharingSettings>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateSharingSettings>>,
+        TError,
+        {data: BodyType<SharingSettings>},
+        TContext
+      > => {
+      return useMutation(getUpdateSharingSettingsMutationOptions(options));
+    }
+
+export const getGetCheersUrl = () => {
+
+
+
+
+  return `/api/cheers`
+}
+
+/**
+ * @summary Recent cheers received from friends
+ */
+export const getCheers = async ( options?: RequestInit): Promise<CheerList> => {
+
+  return customFetch<CheerList>(getGetCheersUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCheersQueryKey = () => {
+    return [
+    `/api/cheers`
+    ] as const;
+    }
+
+
+export const getGetCheersQueryOptions = <TData = Awaited<ReturnType<typeof getCheers>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCheers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCheersQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCheers>>> = ({ signal }) => getCheers({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCheers>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCheersQueryResult = NonNullable<Awaited<ReturnType<typeof getCheers>>>
+export type GetCheersQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Recent cheers received from friends
+ */
+
+export function useGetCheers<TData = Awaited<ReturnType<typeof getCheers>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCheers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCheersQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSendCheerUrl = () => {
+
+
+
+
+  return `/api/cheers`
+}
+
+/**
+ * @summary Send a cheer to a friend you follow
+ */
+export const sendCheer = async (sendCheerInput: SendCheerInput, options?: RequestInit): Promise<SendCheerResult> => {
+
+  return customFetch<SendCheerResult>(getSendCheerUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(sendCheerInput)
+  }
+);}
+
+
+
+
+export const getSendCheerMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendCheer>>, TError,{data: BodyType<SendCheerInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof sendCheer>>, TError,{data: BodyType<SendCheerInput>}, TContext> => {
+
+const mutationKey = ['sendCheer'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof sendCheer>>, {data: BodyType<SendCheerInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  sendCheer(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SendCheerMutationResult = NonNullable<Awaited<ReturnType<typeof sendCheer>>>
+    export type SendCheerMutationBody = BodyType<SendCheerInput>
+    export type SendCheerMutationError = ErrorType<void>
+
+    /**
+ * @summary Send a cheer to a friend you follow
+ */
+export const useSendCheer = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof sendCheer>>, TError,{data: BodyType<SendCheerInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof sendCheer>>,
+        TError,
+        {data: BodyType<SendCheerInput>},
+        TContext
+      > => {
+      return useMutation(getSendCheerMutationOptions(options));
     }
 
 export const getGetMeUrl = () => {
