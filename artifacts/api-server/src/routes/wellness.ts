@@ -15,6 +15,7 @@ import {
   GetDashboardSummaryResponse,
 } from "@workspace/api-zod";
 import { requireAuth, userIdOf } from "../middlewares/auth";
+import { requireActiveSubscription } from "../middlewares/subscription";
 
 const router: IRouter = Router();
 
@@ -51,7 +52,7 @@ router.get("/tips/daily", async (_req, res): Promise<void> => {
   res.json(GetDailyTipResponse.parse(tip));
 });
 
-router.get("/dashboard/summary", requireAuth, async (_req, res): Promise<void> => {
+router.get("/dashboard/summary", requireAuth, requireActiveSubscription, async (_req, res): Promise<void> => {
   const userId = userIdOf(res);
   const today = todayString();
 

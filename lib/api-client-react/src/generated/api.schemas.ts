@@ -5,6 +5,41 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+/**
+ * Membership subscription status
+ */
+export type BillingStatusStatus = typeof BillingStatusStatus[keyof typeof BillingStatusStatus];
+
+
+export const BillingStatusStatus = {
+  none: 'none',
+  trialing: 'trialing',
+  active: 'active',
+  past_due: 'past_due',
+  canceled: 'canceled',
+  incomplete: 'incomplete',
+} as const;
+
+export interface BillingStatus {
+  /** Membership subscription status */
+  status: BillingStatusStatus;
+  /** True when this account (staff) does not need a subscription */
+  exempt: boolean;
+  /** Monthly membership price in cents */
+  priceCents: number;
+  /** ISO timestamp when the free trial ends, if trialing */
+  trialEndsAt?: string | null;
+  /** ISO timestamp when the current billing period ends */
+  currentPeriodEnd?: string | null;
+  /** True when the subscription is set to cancel at period end */
+  cancelAtPeriodEnd?: boolean;
+}
+
+export interface CheckoutSession {
+  /** Stripe-hosted URL to redirect the user to */
+  url: string;
+}
+
 export interface HealthStatus {
   status: string;
 }

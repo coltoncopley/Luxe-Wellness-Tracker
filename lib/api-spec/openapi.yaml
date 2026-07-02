@@ -32,7 +32,45 @@ tags:
     description: Current user profile
   - name: admin
     description: Staff-only management endpoints
+  - name: billing
+    description: Membership subscription billing
 paths:
+  /billing/status:
+    get:
+      operationId: getBillingStatus
+      tags: [billing]
+      summary: Get the current user's membership status
+      responses:
+        "200":
+          description: Membership status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BillingStatus"
+  /billing/checkout:
+    post:
+      operationId: createBillingCheckout
+      tags: [billing]
+      summary: Create a Stripe Checkout session for the membership (7-day free trial)
+      responses:
+        "200":
+          description: Checkout session created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckoutSession"
+  /billing/portal:
+    post:
+      operationId: createBillingPortal
+      tags: [billing]
+      summary: Create a Stripe customer portal session to manage the membership
+      responses:
+        "200":
+          description: Portal session created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CheckoutSession"
   /healthz:
     get:
       operationId: healthCheck
@@ -1196,6 +1234,38 @@ paths:
             text/event-stream: {}
 components:
   schemas:
+    BillingStatus:
+      type: object
+      required: [status, exempt, priceCents]
+      properties:
+        status:
+          type: string
+          enum: [none, trialing, active, past_due, canceled, incomplete]
+          description: Membership subscription status
+        exempt:
+          type: boolean
+          description: True when this account (staff) does not need a subscription
+        priceCents:
+          type: integer
+          description: Monthly membership price in cents
+        trialEndsAt:
+          type: string
+          nullable: true
+          description: ISO timestamp when the free trial ends, if trialing
+        currentPeriodEnd:
+          type: string
+          nullable: true
+          description: ISO timestamp when the current billing period ends
+        cancelAtPeriodEnd:
+          type: boolean
+          description: True when the subscription is set to cancel at period end
+    CheckoutSession:
+      type: object
+      required: [url]
+      properties:
+        url:
+          type: string
+          description: Stripe-hosted URL to redirect the user to
     HealthStatus:
       type: object
       properties:

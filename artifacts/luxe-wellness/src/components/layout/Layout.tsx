@@ -2,7 +2,15 @@ import { Link, useLocation } from "wouter";
 import { User, Calendar, Activity, Utensils, MapPin, Menu, X, Sparkles, Sun, Gift, BadgeCheck, LogOut, HeartPulse, Users } from "lucide-react";
 import { useState } from "react";
 import { Show, useClerk, useUser } from "@clerk/react";
-import { useGetMe, getGetMeQueryKey } from "@workspace/api-client-react";
+import {
+  useGetMe,
+  getGetMeQueryKey,
+  useGetBillingStatus,
+  getGetBillingStatusQueryKey,
+  useCreateBillingPortal,
+} from "@workspace/api-client-react";
+import { toast } from "sonner";
+import { CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import luxeLogo from "@assets/brand/luxe_logo.jpeg";
 
@@ -18,6 +26,37 @@ function SignOutButton({ className }: { className?: string }) {
     >
       <LogOut className="h-4 w-4 mr-2" />
       Sign out
+    </Button>
+  );
+}
+
+function ManageMembershipButton({ className }: { className?: string }) {
+  const { isSignedIn } = useUser();
+  const { data: billing } = useGetBillingStatus({
+    query: { queryKey: getGetBillingStatusQueryKey(), enabled: !!isSignedIn, staleTime: 60_000 },
+  });
+  const portal = useCreateBillingPortal({
+    mutation: {
+      onSuccess: (data) => {
+        window.location.href = data.url;
+      },
+      onError: () => toast.error("Could not open billing settings. Please try again."),
+    },
+  });
+
+  // Only patients with a Stripe subscription history can manage billing
+  if (!billing || billing.exempt || billing.status === "none") return null;
+
+  return (
+    <Button
+      variant="ghost"
+      className={className}
+      disabled={portal.isPending}
+      onClick={() => portal.mutate()}
+      data-testid="button-manage-membership"
+    >
+      <CreditCard className="h-4 w-4 mr-2" />
+      Manage membership
     </Button>
   );
 }
@@ -116,6 +155,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 Signed in as <span className="font-medium">{displayName}</span>
               </div>
             )}
+            <ManageMembershipButton className="w-full justify-start text-muted-foreground" />
             <SignOutButton className="w-full justify-start text-muted-foreground" />
           </div>
         </Show>

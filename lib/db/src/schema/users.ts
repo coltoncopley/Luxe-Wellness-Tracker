@@ -6,6 +6,8 @@ export const usersTable = pgTable("users", {
   firstName: text("first_name"),
   role: text("role").notNull().default("patient"),
   referralCode: text("referral_code").unique(),
+  stripeCustomerId: text("stripe_customer_id"),
+  stripeSubscriptionId: text("stripe_subscription_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

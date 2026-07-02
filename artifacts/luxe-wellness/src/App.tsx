@@ -10,6 +10,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Layout } from "@/components/layout/Layout";
+import { SubscriptionGate } from "@/components/SubscriptionGate";
 import Landing from "@/pages/landing";
 import Dashboard from "@/pages/dashboard";
 import Book from "@/pages/book";
@@ -185,9 +186,11 @@ function HomeRedirect() {
   return (
     <>
       <Show when="signed-in">
-        <Layout>
-          <Dashboard />
-        </Layout>
+        <SubscriptionGate>
+          <Layout>
+            <Dashboard />
+          </Layout>
+        </SubscriptionGate>
       </Show>
       <Show when="signed-out">
         <Landing />
@@ -200,9 +203,11 @@ function Protected({ component: Component }: { component: React.ComponentType })
   return (
     <>
       <Show when="signed-in">
-        <Layout>
-          <Component />
-        </Layout>
+        <SubscriptionGate>
+          <Layout>
+            <Component />
+          </Layout>
+        </SubscriptionGate>
       </Show>
       <Show when="signed-out">
         <Redirect to="/" />

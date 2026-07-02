@@ -13,7 +13,9 @@ import referralsRouter from "./referrals";
 import socialRouter from "./social";
 import meRouter from "./me";
 import adminRouter from "./admin";
+import billingRouter from "./billing";
 import { requireAuth, requireStaff, requirePatient } from "../middlewares/auth";
+import { requireActiveSubscription } from "../middlewares/subscription";
 
 const router: IRouter = Router();
 
@@ -22,17 +24,20 @@ router.use(healthRouter);
 router.use(catalogRouter);
 router.use(wellnessRouter);
 
-// Authenticated patient routes
+// Authenticated, no membership required: profile + billing itself
 router.use(requireAuth, meRouter);
-router.use(requireAuth, appointmentsRouter);
-router.use(requireAuth, trackingRouter);
-router.use(requireAuth, foodRouter);
-router.use(requireAuth, openaiRouter);
-router.use(requireAuth, glowRouter);
-router.use(requireAuth, briefingRouter);
-router.use(requireAuth, rewardsRouter);
-router.use(requireAuth, referralsRouter);
-router.use(requireAuth, requirePatient, socialRouter);
+router.use(requireAuth, billingRouter);
+
+// Premium patient features: require an active (or trialing) membership
+router.use(requireAuth, requireActiveSubscription, appointmentsRouter);
+router.use(requireAuth, requireActiveSubscription, trackingRouter);
+router.use(requireAuth, requireActiveSubscription, foodRouter);
+router.use(requireAuth, requireActiveSubscription, openaiRouter);
+router.use(requireAuth, requireActiveSubscription, glowRouter);
+router.use(requireAuth, requireActiveSubscription, briefingRouter);
+router.use(requireAuth, requireActiveSubscription, rewardsRouter);
+router.use(requireAuth, requireActiveSubscription, referralsRouter);
+router.use(requireAuth, requireActiveSubscription, requirePatient, socialRouter);
 
 // Staff-only management routes
 router.use(requireAuth, requireStaff, adminRouter);

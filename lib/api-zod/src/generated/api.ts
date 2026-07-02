@@ -9,6 +9,35 @@ import * as zod from 'zod';
 
 
 /**
+ * @summary Get the current user's membership status
+ */
+export const GetBillingStatusResponse = zod.object({
+  "status": zod.enum(['none', 'trialing', 'active', 'past_due', 'canceled', 'incomplete']).describe('Membership subscription status'),
+  "exempt": zod.boolean().describe('True when this account (staff) does not need a subscription'),
+  "priceCents": zod.number().describe('Monthly membership price in cents'),
+  "trialEndsAt": zod.string().nullish().describe('ISO timestamp when the free trial ends, if trialing'),
+  "currentPeriodEnd": zod.string().nullish().describe('ISO timestamp when the current billing period ends'),
+  "cancelAtPeriodEnd": zod.boolean().optional().describe('True when the subscription is set to cancel at period end')
+})
+
+
+/**
+ * @summary Create a Stripe Checkout session for the membership (7-day free trial)
+ */
+export const CreateBillingCheckoutResponse = zod.object({
+  "url": zod.string().describe('Stripe-hosted URL to redirect the user to')
+})
+
+
+/**
+ * @summary Create a Stripe customer portal session to manage the membership
+ */
+export const CreateBillingPortalResponse = zod.object({
+  "url": zod.string().describe('Stripe-hosted URL to redirect the user to')
+})
+
+
+/**
  * Returns server health status
  * @summary Health check
  */

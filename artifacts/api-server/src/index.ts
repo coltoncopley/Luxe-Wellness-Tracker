@@ -1,5 +1,37 @@
+import { runMigrations } from "stripe-replit-sync";
 import app from "./app";
 import { logger } from "./lib/logger";
+import { getStripeSync } from "./lib/stripeClient";
+
+async function initStripe(): Promise<void> {
+  const databaseUrl = process.env.DATABASE_URL;
+  if (!databaseUrl) {
+    throw new Error("DATABASE_URL is required for Stripe integration");
+  }
+
+  logger.info("Initializing Stripe schema...");
+  await runMigrations({ databaseUrl });
+
+  const stripeSync = await getStripeSync();
+
+  const webhookBaseUrl = `https://${process.env.REPLIT_DOMAINS?.split(",")[0]}`;
+  const webhookResult = await stripeSync.findOrCreateManagedWebhook(
+    `${webhookBaseUrl}/api/stripe/webhook`,
+  );
+  logger.info({ webhook: webhookResult?.url ?? "configured" }, "Stripe webhook configured");
+
+  stripeSync
+    .syncBackfill()
+    .then(() => logger.info("Stripe data synced"))
+    .catch((err: unknown) => logger.error({ err }, "Error syncing Stripe data"));
+}
+
+try {
+  await initStripe();
+} catch (err) {
+  // Billing endpoints fail explicitly if Stripe is unavailable; don't take the whole app down.
+  logger.error({ err }, "Failed to initialize Stripe");
+}
 
 const rawPort = process.env["PORT"];
 
