@@ -465,6 +465,45 @@ export const GetDashboardSummaryResponse = zod.object({
 
 
 /**
+ * @summary Personalized morning briefing (wellness score, todos, recap) — patient-private
+ */
+export const GetBriefingResponse = zod.object({
+  "firstName": zod.string().nullable(),
+  "wellnessScore": zod.number().describe('0-100 composite of today\'s habits and consistency'),
+  "components": zod.array(zod.object({
+  "key": zod.string(),
+  "label": zod.string(),
+  "points": zod.number(),
+  "maxPoints": zod.number()
+})),
+  "todos": zod.array(zod.object({
+  "id": zod.string(),
+  "label": zod.string(),
+  "done": zod.boolean(),
+  "href": zod.string().describe('In-app route, e.g. \/glow')
+})),
+  "yesterday": zod.object({
+  "calories": zod.number().nullish(),
+  "calorieTarget": zod.number().nullish(),
+  "proteinGrams": zod.number().nullish(),
+  "weightChangeLbs": zod.number().nullish(),
+  "glowScore": zod.number().nullish(),
+  "foodLogged": zod.boolean()
+}),
+  "nextAppointment": zod.union([zod.object({
+  "id": zod.number(),
+  "serviceName": zod.string(),
+  "providerName": zod.string().nullish(),
+  "date": zod.string(),
+  "time": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "status": zod.string()
+}),zod.null()]),
+  "aiBriefing": zod.string().nullable().describe('Short AI-generated coaching message; null if unavailable')
+})
+
+
+/**
  * @summary Today's glow check-in, score, streak, and recent history
  */
 export const GetGlowSummaryResponse = zod.object({

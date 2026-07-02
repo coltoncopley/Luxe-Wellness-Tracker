@@ -24,6 +24,7 @@ import type {
   Appointment,
   AppointmentInput,
   AppointmentUpdate,
+  Briefing,
   DailySummary,
   DashboardSummary,
   FoodLog,
@@ -2123,6 +2124,83 @@ export function useGetDashboardSummary<TData = Awaited<ReturnType<typeof getDash
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetDashboardSummaryQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetBriefingUrl = () => {
+
+
+
+
+  return `/api/briefing`
+}
+
+/**
+ * @summary Personalized morning briefing (wellness score, todos, recap) — patient-private
+ */
+export const getBriefing = async ( options?: RequestInit): Promise<Briefing> => {
+
+  return customFetch<Briefing>(getGetBriefingUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetBriefingQueryKey = () => {
+    return [
+    `/api/briefing`
+    ] as const;
+    }
+
+
+export const getGetBriefingQueryOptions = <TData = Awaited<ReturnType<typeof getBriefing>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBriefing>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetBriefingQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getBriefing>>> = ({ signal }) => getBriefing({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getBriefing>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetBriefingQueryResult = NonNullable<Awaited<ReturnType<typeof getBriefing>>>
+export type GetBriefingQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Personalized morning briefing (wellness score, todos, recap) — patient-private
+ */
+
+export function useGetBriefing<TData = Awaited<ReturnType<typeof getBriefing>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBriefing>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetBriefingQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

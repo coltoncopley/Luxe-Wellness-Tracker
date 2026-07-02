@@ -7,6 +7,7 @@ import foodRouter from "./food";
 import wellnessRouter from "./wellness";
 import openaiRouter from "./openai";
 import glowRouter from "./glow";
+import briefingRouter from "./briefing";
 import rewardsRouter from "./rewards";
 import meRouter from "./me";
 import adminRouter from "./admin";
@@ -26,6 +27,7 @@ router.use(requireAuth, trackingRouter);
 router.use(requireAuth, foodRouter);
 router.use(requireAuth, openaiRouter);
 router.use(requireAuth, glowRouter);
+router.use(requireAuth, briefingRouter);
 router.use(requireAuth, rewardsRouter);
 
 // Staff-only management routes

@@ -26,7 +26,7 @@ A patient companion app for LUXE Wellness and Aesthetics (physician-owned med sp
 
 - `lib/api-spec/openapi.yaml` — source of truth for the API contract
 - `lib/db/src/schema/` — Drizzle tables: services.ts (services, staff), appointments.ts, tracking.ts (weight_entries, measurements, goals), food.ts (restaurants, menu_items, food_logs, tips), conversations.ts + messages.ts (Luxe AI chat), glow.ts (glow_checkins), rewards.ts (reward_events points ledger)
-- `artifacts/api-server/src/routes/` — catalog.ts, appointments.ts, tracking.ts, food.ts (incl. POST /food/analyze-photo AI meal scanner), wellness.ts (tips, dashboard summary), openai.ts (Luxe AI chat: conversation CRUD + SSE streaming), glow.ts (Glow Score summary + check-in upsert), rewards.ts (summary + redeem)
+- `artifacts/api-server/src/routes/` — catalog.ts, appointments.ts, tracking.ts, food.ts (incl. POST /food/analyze-photo AI meal scanner), wellness.ts (tips, dashboard summary), openai.ts (Luxe AI chat: conversation CRUD + SSE streaming), glow.ts (Glow Score summary + check-in upsert), briefing.ts (GET /briefing morning briefing), rewards.ts (summary + redeem)
 - `artifacts/api-server/src/lib/rewards.ts` — reward catalog, point values, award/redeem helpers
 - `scripts/src/seed.ts` — seed data
 - `artifacts/luxe-wellness/` — patient-facing web app (pages: /, /book, /weight, /food, /restaurants, /glow, /rewards, /luxe-ai, /staff)
@@ -51,7 +51,8 @@ A patient companion app for LUXE Wellness and Aesthetics (physician-owned med sp
 
 ## Product
 
-- Dashboard: weight snapshot, calories today vs target, logging streak, next appointment, daily tip
+- Home (V2): "Good morning, {name}" + Wellness Score (0-100: glow habits 40, meals logged 10, within calorie target 10, weigh-in 15, glow-streak consistency 25) + AI morning briefing (gpt-5.4, cached in-memory per user/day with in-flight dedup, null on failure) + today's to-do checklist + yesterday recap + stat cards + daily tip. GET /api/briefing, patient-private, privacy disclaimer in UI.
+- V2 roadmap (user picked phased build, 2026-07): Phase 1 Home+Briefing DONE → next: data-aware Luxe AI → missions/streaks/reward tiers → weekly AI skin scan. Wearables/community deferred (need native app / bigger lift).
 - Book: browse services and team, deep-link out to Aesthetic Record, track appointments manually
 - Weight: daily weigh-ins, body-area measurements, goal setting, progress chart
 - Food: meal logging with macros, daily summary, restaurant menu search
@@ -66,7 +67,7 @@ A patient companion app for LUXE Wellness and Aesthetics (physician-owned med sp
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- Patient health/tracking data must NEVER be visible to staff or "pushed to the med spa" — the owner explicitly wants to stay out of HIPAA territory. Staff may only see reward/redemption info (codes, reward titles, points). Wellness scores, briefings, weight, food, glow data are patient-private only. No provider dashboards over patient health data.
 
 ## Gotchas
 

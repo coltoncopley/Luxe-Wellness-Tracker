@@ -458,6 +458,18 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/DashboardSummary"
+  /briefing:
+    get:
+      operationId: getBriefing
+      tags: [briefing]
+      summary: Personalized morning briefing (wellness score, todos, recap) — patient-private
+      responses:
+        "200":
+          description: Morning briefing
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Briefing"
   /glow/summary:
     get:
       operationId: getGlowSummary
@@ -1119,6 +1131,55 @@ components:
           oneOf:
             - $ref: "#/components/schemas/Appointment"
             - type: "null"
+    BriefingScoreComponent:
+      type: object
+      required: [key, label, points, maxPoints]
+      properties:
+        key: { type: string }
+        label: { type: string }
+        points: { type: integer }
+        maxPoints: { type: integer }
+    BriefingTodo:
+      type: object
+      required: [id, label, done, href]
+      properties:
+        id: { type: string }
+        label: { type: string }
+        done: { type: boolean }
+        href: { type: string, description: "In-app route, e.g. /glow" }
+    BriefingYesterday:
+      type: object
+      required: [foodLogged]
+      properties:
+        calories: { type: ["integer", "null"] }
+        calorieTarget: { type: ["integer", "null"] }
+        proteinGrams: { type: ["integer", "null"] }
+        weightChangeLbs: { type: ["number", "null"] }
+        glowScore: { type: ["integer", "null"] }
+        foodLogged: { type: boolean }
+    Briefing:
+      type: object
+      required: [firstName, wellnessScore, components, todos, yesterday, nextAppointment, aiBriefing]
+      properties:
+        firstName: { type: ["string", "null"] }
+        wellnessScore: { type: integer, description: "0-100 composite of today's habits and consistency" }
+        components:
+          type: array
+          items:
+            $ref: "#/components/schemas/BriefingScoreComponent"
+        todos:
+          type: array
+          items:
+            $ref: "#/components/schemas/BriefingTodo"
+        yesterday:
+          $ref: "#/components/schemas/BriefingYesterday"
+        nextAppointment:
+          oneOf:
+            - $ref: "#/components/schemas/Appointment"
+            - type: "null"
+        aiBriefing:
+          type: ["string", "null"]
+          description: Short AI-generated coaching message; null if unavailable
     GlowCheckinInput:
       type: object
       properties:

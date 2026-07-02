@@ -211,6 +211,51 @@ export interface DashboardSummary {
   nextAppointment?: Appointment | null;
 }
 
+export interface BriefingScoreComponent {
+  key: string;
+  label: string;
+  points: number;
+  maxPoints: number;
+}
+
+export interface BriefingTodo {
+  id: string;
+  label: string;
+  done: boolean;
+  /** In-app route, e.g. /glow */
+  href: string;
+}
+
+export interface BriefingYesterday {
+  /** @nullable */
+  calories?: number | null;
+  /** @nullable */
+  calorieTarget?: number | null;
+  /** @nullable */
+  proteinGrams?: number | null;
+  /** @nullable */
+  weightChangeLbs?: number | null;
+  /** @nullable */
+  glowScore?: number | null;
+  foodLogged: boolean;
+}
+
+export interface Briefing {
+  /** @nullable */
+  firstName: string | null;
+  /** 0-100 composite of today's habits and consistency */
+  wellnessScore: number;
+  components: BriefingScoreComponent[];
+  todos: BriefingTodo[];
+  yesterday: BriefingYesterday;
+  nextAppointment: Appointment | null;
+  /**
+     * Short AI-generated coaching message; null if unavailable
+     * @nullable
+     */
+  aiBriefing: string | null;
+}
+
 export interface GlowCheckinInput {
   /** YYYY-MM-DD; defaults to today */
   date?: string;
