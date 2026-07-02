@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { User, Calendar, Activity, Utensils, MapPin, Menu, X } from "lucide-react";
+import { User, Calendar, Activity, Utensils, MapPin, Menu, X, Sparkles } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import luxeLogo from "@assets/brand/luxe_logo.jpeg";
@@ -14,6 +14,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { href: "/weight", label: "Progress", icon: Activity },
     { href: "/food", label: "Food Log", icon: Utensils },
     { href: "/restaurants", label: "Restaurants", icon: MapPin },
+    { href: "/luxe-ai", label: "Luxe AI", icon: Sparkles },
   ];
 
   return (

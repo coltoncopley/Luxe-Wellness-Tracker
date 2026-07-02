@@ -20,14 +20,15 @@ A patient companion app for LUXE Wellness and Aesthetics (physician-owned med sp
 - Validation: Zod (`zod/v4`), `drizzle-zod`
 - API codegen: Orval (from OpenAPI spec)
 - Frontend: React + Vite (artifacts/luxe-wellness), wouter, TanStack Query, shadcn/ui, recharts
+- AI: Replit AI Integrations OpenAI proxy (`lib/integrations-openai-ai-server`, gpt-5.4) — env vars AI_INTEGRATIONS_OPENAI_BASE_URL/API_KEY auto-provisioned, billed to Replit credits
 
 ## Where things live
 
 - `lib/api-spec/openapi.yaml` — source of truth for the API contract
-- `lib/db/src/schema/` — Drizzle tables: services.ts (services, staff), appointments.ts, tracking.ts (weight_entries, measurements, goals), food.ts (restaurants, menu_items, food_logs, tips)
-- `artifacts/api-server/src/routes/` — catalog.ts, appointments.ts, tracking.ts, food.ts, wellness.ts (tips, dashboard summary)
+- `lib/db/src/schema/` — Drizzle tables: services.ts (services, staff), appointments.ts, tracking.ts (weight_entries, measurements, goals), food.ts (restaurants, menu_items, food_logs, tips), conversations.ts + messages.ts (Luxe AI chat)
+- `artifacts/api-server/src/routes/` — catalog.ts, appointments.ts, tracking.ts, food.ts, wellness.ts (tips, dashboard summary), openai.ts (Luxe AI chat: conversation CRUD + SSE streaming)
 - `scripts/src/seed.ts` — seed data
-- `artifacts/luxe-wellness/` — patient-facing web app (pages: /, /book, /weight, /food, /restaurants)
+- `artifacts/luxe-wellness/` — patient-facing web app (pages: /, /book, /weight, /food, /restaurants, /luxe-ai)
 - `attached_assets/brand/luxe_logo.jpeg` — brand logo
 
 ## Architecture decisions
@@ -37,6 +38,8 @@ A patient companion app for LUXE Wellness and Aesthetics (physician-owned med sp
 - Calendar dates stored as YYYY-MM-DD strings (`date(..., { mode: "string" })`).
 - mealType values: breakfast/lunch/dinner/snack; measurement areas: waist/hips/arms/thighs/chest/neck.
 - Goal is a singleton row, auto-created on first GET /api/goal.
+- Luxe AI system prompt is built per-request from live services/staff DB rows; safety rules: no diagnosis, soft-sell only (max one treatment suggestion per reply), directs booking to the Aesthetic Record URL.
+- Chat streaming is SSE over POST; Orval can't type SSE, so the client uses raw fetch + ReadableStream (generated hooks for everything else).
 
 ## Product
 
@@ -45,6 +48,7 @@ A patient companion app for LUXE Wellness and Aesthetics (physician-owned med sp
 - Weight: daily weigh-ins, body-area measurements, goal setting, progress chart
 - Food: meal logging with macros, daily summary, restaurant menu search
 - Restaurants: local chains with calorie/macro data and healthy pick ordering tips
+- Luxe AI: 24/7 streaming chat assistant grounded in LUXE's service catalog and team; GLP-1 coaching, skincare/treatment Q&A, gentle treatment suggestions
 
 ## User preferences
 
