@@ -1,0 +1,1 @@
+- [Design subagent output verification](design-subagent-verification.md) — always verify page files exist, typecheck passes, and no escaped `\`` template literals after a DESIGN subagent finishes.

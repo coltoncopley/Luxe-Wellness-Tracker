@@ -1,0 +1,337 @@
+import { useState } from "react";
+import { 
+  useListFoodLogs, useCreateFoodLog, useDeleteFoodLog, getListFoodLogsQueryKey,
+  useGetDailySummary, getGetDailySummaryQueryKey,
+  useSearchMenuItems
+} from "@workspace/api-client-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { format } from "date-fns";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
+import { Progress } from "@/components/ui/progress";
+import { Utensils, Flame, Trash2, Plus, ChevronLeft, ChevronRight, Search, CheckCircle2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
+export default function Food() {
+  const queryClient = useQueryClient();
+  const [selectedDate, setSelectedDate] = useState(format(new Date(), "yyyy-MM-dd"));
+  
+  // Queries
+  const { data: logs, isLoading: isLoadingLogs } = useListFoodLogs({ date: selectedDate }, { query: { queryKey: getListFoodLogsQueryKey({ date: selectedDate }) } });
+  const { data: summary, isLoading: isLoadingSummary } = useGetDailySummary({ date: selectedDate }, { query: { queryKey: getGetDailySummaryQueryKey({ date: selectedDate }) } });
+  
+  // Mutations
+  const createLog = useCreateFoodLog();
+  const deleteLog = useDeleteFoodLog();
+
+  // State for add manual form
+  const [isAddOpen, setIsAddOpen] = useState(false);
+  const [formData, setFormData] = useState({
+    mealType: "breakfast",
+    foodName: "",
+    restaurantName: "",
+    calories: "",
+    proteinG: "",
+    carbsG: "",
+    fatG: ""
+  });
+
+  // State for quick search
+  const [searchQuery, setSearchQuery] = useState("");
+  const { data: searchResults } = useSearchMenuItems(
+    { q: searchQuery }, 
+    { query: { enabled: searchQuery.length > 2, queryKey: ['searchMenuItems', { q: searchQuery }] } }
+  );
+
+  // Date navigation
+  const handlePrevDay = () => {
+    const d = new Date(selectedDate);
+    d.setDate(d.getDate() - 1);
+    setSelectedDate(format(d, "yyyy-MM-dd"));
+  };
+
+  const handleNextDay = () => {
+    const d = new Date(selectedDate);
+    d.setDate(d.getDate() + 1);
+    setSelectedDate(format(d, "yyyy-MM-dd"));
+  };
+
+  const handleAddManual = (e: React.FormEvent) => {
+    e.preventDefault();
+    createLog.mutate({ data: {
+      date: selectedDate,
+      mealType: formData.mealType,
+      foodName: formData.foodName,
+      restaurantName: formData.restaurantName || undefined,
+      calories: Number(formData.calories),
+      proteinG: formData.proteinG ? Number(formData.proteinG) : undefined,
+      carbsG: formData.carbsG ? Number(formData.carbsG) : undefined,
+      fatG: formData.fatG ? Number(formData.fatG) : undefined
+    }}, {
+      onSuccess: () => {
+        toast.success("Food logged successfully");
+        queryClient.invalidateQueries({ queryKey: getListFoodLogsQueryKey({ date: selectedDate }) });
+        queryClient.invalidateQueries({ queryKey: getGetDailySummaryQueryKey({ date: selectedDate }) });
+        setIsAddOpen(false);
+        setFormData({ mealType: "breakfast", foodName: "", restaurantName: "", calories: "", proteinG: "", carbsG: "", fatG: "" });
+      }
+    });
+  };
+
+  const handleQuickAdd = (item: any) => {
+    createLog.mutate({ data: {
+      date: selectedDate,
+      mealType: formData.mealType, // use currently selected meal type in form state as default
+      foodName: item.name,
+      restaurantName: item.restaurantName,
+      calories: item.calories,
+      proteinG: item.proteinG,
+      carbsG: item.carbsG,
+      fatG: item.fatG
+    }}, {
+      onSuccess: () => {
+        toast.success(`Logged ${item.name}`);
+        queryClient.invalidateQueries({ queryKey: getListFoodLogsQueryKey({ date: selectedDate }) });
+        queryClient.invalidateQueries({ queryKey: getGetDailySummaryQueryKey({ date: selectedDate }) });
+        setSearchQuery("");
+      }
+    });
+  };
+
+  const handleDelete = (id: number) => {
+    deleteLog.mutate({ id }, {
+      onSuccess: () => {
+        toast.success("Log removed");
+        queryClient.invalidateQueries({ queryKey: getListFoodLogsQueryKey({ date: selectedDate }) });
+        queryClient.invalidateQueries({ queryKey: getGetDailySummaryQueryKey({ date: selectedDate }) });
+      }
+    });
+  };
+
+  const mealTypes = ["breakfast", "lunch", "dinner", "snack"];
+  const logsByMeal = mealTypes.reduce((acc, type) => {
+    acc[type] = logs?.filter(log => log.mealType === type) || [];
+    return acc;
+  }, {} as Record<string, any[]>);
+
+  const calProgress = summary?.calorieTarget ? Math.min(100, ((summary?.totalCalories || 0) / summary.calorieTarget) * 100) : 0;
+  const isOverTarget = summary?.calorieTarget && summary.totalCalories > summary.calorieTarget;
+
+  return (
+    <div className="space-y-8 pb-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div>
+        <h1 className="text-4xl mb-2 text-primary">Daily Food Log</h1>
+        <p className="text-muted-foreground text-lg">Track your meals to support your GLP-1 progress.</p>
+      </div>
+
+      <div className="flex items-center justify-between bg-card p-4 rounded-2xl border border-border shadow-sm">
+        <Button variant="ghost" size="icon" onClick={handlePrevDay}><ChevronLeft className="w-5 h-5" /></Button>
+        <div className="font-serif text-xl font-medium">
+          {format(new Date(selectedDate), "EEEE, MMMM d, yyyy")}
+        </div>
+        <Button variant="ghost" size="icon" onClick={handleNextDay}><ChevronRight className="w-5 h-5" /></Button>
+      </div>
+
+      <Card className="bg-card shadow-sm border-border overflow-hidden relative">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-accent/5 rounded-bl-full -z-10" />
+        <CardContent className="p-6">
+          <div className="flex flex-col md:flex-row gap-8 items-center">
+            <div className="flex-1 w-full text-center md:text-left">
+              <h2 className="text-sm font-sans font-medium text-muted-foreground flex items-center justify-center md:justify-start gap-2 mb-2">
+                <Flame className="h-4 w-4 text-orange-500" /> Calories Today
+              </h2>
+              <div className="text-4xl font-serif">
+                {summary?.totalCalories || 0} 
+                <span className="text-xl text-muted-foreground ml-2">
+                  / {summary?.calorieTarget || "—"}
+                </span>
+              </div>
+              {summary?.calorieTarget && (
+                <div className="mt-4">
+                  <Progress value={calProgress} className={`h-3 ${isOverTarget ? '[&>div]:bg-destructive' : ''}`} />
+                  <p className={`text-sm mt-2 font-medium ${isOverTarget ? 'text-destructive' : 'text-primary'}`}>
+                    {isOverTarget ? 
+                      `${summary.totalCalories - summary.calorieTarget} kcal over target` : 
+                      `${summary.calorieTarget - summary.totalCalories} kcal remaining`}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex gap-6 shrink-0 w-full md:w-auto justify-center md:justify-end border-t md:border-t-0 md:border-l border-border pt-6 md:pt-0 md:pl-8">
+              <div className="text-center">
+                <div className="text-2xl font-serif">{summary?.totalProteinG || 0}g</div>
+                <div className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Protein</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-serif">{summary?.totalCarbsG || 0}g</div>
+                <div className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Carbs</div>
+              </div>
+              <div className="text-center">
+                <div className="text-2xl font-serif">{summary?.totalFatG || 0}g</div>
+                <div className="text-xs text-muted-foreground uppercase tracking-wider font-semibold">Fat</div>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="lg:col-span-2 space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="text-2xl font-serif text-primary">Meals</h2>
+            <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
+              <DialogTrigger asChild>
+                <Button className="rounded-full shadow-md">
+                  <Plus className="w-4 h-4 mr-2" /> Custom Entry
+                </Button>
+              </DialogTrigger>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Log Custom Food</DialogTitle>
+                </DialogHeader>
+                <form onSubmit={handleAddManual} className="space-y-4 pt-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="mealType">Meal</Label>
+                    <Select value={formData.mealType} onValueChange={(val) => setFormData({...formData, mealType: val})}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select meal" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="breakfast">Breakfast</SelectItem>
+                        <SelectItem value="lunch">Lunch</SelectItem>
+                        <SelectItem value="dinner">Dinner</SelectItem>
+                        <SelectItem value="snack">Snack</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="foodName">Food Name</Label>
+                    <Input id="foodName" required value={formData.foodName} onChange={e => setFormData({...formData, foodName: e.target.value})} placeholder="e.g. Grilled Chicken Salad" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="calories">Calories</Label>
+                    <Input id="calories" type="number" required value={formData.calories} onChange={e => setFormData({...formData, calories: e.target.value})} />
+                  </div>
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="proteinG">Protein (g)</Label>
+                      <Input id="proteinG" type="number" value={formData.proteinG} onChange={e => setFormData({...formData, proteinG: e.target.value})} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="carbsG">Carbs (g)</Label>
+                      <Input id="carbsG" type="number" value={formData.carbsG} onChange={e => setFormData({...formData, carbsG: e.target.value})} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="fatG">Fat (g)</Label>
+                      <Input id="fatG" type="number" value={formData.fatG} onChange={e => setFormData({...formData, fatG: e.target.value})} />
+                    </div>
+                  </div>
+                  <Button type="submit" className="w-full mt-4" disabled={createLog.isPending}>
+                    Save to Log
+                  </Button>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </div>
+
+          {isLoadingLogs ? (
+            <div className="py-8 text-center text-muted-foreground">Loading food log...</div>
+          ) : (
+            <div className="space-y-6">
+              {mealTypes.map(meal => (
+                <div key={meal} className="bg-card rounded-2xl border border-border shadow-sm overflow-hidden">
+                  <div className="bg-secondary/30 px-4 py-3 flex items-center justify-between border-b border-border">
+                    <h3 className="font-semibold capitalize flex items-center gap-2">
+                      {meal === 'breakfast' && <Utensils className="w-4 h-4 text-primary" />}
+                      {meal === 'lunch' && <Utensils className="w-4 h-4 text-primary" />}
+                      {meal === 'dinner' && <Utensils className="w-4 h-4 text-primary" />}
+                      {meal === 'snack' && <Flame className="w-4 h-4 text-accent" />}
+                      {meal}
+                    </h3>
+                    <span className="text-sm font-medium">
+                      {logsByMeal[meal].reduce((sum, item) => sum + item.calories, 0)} kcal
+                    </span>
+                  </div>
+                  <div className="divide-y divide-border">
+                    {logsByMeal[meal].length > 0 ? (
+                      logsByMeal[meal].map(item => (
+                        <div key={item.id} className="p-4 flex items-center justify-between hover:bg-muted/30 transition-colors">
+                          <div>
+                            <div className="font-medium text-foreground">{item.foodName}</div>
+                            {item.restaurantName && <div className="text-xs text-muted-foreground mt-0.5">{item.restaurantName}</div>}
+                            <div className="text-xs text-muted-foreground mt-1 flex gap-3">
+                              {item.proteinG != null && <span>P: {item.proteinG}g</span>}
+                              {item.carbsG != null && <span>C: {item.carbsG}g</span>}
+                              {item.fatG != null && <span>F: {item.fatG}g</span>}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <span className="font-medium text-primary">{item.calories} kcal</span>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0" onClick={() => handleDelete(item.id)}>
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="p-4 text-sm text-muted-foreground text-center italic">No items logged</div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div>
+          <Card className="sticky top-24">
+            <CardHeader>
+              <CardTitle className="font-serif">Quick Add from Restaurants</CardTitle>
+              <CardDescription>Search local healthy menu items to log instantly.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="relative mb-4">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input 
+                  placeholder="Search menu items..." 
+                  className="pl-9"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
+
+              {searchQuery.length > 2 && (
+                <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
+                  {searchResults && searchResults.length > 0 ? (
+                    searchResults.map(item => (
+                      <div key={item.id} className="p-3 border border-border rounded-xl bg-card hover:border-primary/50 transition-colors">
+                        <div className="flex justify-between items-start gap-2 mb-1">
+                          <span className="font-medium text-sm leading-tight">{item.name}</span>
+                          {item.isHealthyPick && <CheckCircle2 className="w-4 h-4 text-accent shrink-0" />}
+                        </div>
+                        <div className="text-xs text-muted-foreground mb-3">{item.restaurantName}</div>
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm font-semibold text-primary">{item.calories} kcal</span>
+                          <Button size="sm" variant="secondary" className="h-7 text-xs rounded-full" onClick={() => handleQuickAdd(item)} disabled={createLog.isPending}>
+                            <Plus className="w-3 h-3 mr-1" /> Add
+                          </Button>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center text-sm text-muted-foreground py-4">No matching items found.</div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}
