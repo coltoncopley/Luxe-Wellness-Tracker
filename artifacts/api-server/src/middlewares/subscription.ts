@@ -51,6 +51,9 @@ export async function requireActiveSubscription(
     let ok = false;
     if (user.role === "staff") {
       ok = true;
+    } else if (user.compLifetime || (user.compUntil && user.compUntil > new Date())) {
+      // Complimentary access granted by staff
+      ok = true;
     } else if (user.stripeCustomerId) {
       const sub = await getSubscriptionForCustomer(user.stripeCustomerId);
       ok = isSubscriptionActive(sub);

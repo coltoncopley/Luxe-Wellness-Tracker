@@ -35,6 +35,43 @@ export interface BillingStatus {
   cancelAtPeriodEnd?: boolean;
 }
 
+export interface CompAccess {
+  userId: string;
+  /** @nullable */
+  email: string | null;
+  /** @nullable */
+  firstName: string | null;
+  /** True when access is free for life */
+  lifetime: boolean;
+  /**
+     * ISO timestamp when free access expires (null if lifetime)
+     * @nullable
+     */
+  until: string | null;
+}
+
+/**
+ * Free months to grant (ignored when lifetime is true)
+ */
+export type GrantCompInputMonths = typeof GrantCompInputMonths[keyof typeof GrantCompInputMonths];
+
+
+export const GrantCompInputMonths = {
+  NUMBER_1: 1,
+  NUMBER_3: 3,
+  NUMBER_6: 6,
+  NUMBER_12: 12,
+} as const;
+
+export interface GrantCompInput {
+  /** Email of an existing patient account */
+  email: string;
+  /** Free months to grant (ignored when lifetime is true) */
+  months?: GrantCompInputMonths;
+  /** Grant free access for life */
+  lifetime?: boolean;
+}
+
 export interface CheckoutSession {
   /** Stripe-hosted URL to redirect the user to */
   url: string;

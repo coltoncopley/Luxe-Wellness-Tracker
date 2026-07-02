@@ -25,6 +25,11 @@ import {
   useAdminDeleteRestaurant,
   useAdminCreateMenuItem,
   useAdminDeleteMenuItem,
+  useAdminListComps,
+  getAdminListCompsQueryKey,
+  useAdminGrantComp,
+  useAdminRevokeComp,
+  type CompAccess,
   type RedemptionDetail,
   type Service,
   type RewardItem,
@@ -61,6 +66,7 @@ import {
   UtensilsCrossed,
   ChevronDown,
   ChevronUp,
+  HeartHandshake,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -1154,6 +1160,172 @@ function RedemptionsTab() {
   );
 }
 
+/* ---------- Free access tab ---------- */
+
+function FreeAccessTab() {
+  const queryClient = useQueryClient();
+  const { data: comps, isLoading } = useAdminListComps();
+  const grant = useAdminGrantComp();
+  const revoke = useAdminRevokeComp();
+
+  const [email, setEmail] = useState("");
+  const [duration, setDuration] = useState("1");
+
+  function refresh() {
+    void queryClient.invalidateQueries({ queryKey: getAdminListCompsQueryKey() });
+  }
+
+  function handleGrant(e: React.FormEvent) {
+    e.preventDefault();
+    if (!email.trim()) return;
+    const lifetime = duration === "lifetime";
+    grant.mutate(
+      {
+        data: {
+          email: email.trim(),
+          ...(lifetime ? { lifetime: true } : { months: Number(duration) as 1 | 3 | 6 | 12 }),
+        },
+      },
+      {
+        onSuccess: (c) => {
+          toast.success(
+            c.lifetime
+              ? `${c.email ?? "Patient"} now has free access for life`
+              : `${c.email ?? "Patient"} has free access until ${
+                  c.until ? format(new Date(c.until), "MMM d, yyyy") : "—"
+                }`,
+          );
+          setEmail("");
+          refresh();
+        },
+        onError: (err: unknown) => {
+          const status = (err as { response?: { status?: number } })?.response?.status;
+          toast.error(
+            status === 404
+              ? "No account found with that email. The patient must sign up in the app first."
+              : "Couldn't grant free access. Please try again.",
+          );
+        },
+      },
+    );
+  }
+
+  function handleRevoke(c: CompAccess) {
+    revoke.mutate(
+      { userId: c.userId },
+      {
+        onSuccess: () => {
+          toast.success(`Free access removed for ${c.email ?? "patient"}`);
+          refresh();
+        },
+        onError: () => toast.error("Couldn't remove free access. Please try again."),
+      },
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <HeartHandshake className="h-5 w-5 text-primary" /> Give a patient free access
+          </CardTitle>
+          <CardDescription>
+            The patient must already have an account (they can sign up free — no card needed).
+            While free access is active they skip the $4.99/mo membership entirely.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form className="flex flex-col sm:flex-row gap-2" onSubmit={handleGrant}>
+            <Input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="patient@email.com"
+              className="flex-1"
+            />
+            <select
+              value={duration}
+              onChange={(e) => setDuration(e.target.value)}
+              className="h-9 rounded-md border border-input bg-transparent px-3 text-sm"
+            >
+              <option value="1">1 month</option>
+              <option value="3">3 months</option>
+              <option value="6">6 months</option>
+              <option value="12">1 year</option>
+              <option value="lifetime">Lifetime</option>
+            </select>
+            <Button type="submit" disabled={grant.isPending || !email.trim()}>
+              {grant.isPending ? "Granting..." : "Grant free access"}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      {isLoading ? (
+        <p className="text-muted-foreground text-sm">Loading…</p>
+      ) : !comps || comps.length === 0 ? (
+        <Card>
+          <CardContent className="py-8 text-center text-muted-foreground">
+            No patients have free access right now.
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Patients with free access</CardTitle>
+          </CardHeader>
+          <CardContent className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Patient</TableHead>
+                  <TableHead>Free until</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {comps.map((c) => (
+                  <TableRow key={c.userId}>
+                    <TableCell>
+                      <div className="font-medium">{c.firstName ?? "—"}</div>
+                      <div className="text-xs text-muted-foreground">{c.email ?? "—"}</div>
+                    </TableCell>
+                    <TableCell>
+                      {c.lifetime ? (
+                        <Badge variant="secondary" className="bg-emerald-100 text-emerald-800">
+                          Lifetime
+                        </Badge>
+                      ) : c.until ? (
+                        <span className="text-sm whitespace-nowrap">
+                          {format(new Date(c.until), "MMM d, yyyy")}
+                        </span>
+                      ) : (
+                        "—"
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-destructive hover:text-destructive"
+                        disabled={revoke.isPending}
+                        onClick={() => handleRevoke(c)}
+                      >
+                        <Trash2 className="h-4 w-4 mr-1" /> Remove
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
 /* ---------- Page ---------- */
 
 export default function StaffVerify() {
@@ -1195,6 +1367,9 @@ export default function StaffVerify() {
           <TabsTrigger value="redemptions">
             <Search className="h-4 w-4 mr-1" /> Redemptions
           </TabsTrigger>
+          <TabsTrigger value="freeaccess">
+            <HeartHandshake className="h-4 w-4 mr-1" /> Free access
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="verify" className="mt-6">
           <VerifyTab />
@@ -1210,6 +1385,9 @@ export default function StaffVerify() {
         </TabsContent>
         <TabsContent value="redemptions" className="mt-6">
           <RedemptionsTab />
+        </TabsContent>
+        <TabsContent value="freeaccess" className="mt-6">
+          <FreeAccessTab />
         </TabsContent>
       </Tabs>
     </div>

@@ -1117,6 +1117,55 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/AdminRedemption"
+  /admin/comps:
+    get:
+      operationId: adminListComps
+      tags: [admin]
+      summary: List users with complimentary access (staff)
+      responses:
+        "200":
+          description: Comp access list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CompAccess"
+    post:
+      operationId: adminGrantComp
+      tags: [admin]
+      summary: Grant complimentary access to a patient by email (staff)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GrantCompInput"
+      responses:
+        "200":
+          description: Comp access granted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CompAccess"
+        "404":
+          description: No account found with that email
+  /admin/comps/{userId}:
+    delete:
+      operationId: adminRevokeComp
+      tags: [admin]
+      summary: Revoke complimentary access (staff)
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: Comp access revoked
+        "404":
+          description: User not found
   /openai/conversations:
     get:
       operationId: listOpenaiConversations
@@ -1259,6 +1308,33 @@ components:
         cancelAtPeriodEnd:
           type: boolean
           description: True when the subscription is set to cancel at period end
+    CompAccess:
+      type: object
+      required: [userId, email, firstName, lifetime, until]
+      properties:
+        userId: { type: string }
+        email: { type: ["string", "null"] }
+        firstName: { type: ["string", "null"] }
+        lifetime:
+          type: boolean
+          description: True when access is free for life
+        until:
+          type: ["string", "null"]
+          description: ISO timestamp when free access expires (null if lifetime)
+    GrantCompInput:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          description: Email of an existing patient account
+        months:
+          type: integer
+          enum: [1, 3, 6, 12]
+          description: Free months to grant (ignored when lifetime is true)
+        lifetime:
+          type: boolean
+          description: Grant free access for life
     CheckoutSession:
       type: object
       required: [url]

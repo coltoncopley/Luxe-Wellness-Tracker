@@ -53,7 +53,9 @@ router.get("/billing/status", async (_req, res, next): Promise<void> => {
       return;
     }
 
-    if (user.role === "staff") {
+    const hasComp =
+      user.compLifetime || (user.compUntil !== null && user.compUntil > new Date());
+    if (user.role === "staff" || hasComp) {
       res.json(
         GetBillingStatusResponse.parse({
           status: "none",
@@ -116,6 +118,10 @@ router.post("/billing/checkout", async (req, res, next): Promise<void> => {
     }
     if (user.role === "staff") {
       res.status(400).json({ error: "Staff accounts do not need a membership" });
+      return;
+    }
+    if (user.compLifetime || (user.compUntil !== null && user.compUntil > new Date())) {
+      res.status(400).json({ error: "You already have free access — no membership needed" });
       return;
     }
 

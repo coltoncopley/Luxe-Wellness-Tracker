@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { asc, desc, eq } from "drizzle-orm";
+import { asc, desc, eq, gt, or, sql } from "drizzle-orm";
 import {
   db,
   servicesTable,
@@ -24,7 +24,11 @@ import {
   AdminCreateRestaurantResponse,
   AdminCreateMenuItemBody,
   AdminCreateMenuItemResponse,
+  AdminListCompsResponse,
+  AdminGrantCompBody,
+  AdminGrantCompResponse,
 } from "@workspace/api-zod";
+import { clearSubscriptionCache } from "../middlewares/subscription";
 
 const router: IRouter = Router();
 
@@ -242,6 +246,102 @@ router.get("/admin/redemptions", async (_req, res): Promise<void> => {
       })),
     ),
   );
+});
+
+/** Add months to a date, clamping the day-of-month to the target month's last day
+ *  (e.g. Jan 31 + 1 month = Feb 28/29, not Mar 2/3). */
+function addMonthsClamped(from: Date, months: number): Date {
+  const d = new Date(from);
+  const day = d.getDate();
+  d.setDate(1);
+  d.setMonth(d.getMonth() + months);
+  const lastDay = new Date(d.getFullYear(), d.getMonth() + 1, 0).getDate();
+  d.setDate(Math.min(day, lastDay));
+  return d;
+}
+
+function toCompAccess(u: {
+  id: string;
+  email: string | null;
+  firstName: string | null;
+  compLifetime: boolean;
+  compUntil: Date | null;
+}) {
+  return {
+    userId: u.id,
+    email: u.email,
+    firstName: u.firstName,
+    lifetime: u.compLifetime,
+    until: u.compLifetime ? null : (u.compUntil?.toISOString() ?? null),
+  };
+}
+
+router.get("/admin/comps", async (_req, res): Promise<void> => {
+  const rows = await db
+    .select({
+      id: usersTable.id,
+      email: usersTable.email,
+      firstName: usersTable.firstName,
+      compLifetime: usersTable.compLifetime,
+      compUntil: usersTable.compUntil,
+    })
+    .from(usersTable)
+    .where(or(eq(usersTable.compLifetime, true), gt(usersTable.compUntil, new Date())))
+    .orderBy(asc(usersTable.email));
+  res.json(AdminListCompsResponse.parse(rows.map(toCompAccess)));
+});
+
+router.post("/admin/comps", async (req, res): Promise<void> => {
+  const body = AdminGrantCompBody.safeParse(req.body);
+  if (!body.success) {
+    res.status(400).json({ error: body.error.message });
+    return;
+  }
+  const email = body.data.email.trim().toLowerCase();
+  const [user] = await db
+    .select()
+    .from(usersTable)
+    .where(sql`lower(${usersTable.email}) = ${email}`);
+  if (!user) {
+    res.status(404).json({
+      error: "No account found with that email. The patient must sign up first.",
+    });
+    return;
+  }
+
+  const lifetime = body.data.lifetime === true;
+  const months = body.data.months ?? 1;
+  if (!lifetime && ![1, 3, 6, 12].includes(months)) {
+    res.status(400).json({ error: "Months must be 1, 3, 6, or 12" });
+    return;
+  }
+  const until = addMonthsClamped(new Date(), months);
+
+  const [updated] = await db
+    .update(usersTable)
+    .set({
+      compLifetime: lifetime,
+      compUntil: lifetime ? null : until,
+    })
+    .where(eq(usersTable.id, user.id))
+    .returning();
+  clearSubscriptionCache(user.id);
+  res.json(AdminGrantCompResponse.parse(toCompAccess(updated!)));
+});
+
+router.delete("/admin/comps/:userId", async (req, res): Promise<void> => {
+  const userId = req.params.userId;
+  const [updated] = await db
+    .update(usersTable)
+    .set({ compLifetime: false, compUntil: null })
+    .where(eq(usersTable.id, userId))
+    .returning();
+  if (!updated) {
+    res.status(404).json({ error: "User not found" });
+    return;
+  }
+  clearSubscriptionCache(userId);
+  res.status(204).end();
 });
 
 export default router;

@@ -1151,6 +1151,47 @@ export const AdminListRedemptionsResponse = zod.array(AdminListRedemptionsRespon
 
 
 /**
+ * @summary List users with complimentary access (staff)
+ */
+export const AdminListCompsResponseItem = zod.object({
+  "userId": zod.string(),
+  "email": zod.string().nullable(),
+  "firstName": zod.string().nullable(),
+  "lifetime": zod.boolean().describe('True when access is free for life'),
+  "until": zod.string().nullable().describe('ISO timestamp when free access expires (null if lifetime)')
+})
+export const AdminListCompsResponse = zod.array(AdminListCompsResponseItem)
+
+
+/**
+ * @summary Grant complimentary access to a patient by email (staff)
+ */
+export const AdminGrantCompBody = zod.object({
+  "email": zod.string().describe('Email of an existing patient account'),
+  "months": zod.union([zod.literal(1),zod.literal(3),zod.literal(6),zod.literal(12)]).optional().describe('Free months to grant (ignored when lifetime is true)'),
+  "lifetime": zod.boolean().optional().describe('Grant free access for life')
+})
+
+export const AdminGrantCompResponse = zod.object({
+  "userId": zod.string(),
+  "email": zod.string().nullable(),
+  "firstName": zod.string().nullable(),
+  "lifetime": zod.boolean().describe('True when access is free for life'),
+  "until": zod.string().nullable().describe('ISO timestamp when free access expires (null if lifetime)')
+})
+
+
+/**
+ * @summary Revoke complimentary access (staff)
+ */
+export const AdminRevokeCompParams = zod.object({
+  "userId": zod.coerce.string()
+})
+
+export const AdminRevokeCompResponse = zod.void()
+
+
+/**
  * @summary List all conversations
  */
 export const ListOpenaiConversationsResponseItem = zod.object({

@@ -30,6 +30,7 @@ import type {
   CheerList,
   ClaimReferralInput,
   ClaimReferralResult,
+  CompAccess,
   DailySummary,
   DashboardSummary,
   FollowActionResult,
@@ -45,6 +46,7 @@ import type {
   GlowSummary,
   Goal,
   GoalInput,
+  GrantCompInput,
   HealthStatus,
   ListFoodLogsParams,
   ListTipsParams,
@@ -4767,6 +4769,223 @@ export function useAdminListRedemptions<TData = Awaited<ReturnType<typeof adminL
 
 
 
+
+export const getAdminListCompsUrl = () => {
+
+
+
+
+  return `/api/admin/comps`
+}
+
+/**
+ * @summary List users with complimentary access (staff)
+ */
+export const adminListComps = async ( options?: RequestInit): Promise<CompAccess[]> => {
+
+  return customFetch<CompAccess[]>(getAdminListCompsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminListCompsQueryKey = () => {
+    return [
+    `/api/admin/comps`
+    ] as const;
+    }
+
+
+export const getAdminListCompsQueryOptions = <TData = Awaited<ReturnType<typeof adminListComps>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListComps>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminListCompsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminListComps>>> = ({ signal }) => adminListComps({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminListComps>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminListCompsQueryResult = NonNullable<Awaited<ReturnType<typeof adminListComps>>>
+export type AdminListCompsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List users with complimentary access (staff)
+ */
+
+export function useAdminListComps<TData = Awaited<ReturnType<typeof adminListComps>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListComps>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminListCompsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAdminGrantCompUrl = () => {
+
+
+
+
+  return `/api/admin/comps`
+}
+
+/**
+ * @summary Grant complimentary access to a patient by email (staff)
+ */
+export const adminGrantComp = async (grantCompInput: GrantCompInput, options?: RequestInit): Promise<CompAccess> => {
+
+  return customFetch<CompAccess>(getAdminGrantCompUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(grantCompInput)
+  }
+);}
+
+
+
+
+export const getAdminGrantCompMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminGrantComp>>, TError,{data: BodyType<GrantCompInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminGrantComp>>, TError,{data: BodyType<GrantCompInput>}, TContext> => {
+
+const mutationKey = ['adminGrantComp'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminGrantComp>>, {data: BodyType<GrantCompInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  adminGrantComp(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminGrantCompMutationResult = NonNullable<Awaited<ReturnType<typeof adminGrantComp>>>
+    export type AdminGrantCompMutationBody = BodyType<GrantCompInput>
+    export type AdminGrantCompMutationError = ErrorType<void>
+
+    /**
+ * @summary Grant complimentary access to a patient by email (staff)
+ */
+export const useAdminGrantComp = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminGrantComp>>, TError,{data: BodyType<GrantCompInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminGrantComp>>,
+        TError,
+        {data: BodyType<GrantCompInput>},
+        TContext
+      > => {
+      return useMutation(getAdminGrantCompMutationOptions(options));
+    }
+
+export const getAdminRevokeCompUrl = (userId: string,) => {
+
+
+
+
+  return `/api/admin/comps/${userId}`
+}
+
+/**
+ * @summary Revoke complimentary access (staff)
+ */
+export const adminRevokeComp = async (userId: string, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getAdminRevokeCompUrl(userId),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getAdminRevokeCompMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminRevokeComp>>, TError,{userId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminRevokeComp>>, TError,{userId: string}, TContext> => {
+
+const mutationKey = ['adminRevokeComp'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminRevokeComp>>, {userId: string}> = (props) => {
+          const {userId} = props ?? {};
+
+          return  adminRevokeComp(userId,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminRevokeCompMutationResult = NonNullable<Awaited<ReturnType<typeof adminRevokeComp>>>
+
+    export type AdminRevokeCompMutationError = ErrorType<void>
+
+    /**
+ * @summary Revoke complimentary access (staff)
+ */
+export const useAdminRevokeComp = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminRevokeComp>>, TError,{userId: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminRevokeComp>>,
+        TError,
+        {userId: string},
+        TContext
+      > => {
+      return useMutation(getAdminRevokeCompMutationOptions(options));
+    }
 
 export const getListOpenaiConversationsUrl = () => {
 
