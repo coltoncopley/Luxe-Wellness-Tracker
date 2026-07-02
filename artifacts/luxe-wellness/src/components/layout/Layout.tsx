@@ -38,7 +38,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { href: "/food", label: "Food Log", icon: Utensils },
     { href: "/restaurants", label: "Restaurants", icon: MapPin },
     { href: "/glow", label: "Glow Score", icon: Sun },
-    { href: "/bhrt", label: "BHRT", icon: HeartPulse },
+    { href: "/bhrt", label: "Hormone Replacement", icon: HeartPulse },
     { href: "/rewards", label: "Rewards", icon: Gift },
     { href: "/luxe-ai", label: "Luxe AI", icon: Sparkles },
     ...(isStaff ? [{ href: "/staff", label: "Staff Portal", icon: BadgeCheck }] : []),
