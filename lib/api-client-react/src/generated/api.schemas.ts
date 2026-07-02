@@ -298,6 +298,63 @@ export interface OpenaiError {
   error: string;
 }
 
+export interface MealPhotoAnalysisInput {
+  /** Data URL (data:image/jpeg;base64,...) of the meal photo */
+  imageDataUrl: string;
+}
+
+export type MealPhotoAnalysisConfidence = typeof MealPhotoAnalysisConfidence[keyof typeof MealPhotoAnalysisConfidence];
+
+
+export const MealPhotoAnalysisConfidence = {
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
+} as const;
+
+export interface MealPhotoAnalysis {
+  name: string;
+  calories: number;
+  proteinG: number;
+  carbsG: number;
+  fatG: number;
+  confidence: MealPhotoAnalysisConfidence;
+  notes: string;
+}
+
+export interface RewardEvent {
+  id: number;
+  date: string;
+  type: string;
+  points: number;
+  description: string;
+  createdAt: string;
+}
+
+export interface RewardCatalogItem {
+  id: string;
+  title: string;
+  description: string;
+  points: number;
+}
+
+export interface RewardsSummary {
+  balance: number;
+  totalEarned: number;
+  history: RewardEvent[];
+  catalog: RewardCatalogItem[];
+}
+
+export interface RedeemRewardInput {
+  rewardId: string;
+}
+
+export interface RedemptionResult {
+  code: string;
+  reward: RewardCatalogItem;
+  balance: number;
+}
+
 export type SearchMenuItemsParams = {
 q: string;
 };

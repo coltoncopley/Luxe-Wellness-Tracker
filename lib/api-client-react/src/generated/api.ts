@@ -36,6 +36,8 @@ import type {
   HealthStatus,
   ListFoodLogsParams,
   ListTipsParams,
+  MealPhotoAnalysis,
+  MealPhotoAnalysisInput,
   Measurement,
   MeasurementInput,
   MenuItem,
@@ -45,7 +47,10 @@ import type {
   OpenaiError,
   OpenaiMessage,
   OpenaiMessageInput,
+  RedeemRewardInput,
+  RedemptionResult,
   Restaurant,
+  RewardsSummary,
   SearchMenuItemsParams,
   Service,
   StaffMember,
@@ -2266,6 +2271,223 @@ export const useUpsertGlowCheckin = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getUpsertGlowCheckinMutationOptions(options));
+    }
+
+export const getAnalyzeMealPhotoUrl = () => {
+
+
+
+
+  return `/api/food/analyze-photo`
+}
+
+/**
+ * @summary Analyze a meal photo with AI and estimate calories and macros
+ */
+export const analyzeMealPhoto = async (mealPhotoAnalysisInput: MealPhotoAnalysisInput, options?: RequestInit): Promise<MealPhotoAnalysis> => {
+
+  return customFetch<MealPhotoAnalysis>(getAnalyzeMealPhotoUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(mealPhotoAnalysisInput)
+  }
+);}
+
+
+
+
+export const getAnalyzeMealPhotoMutationOptions = <TError = ErrorType<OpenaiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof analyzeMealPhoto>>, TError,{data: BodyType<MealPhotoAnalysisInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof analyzeMealPhoto>>, TError,{data: BodyType<MealPhotoAnalysisInput>}, TContext> => {
+
+const mutationKey = ['analyzeMealPhoto'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof analyzeMealPhoto>>, {data: BodyType<MealPhotoAnalysisInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  analyzeMealPhoto(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AnalyzeMealPhotoMutationResult = NonNullable<Awaited<ReturnType<typeof analyzeMealPhoto>>>
+    export type AnalyzeMealPhotoMutationBody = BodyType<MealPhotoAnalysisInput>
+    export type AnalyzeMealPhotoMutationError = ErrorType<OpenaiError>
+
+    /**
+ * @summary Analyze a meal photo with AI and estimate calories and macros
+ */
+export const useAnalyzeMealPhoto = <TError = ErrorType<OpenaiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof analyzeMealPhoto>>, TError,{data: BodyType<MealPhotoAnalysisInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof analyzeMealPhoto>>,
+        TError,
+        {data: BodyType<MealPhotoAnalysisInput>},
+        TContext
+      > => {
+      return useMutation(getAnalyzeMealPhotoMutationOptions(options));
+    }
+
+export const getGetRewardsSummaryUrl = () => {
+
+
+
+
+  return `/api/rewards/summary`
+}
+
+/**
+ * @summary Points balance, earning history, and reward catalog
+ */
+export const getRewardsSummary = async ( options?: RequestInit): Promise<RewardsSummary> => {
+
+  return customFetch<RewardsSummary>(getGetRewardsSummaryUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetRewardsSummaryQueryKey = () => {
+    return [
+    `/api/rewards/summary`
+    ] as const;
+    }
+
+
+export const getGetRewardsSummaryQueryOptions = <TData = Awaited<ReturnType<typeof getRewardsSummary>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRewardsSummary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetRewardsSummaryQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getRewardsSummary>>> = ({ signal }) => getRewardsSummary({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getRewardsSummary>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetRewardsSummaryQueryResult = NonNullable<Awaited<ReturnType<typeof getRewardsSummary>>>
+export type GetRewardsSummaryQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Points balance, earning history, and reward catalog
+ */
+
+export function useGetRewardsSummary<TData = Awaited<ReturnType<typeof getRewardsSummary>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRewardsSummary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetRewardsSummaryQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getRedeemRewardUrl = () => {
+
+
+
+
+  return `/api/rewards/redeem`
+}
+
+/**
+ * @summary Redeem points for a reward
+ */
+export const redeemReward = async (redeemRewardInput: RedeemRewardInput, options?: RequestInit): Promise<RedemptionResult> => {
+
+  return customFetch<RedemptionResult>(getRedeemRewardUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(redeemRewardInput)
+  }
+);}
+
+
+
+
+export const getRedeemRewardMutationOptions = <TError = ErrorType<OpenaiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof redeemReward>>, TError,{data: BodyType<RedeemRewardInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof redeemReward>>, TError,{data: BodyType<RedeemRewardInput>}, TContext> => {
+
+const mutationKey = ['redeemReward'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof redeemReward>>, {data: BodyType<RedeemRewardInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  redeemReward(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RedeemRewardMutationResult = NonNullable<Awaited<ReturnType<typeof redeemReward>>>
+    export type RedeemRewardMutationBody = BodyType<RedeemRewardInput>
+    export type RedeemRewardMutationError = ErrorType<OpenaiError>
+
+    /**
+ * @summary Redeem points for a reward
+ */
+export const useRedeemReward = <TError = ErrorType<OpenaiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof redeemReward>>, TError,{data: BodyType<RedeemRewardInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof redeemReward>>,
+        TError,
+        {data: BodyType<RedeemRewardInput>},
+        TContext
+      > => {
+      return useMutation(getRedeemRewardMutationOptions(options));
     }
 
 export const getListOpenaiConversationsUrl = () => {

@@ -530,6 +530,66 @@ export const UpsertGlowCheckinResponse = zod.object({
 
 
 /**
+ * @summary Analyze a meal photo with AI and estimate calories and macros
+ */
+export const AnalyzeMealPhotoBody = zod.object({
+  "imageDataUrl": zod.string().describe('Data URL (data:image\/jpeg;base64,...) of the meal photo')
+})
+
+export const AnalyzeMealPhotoResponse = zod.object({
+  "name": zod.string(),
+  "calories": zod.number(),
+  "proteinG": zod.number(),
+  "carbsG": zod.number(),
+  "fatG": zod.number(),
+  "confidence": zod.enum(['low', 'medium', 'high']),
+  "notes": zod.string()
+})
+
+
+/**
+ * @summary Points balance, earning history, and reward catalog
+ */
+export const GetRewardsSummaryResponse = zod.object({
+  "balance": zod.number(),
+  "totalEarned": zod.number(),
+  "history": zod.array(zod.object({
+  "id": zod.number(),
+  "date": zod.string(),
+  "type": zod.string(),
+  "points": zod.number(),
+  "description": zod.string(),
+  "createdAt": zod.coerce.date()
+})),
+  "catalog": zod.array(zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "points": zod.number()
+}))
+})
+
+
+/**
+ * @summary Redeem points for a reward
+ */
+export const RedeemRewardBody = zod.object({
+  "rewardId": zod.string()
+})
+
+export const RedeemRewardResponse = zod.object({
+  "code": zod.string(),
+  "reward": zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "points": zod.number()
+}),
+  "balance": zod.number()
+})
+
+
+/**
  * @summary List all conversations
  */
 export const ListOpenaiConversationsResponseItem = zod.object({

@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "sJscGYG0bTqmu-VWlL30y"
+uri = "file://attached_assets/stock_images/test_meal_photo.jpg"
+type = "image"
+title = "grilled chicken salad meal on a plate"

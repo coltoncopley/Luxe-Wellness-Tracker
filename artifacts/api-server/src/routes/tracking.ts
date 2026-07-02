@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { eq, asc } from "drizzle-orm";
 import { db, weightEntriesTable, measurementsTable, goalsTable } from "@workspace/db";
+import { awardOncePerDay, POINTS } from "../lib/rewards";
 import {
   ListWeightEntriesResponse,
   CreateWeightEntryBody,
@@ -30,6 +31,7 @@ router.post("/weight-entries", async (req, res): Promise<void> => {
     return;
   }
   const [row] = await db.insert(weightEntriesTable).values(parsed.data).returning();
+  await awardOncePerDay("weight_entry", row.date, POINTS.weightEntry, "Daily weigh-in");
   res.status(201).json(CreateWeightEntryResponse.parse(row));
 });
 

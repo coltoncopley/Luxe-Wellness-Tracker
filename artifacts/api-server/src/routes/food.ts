@@ -1,7 +1,12 @@
 import { Router, type IRouter } from "express";
 import { eq, asc, ilike, and, desc } from "drizzle-orm";
 import { db, restaurantsTable, menuItemsTable, foodLogsTable, goalsTable } from "@workspace/db";
+import { openai } from "@workspace/integrations-openai-ai-server";
+import { z } from "zod/v4";
+import { awardWithDailyCap, POINTS, FOOD_LOG_DAILY_CAP } from "../lib/rewards";
 import {
+  AnalyzeMealPhotoBody,
+  AnalyzeMealPhotoResponse,
   ListRestaurantsResponse,
   ListMenuItemsParams,
   ListMenuItemsResponse,
@@ -112,7 +117,91 @@ router.post("/food-logs", async (req, res): Promise<void> => {
     return;
   }
   const [row] = await db.insert(foodLogsTable).values(parsed.data).returning();
+  await awardWithDailyCap(
+    "food_log",
+    row.date,
+    POINTS.foodLog,
+    `Logged ${row.foodName}`,
+    FOOD_LOG_DAILY_CAP,
+  );
   res.status(201).json(CreateFoodLogResponse.parse(row));
+});
+
+const mealEstimateSchema = z.object({
+  isFood: z.boolean(),
+  name: z.string(),
+  calories: z.number(),
+  proteinG: z.number(),
+  carbsG: z.number(),
+  fatG: z.number(),
+  confidence: z.enum(["low", "medium", "high"]),
+  notes: z.string(),
+});
+
+router.post("/food/analyze-photo", async (req, res): Promise<void> => {
+  const body = AnalyzeMealPhotoBody.safeParse(req.body);
+  if (!body.success) {
+    res.status(400).json({ error: body.error.message });
+    return;
+  }
+  if (!/^data:image\/(jpeg|jpg|png|webp);base64,/.test(body.data.imageDataUrl)) {
+    res.status(400).json({ error: "imageDataUrl must be a base64 JPEG, PNG, or WebP data URL" });
+    return;
+  }
+
+  const completion = await openai.chat.completions.create({
+    model: "gpt-5.4",
+    messages: [
+      {
+        role: "system",
+        content:
+          "You are a nutrition estimation assistant for a med spa patient app. " +
+          "Analyze the meal photo and estimate total nutrition for the full visible portion. " +
+          "Respond ONLY with JSON matching this shape: " +
+          '{"isFood": boolean, "name": string, "calories": number, "proteinG": number, "carbsG": number, "fatG": number, "confidence": "low"|"medium"|"high", "notes": string}. ' +
+          "If the image does not contain food or drink, set isFood to false. " +
+          "Keep name short (e.g. 'Grilled chicken salad'). In notes, give one brief GLP-1-friendly observation (e.g. protein content, portion tip).",
+      },
+      {
+        role: "user",
+        content: [
+          { type: "text", text: "Estimate the nutrition in this meal photo." },
+          { type: "image_url", image_url: { url: body.data.imageDataUrl } },
+        ],
+      },
+    ],
+    response_format: { type: "json_object" },
+  });
+
+  const raw = completion.choices[0]?.message?.content;
+  if (!raw) {
+    res.status(422).json({ error: "The photo could not be analyzed. Please try again." });
+    return;
+  }
+  let estimate: z.infer<typeof mealEstimateSchema>;
+  try {
+    estimate = mealEstimateSchema.parse(JSON.parse(raw));
+  } catch {
+    req.log.warn({ raw }, "Unparseable meal estimate from model");
+    res.status(422).json({ error: "The photo could not be analyzed. Please try again." });
+    return;
+  }
+  if (!estimate.isFood) {
+    res.status(422).json({ error: "That doesn't look like food. Try a clearer photo of your meal." });
+    return;
+  }
+
+  res.json(
+    AnalyzeMealPhotoResponse.parse({
+      name: estimate.name,
+      calories: Math.max(0, Math.round(estimate.calories)),
+      proteinG: Math.max(0, Math.round(estimate.proteinG * 10) / 10),
+      carbsG: Math.max(0, Math.round(estimate.carbsG * 10) / 10),
+      fatG: Math.max(0, Math.round(estimate.fatG * 10) / 10),
+      confidence: estimate.confidence,
+      notes: estimate.notes,
+    }),
+  );
 });
 
 router.delete("/food-logs/:id", async (req, res): Promise<void> => {

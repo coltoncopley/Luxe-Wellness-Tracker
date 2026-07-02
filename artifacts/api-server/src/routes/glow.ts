@@ -1,6 +1,7 @@
 import { Router, type IRouter } from "express";
 import { desc } from "drizzle-orm";
 import { db, glowCheckinsTable, type GlowCheckin } from "@workspace/db";
+import { awardOncePerDay, awardStreakMilestone, POINTS } from "../lib/rewards";
 import {
   UpsertGlowCheckinBody,
   UpsertGlowCheckinResponse,
@@ -107,6 +108,30 @@ router.put("/glow/checkin", async (req, res): Promise<void> => {
       set: fields,
     })
     .returning();
+
+  await awardOncePerDay(
+    "glow_checkin",
+    targetDate,
+    POINTS.glowCheckin,
+    "Daily Glow check-in",
+  );
+
+  const allRows = await db.select({ date: glowCheckinsTable.date }).from(glowCheckinsTable);
+  const dateSet = new Set(allRows.map((r) => r.date));
+  let streak = 0;
+  const cursor = new Date();
+  if (!dateSet.has(todayString())) cursor.setDate(cursor.getDate() - 1);
+  for (;;) {
+    const y = cursor.getFullYear();
+    const m = String(cursor.getMonth() + 1).padStart(2, "0");
+    const d = String(cursor.getDate()).padStart(2, "0");
+    if (!dateSet.has(`${y}-${m}-${d}`)) break;
+    streak += 1;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  for (let milestone = 7; milestone <= streak; milestone += 7) {
+    await awardStreakMilestone(milestone, todayString(), POINTS.streakBonus);
+  }
 
   res.json(UpsertGlowCheckinResponse.parse(withScore(row)));
 });

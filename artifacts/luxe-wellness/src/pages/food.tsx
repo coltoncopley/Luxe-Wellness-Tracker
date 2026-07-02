@@ -15,6 +15,7 @@ import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
 import { Utensils, Flame, Trash2, Plus, ChevronLeft, ChevronRight, Search, CheckCircle2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MealScanner } from "@/components/meal-scanner";
 
 export default function Food() {
   const queryClient = useQueryClient();
@@ -182,8 +183,29 @@ export default function Food() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-6">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <h2 className="text-2xl font-serif text-primary">Meals</h2>
+            <div className="flex gap-2">
+            <MealScanner
+              isLogging={createLog.isPending}
+              onLog={(analysis, mealType) => {
+                createLog.mutate({ data: {
+                  date: selectedDate,
+                  mealType,
+                  foodName: analysis.name,
+                  calories: analysis.calories,
+                  proteinG: analysis.proteinG,
+                  carbsG: analysis.carbsG,
+                  fatG: analysis.fatG
+                }}, {
+                  onSuccess: () => {
+                    toast.success(`Logged ${analysis.name}`);
+                    queryClient.invalidateQueries({ queryKey: getListFoodLogsQueryKey({ date: selectedDate }) });
+                    queryClient.invalidateQueries({ queryKey: getGetDailySummaryQueryKey({ date: selectedDate }) });
+                  }
+                });
+              }}
+            />
             <Dialog open={isAddOpen} onOpenChange={setIsAddOpen}>
               <DialogTrigger asChild>
                 <Button className="rounded-full shadow-md">
@@ -237,6 +259,7 @@ export default function Food() {
                 </form>
               </DialogContent>
             </Dialog>
+            </div>
           </div>
 
           {isLoadingLogs ? (
