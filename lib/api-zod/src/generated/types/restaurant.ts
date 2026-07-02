@@ -6,6 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface HealthStatus {
-  status: string;
+export interface Restaurant {
+  id: number;
+  name: string;
+  cuisine: string;
+  /** @nullable */
+  description?: string | null;
 }

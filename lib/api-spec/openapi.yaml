@@ -10,6 +10,18 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: services
+    description: Med spa services and staff
+  - name: appointments
+    description: Patient appointment tracking
+  - name: weight
+    description: Weight and measurement tracking
+  - name: food
+    description: Food and calorie tracking
+  - name: tips
+    description: Wellness tips
+  - name: dashboard
+    description: Dashboard summaries
 paths:
   /healthz:
     get:
@@ -24,6 +36,420 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /services:
+    get:
+      operationId: listServices
+      tags: [services]
+      summary: List all med spa services
+      responses:
+        "200":
+          description: Services
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Service"
+  /staff:
+    get:
+      operationId: listStaff
+      tags: [services]
+      summary: List staff members
+      responses:
+        "200":
+          description: Staff
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StaffMember"
+  /appointments:
+    get:
+      operationId: listAppointments
+      tags: [appointments]
+      summary: List tracked appointments
+      responses:
+        "200":
+          description: Appointments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Appointment"
+    post:
+      operationId: createAppointment
+      tags: [appointments]
+      summary: Track a new appointment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AppointmentInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Appointment"
+  /appointments/{id}:
+    patch:
+      operationId: updateAppointment
+      tags: [appointments]
+      summary: Update an appointment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AppointmentUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Appointment"
+    delete:
+      operationId: deleteAppointment
+      tags: [appointments]
+      summary: Delete an appointment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+  /weight-entries:
+    get:
+      operationId: listWeightEntries
+      tags: [weight]
+      summary: List weight entries ordered by date
+      responses:
+        "200":
+          description: Weight entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WeightEntry"
+    post:
+      operationId: createWeightEntry
+      tags: [weight]
+      summary: Log a weight entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WeightEntryInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WeightEntry"
+  /weight-entries/{id}:
+    delete:
+      operationId: deleteWeightEntry
+      tags: [weight]
+      summary: Delete a weight entry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+  /measurements:
+    get:
+      operationId: listMeasurements
+      tags: [weight]
+      summary: List body area measurements
+      responses:
+        "200":
+          description: Measurements
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Measurement"
+    post:
+      operationId: createMeasurement
+      tags: [weight]
+      summary: Log a body area measurement
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MeasurementInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Measurement"
+  /measurements/{id}:
+    delete:
+      operationId: deleteMeasurement
+      tags: [weight]
+      summary: Delete a measurement
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+  /goal:
+    get:
+      operationId: getGoal
+      tags: [weight]
+      summary: Get the active weight goal
+      responses:
+        "200":
+          description: Goal (may be empty object defaults)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Goal"
+    put:
+      operationId: setGoal
+      tags: [weight]
+      summary: Set or update the weight goal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GoalInput"
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Goal"
+  /weight/progress:
+    get:
+      operationId: getWeightProgress
+      tags: [weight]
+      summary: Weight progress summary (start, current, change, goal, pct to goal)
+      responses:
+        "200":
+          description: Progress summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WeightProgress"
+  /restaurants:
+    get:
+      operationId: listRestaurants
+      tags: [food]
+      summary: List restaurants with calorie data
+      responses:
+        "200":
+          description: Restaurants
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Restaurant"
+  /restaurants/{id}/menu-items:
+    get:
+      operationId: listMenuItems
+      tags: [food]
+      summary: List menu items for a restaurant
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Menu items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MenuItem"
+  /restaurants/{id}/healthy-picks:
+    get:
+      operationId: listHealthyPicks
+      tags: [food]
+      summary: Best menu items to order for healthy living at this restaurant
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Healthy picks
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MenuItem"
+  /menu-items/search:
+    get:
+      operationId: searchMenuItems
+      tags: [food]
+      summary: Search menu items across all restaurants
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Matching menu items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MenuItem"
+  /food-logs:
+    get:
+      operationId: listFoodLogs
+      tags: [food]
+      summary: List food log entries, optionally by date (YYYY-MM-DD)
+      parameters:
+        - name: date
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Food logs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FoodLog"
+    post:
+      operationId: createFoodLog
+      tags: [food]
+      summary: Log a food entry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/FoodLogInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FoodLog"
+  /food-logs/{id}:
+    delete:
+      operationId: deleteFoodLog
+      tags: [food]
+      summary: Delete a food log entry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+  /food-logs/daily-summary:
+    get:
+      operationId: getDailySummary
+      tags: [food]
+      summary: Daily nutrition totals for a date (YYYY-MM-DD)
+      parameters:
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Daily totals
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DailySummary"
+  /tips:
+    get:
+      operationId: listTips
+      tags: [tips]
+      summary: List wellness tips, optionally by category
+      parameters:
+        - name: category
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Tips
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/WellnessTip"
+  /tips/daily:
+    get:
+      operationId: getDailyTip
+      tags: [tips]
+      summary: Tip of the day
+      responses:
+        "200":
+          description: Tip of the day
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WellnessTip"
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Dashboard overview (weight, calories today, next appointment, streak)
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
 components:
   schemas:
     HealthStatus:
@@ -33,4 +459,193 @@ components:
           type: string
       required:
         - status
-
+    Service:
+      type: object
+      required: [id, name, category, description, bookingUrl]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        category: { type: string }
+        description: { type: string }
+        durationMinutes: { type: ["integer", "null"] }
+        priceText: { type: ["string", "null"] }
+        bookingUrl: { type: string }
+    StaffMember:
+      type: object
+      required: [id, name, title, bio, bookingUrl]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        title: { type: string }
+        bio: { type: string }
+        photoUrl: { type: ["string", "null"] }
+        bookingUrl: { type: string }
+    Appointment:
+      type: object
+      required: [id, serviceName, date, status]
+      properties:
+        id: { type: integer }
+        serviceName: { type: string }
+        providerName: { type: ["string", "null"] }
+        date: { type: string }
+        time: { type: ["string", "null"] }
+        notes: { type: ["string", "null"] }
+        status: { type: string }
+    AppointmentInput:
+      type: object
+      required: [serviceName, date]
+      properties:
+        serviceName: { type: string, minLength: 1 }
+        providerName: { type: string }
+        date: { type: string }
+        time: { type: string }
+        notes: { type: string }
+        status: { type: string }
+    AppointmentUpdate:
+      type: object
+      properties:
+        serviceName: { type: string, minLength: 1 }
+        providerName: { type: string }
+        date: { type: string }
+        time: { type: string }
+        notes: { type: string }
+        status: { type: string }
+    WeightEntry:
+      type: object
+      required: [id, date, weightLbs]
+      properties:
+        id: { type: integer }
+        date: { type: string }
+        weightLbs: { type: number }
+        note: { type: ["string", "null"] }
+    WeightEntryInput:
+      type: object
+      required: [date, weightLbs]
+      properties:
+        date: { type: string }
+        weightLbs: { type: number }
+        note: { type: string }
+    Measurement:
+      type: object
+      required: [id, date, area, valueInches]
+      properties:
+        id: { type: integer }
+        date: { type: string }
+        area: { type: string }
+        valueInches: { type: number }
+    MeasurementInput:
+      type: object
+      required: [date, area, valueInches]
+      properties:
+        date: { type: string }
+        area: { type: string, minLength: 1 }
+        valueInches: { type: number }
+    Goal:
+      type: object
+      required: [id]
+      properties:
+        id: { type: integer }
+        startWeightLbs: { type: ["number", "null"] }
+        goalWeightLbs: { type: ["number", "null"] }
+        targetDate: { type: ["string", "null"] }
+        dailyCalorieTarget: { type: ["integer", "null"] }
+    GoalInput:
+      type: object
+      properties:
+        startWeightLbs: { type: number }
+        goalWeightLbs: { type: number }
+        targetDate: { type: string }
+        dailyCalorieTarget: { type: integer }
+    WeightProgress:
+      type: object
+      required: [entries]
+      properties:
+        startWeightLbs: { type: ["number", "null"] }
+        currentWeightLbs: { type: ["number", "null"] }
+        goalWeightLbs: { type: ["number", "null"] }
+        totalChangeLbs: { type: ["number", "null"] }
+        percentToGoal: { type: ["number", "null"] }
+        entries:
+          type: array
+          items:
+            $ref: "#/components/schemas/WeightEntry"
+    Restaurant:
+      type: object
+      required: [id, name, cuisine]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        cuisine: { type: string }
+        description: { type: ["string", "null"] }
+    MenuItem:
+      type: object
+      required: [id, restaurantId, restaurantName, name, calories, isHealthyPick]
+      properties:
+        id: { type: integer }
+        restaurantId: { type: integer }
+        restaurantName: { type: string }
+        name: { type: string }
+        calories: { type: integer }
+        proteinG: { type: ["number", "null"] }
+        carbsG: { type: ["number", "null"] }
+        fatG: { type: ["number", "null"] }
+        isHealthyPick: { type: boolean }
+        orderingTip: { type: ["string", "null"] }
+    FoodLog:
+      type: object
+      required: [id, date, mealType, foodName, calories]
+      properties:
+        id: { type: integer }
+        date: { type: string }
+        mealType: { type: string }
+        foodName: { type: string }
+        restaurantName: { type: ["string", "null"] }
+        calories: { type: integer }
+        proteinG: { type: ["number", "null"] }
+        carbsG: { type: ["number", "null"] }
+        fatG: { type: ["number", "null"] }
+    FoodLogInput:
+      type: object
+      required: [date, mealType, foodName, calories]
+      properties:
+        date: { type: string }
+        mealType: { type: string, minLength: 1 }
+        foodName: { type: string, minLength: 1 }
+        restaurantName: { type: string }
+        calories: { type: integer }
+        proteinG: { type: number }
+        carbsG: { type: number }
+        fatG: { type: number }
+    DailySummary:
+      type: object
+      required: [date, totalCalories, totalProteinG, totalCarbsG, totalFatG, mealCount]
+      properties:
+        date: { type: string }
+        totalCalories: { type: integer }
+        totalProteinG: { type: number }
+        totalCarbsG: { type: number }
+        totalFatG: { type: number }
+        mealCount: { type: integer }
+        calorieTarget: { type: ["integer", "null"] }
+    WellnessTip:
+      type: object
+      required: [id, category, title, content]
+      properties:
+        id: { type: integer }
+        category: { type: string }
+        title: { type: string }
+        content: { type: string }
+    DashboardSummary:
+      type: object
+      required: [caloriesToday, loggingStreakDays]
+      properties:
+        currentWeightLbs: { type: ["number", "null"] }
+        weightChangeLbs: { type: ["number", "null"] }
+        goalWeightLbs: { type: ["number", "null"] }
+        caloriesToday: { type: integer }
+        calorieTarget: { type: ["integer", "null"] }
+        loggingStreakDays: { type: integer }
+        nextAppointment:
+          oneOf:
+            - $ref: "#/components/schemas/Appointment"
+            - type: "null"

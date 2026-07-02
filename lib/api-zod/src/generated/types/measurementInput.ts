@@ -6,6 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface HealthStatus {
-  status: string;
+export interface MeasurementInput {
+  date: string;
+  /** @minLength 1 */
+  area: string;
+  valueInches: number;
 }

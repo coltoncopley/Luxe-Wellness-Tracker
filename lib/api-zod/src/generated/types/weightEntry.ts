@@ -6,6 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface HealthStatus {
-  status: string;
+export interface WeightEntry {
+  id: number;
+  date: string;
+  weightLbs: number;
+  /** @nullable */
+  note?: string | null;
 }
