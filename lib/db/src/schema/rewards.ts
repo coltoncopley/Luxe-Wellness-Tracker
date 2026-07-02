@@ -12,6 +12,17 @@ export const rewardEventsTable = pgTable("reward_events", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const redemptionsTable = pgTable("redemptions", {
+  id: serial("id").primaryKey(),
+  code: text("code").notNull().unique(),
+  rewardId: text("reward_id").notNull(),
+  title: text("title").notNull(),
+  points: integer("points").notNull(),
+  date: date("date", { mode: "string" }).notNull(),
+  usedAt: timestamp("used_at", { withTimezone: true }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const insertRewardEventSchema = createInsertSchema(rewardEventsTable).omit({
   id: true,
   createdAt: true,
@@ -19,3 +30,4 @@ export const insertRewardEventSchema = createInsertSchema(rewardEventsTable).omi
 
 export type RewardEvent = typeof rewardEventsTable.$inferSelect;
 export type InsertRewardEvent = z.infer<typeof insertRewardEventSchema>;
+export type Redemption = typeof redemptionsTable.$inferSelect;

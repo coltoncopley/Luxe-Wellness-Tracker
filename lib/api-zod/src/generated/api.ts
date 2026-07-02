@@ -590,6 +590,40 @@ export const RedeemRewardResponse = zod.object({
 
 
 /**
+ * @summary Look up a redemption by its code (staff verification)
+ */
+export const LookupRedemptionParams = zod.object({
+  "code": zod.coerce.string()
+})
+
+export const LookupRedemptionResponse = zod.object({
+  "code": zod.string(),
+  "rewardId": zod.string(),
+  "title": zod.string(),
+  "points": zod.number(),
+  "date": zod.string(),
+  "usedAt": zod.string().nullable()
+})
+
+
+/**
+ * @summary Mark a redemption code as used (staff)
+ */
+export const MarkRedemptionUsedParams = zod.object({
+  "code": zod.coerce.string()
+})
+
+export const MarkRedemptionUsedResponse = zod.object({
+  "code": zod.string(),
+  "rewardId": zod.string(),
+  "title": zod.string(),
+  "points": zod.number(),
+  "date": zod.string(),
+  "usedAt": zod.string().nullable()
+})
+
+
+/**
  * @summary List all conversations
  */
 export const ListOpenaiConversationsResponseItem = zod.object({

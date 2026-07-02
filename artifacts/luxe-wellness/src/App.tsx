@@ -12,6 +12,7 @@ import Restaurants from "@/pages/restaurants";
 import LuxeAI from "@/pages/luxe-ai";
 import Glow from "@/pages/glow";
 import Rewards from "@/pages/rewards";
+import StaffVerify from "@/pages/staff-verify";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ function Router() {
         <Route path="/luxe-ai" component={LuxeAI} />
         <Route path="/glow" component={Glow} />
         <Route path="/rewards" component={Rewards} />
+        <Route path="/staff" component={StaffVerify} />
         <Route component={NotFound} />
       </Switch>
     </Layout>

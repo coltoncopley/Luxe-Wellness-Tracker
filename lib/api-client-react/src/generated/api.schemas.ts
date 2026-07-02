@@ -355,6 +355,15 @@ export interface RedemptionResult {
   balance: number;
 }
 
+export interface RedemptionDetail {
+  code: string;
+  rewardId: string;
+  title: string;
+  points: number;
+  date: string;
+  usedAt: string | null;
+}
+
 export type SearchMenuItemsParams = {
 q: string;
 };

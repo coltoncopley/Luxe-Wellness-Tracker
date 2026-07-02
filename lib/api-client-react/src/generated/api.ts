@@ -48,6 +48,7 @@ import type {
   OpenaiMessage,
   OpenaiMessageInput,
   RedeemRewardInput,
+  RedemptionDetail,
   RedemptionResult,
   Restaurant,
   RewardsSummary,
@@ -2488,6 +2489,153 @@ export const useRedeemReward = <TError = ErrorType<OpenaiError>,
         TContext
       > => {
       return useMutation(getRedeemRewardMutationOptions(options));
+    }
+
+export const getLookupRedemptionUrl = (code: string,) => {
+
+
+
+
+  return `/api/rewards/redemptions/${code}`
+}
+
+/**
+ * @summary Look up a redemption by its code (staff verification)
+ */
+export const lookupRedemption = async (code: string, options?: RequestInit): Promise<RedemptionDetail> => {
+
+  return customFetch<RedemptionDetail>(getLookupRedemptionUrl(code),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getLookupRedemptionQueryKey = (code: string,) => {
+    return [
+    `/api/rewards/redemptions/${code}`
+    ] as const;
+    }
+
+
+export const getLookupRedemptionQueryOptions = <TData = Awaited<ReturnType<typeof lookupRedemption>>, TError = ErrorType<OpenaiError>>(code: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof lookupRedemption>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getLookupRedemptionQueryKey(code);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof lookupRedemption>>> = ({ signal }) => lookupRedemption(code, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: code !== null && code !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof lookupRedemption>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type LookupRedemptionQueryResult = NonNullable<Awaited<ReturnType<typeof lookupRedemption>>>
+export type LookupRedemptionQueryError = ErrorType<OpenaiError>
+
+
+/**
+ * @summary Look up a redemption by its code (staff verification)
+ */
+
+export function useLookupRedemption<TData = Awaited<ReturnType<typeof lookupRedemption>>, TError = ErrorType<OpenaiError>>(
+ code: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof lookupRedemption>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getLookupRedemptionQueryOptions(code,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getMarkRedemptionUsedUrl = (code: string,) => {
+
+
+
+
+  return `/api/rewards/redemptions/${code}/use`
+}
+
+/**
+ * @summary Mark a redemption code as used (staff)
+ */
+export const markRedemptionUsed = async (code: string, options?: RequestInit): Promise<RedemptionDetail> => {
+
+  return customFetch<RedemptionDetail>(getMarkRedemptionUsedUrl(code),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getMarkRedemptionUsedMutationOptions = <TError = ErrorType<OpenaiError | RedemptionDetail>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markRedemptionUsed>>, TError,{code: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof markRedemptionUsed>>, TError,{code: string}, TContext> => {
+
+const mutationKey = ['markRedemptionUsed'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof markRedemptionUsed>>, {code: string}> = (props) => {
+          const {code} = props ?? {};
+
+          return  markRedemptionUsed(code,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MarkRedemptionUsedMutationResult = NonNullable<Awaited<ReturnType<typeof markRedemptionUsed>>>
+
+    export type MarkRedemptionUsedMutationError = ErrorType<OpenaiError | RedemptionDetail>
+
+    /**
+ * @summary Mark a redemption code as used (staff)
+ */
+export const useMarkRedemptionUsed = <TError = ErrorType<OpenaiError | RedemptionDetail>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof markRedemptionUsed>>, TError,{code: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof markRedemptionUsed>>,
+        TError,
+        {code: string},
+        TContext
+      > => {
+      return useMutation(getMarkRedemptionUsedMutationOptions(options));
     }
 
 export const getListOpenaiConversationsUrl = () => {

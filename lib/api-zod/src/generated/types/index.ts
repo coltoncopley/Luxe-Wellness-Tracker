@@ -36,6 +36,7 @@ export * from './openaiError';
 export * from './openaiMessage';
 export * from './openaiMessageInput';
 export * from './redeemRewardInput';
+export * from './redemptionDetail';
 export * from './redemptionResult';
 export * from './restaurant';
 export * from './rewardCatalogItem';

@@ -544,6 +544,60 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/OpenaiError"
+  /rewards/redemptions/{code}:
+    get:
+      operationId: lookupRedemption
+      tags: [rewards]
+      summary: Look up a redemption by its code (staff verification)
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Redemption details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RedemptionDetail"
+        "404":
+          description: Code not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenaiError"
+  /rewards/redemptions/{code}/use:
+    post:
+      operationId: markRedemptionUsed
+      tags: [rewards]
+      summary: Mark a redemption code as used (staff)
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Updated redemption
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RedemptionDetail"
+        "404":
+          description: Code not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenaiError"
+        "409":
+          description: Code already used
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RedemptionDetail"
   /openai/conversations:
     get:
       operationId: listOpenaiConversations
@@ -1138,3 +1192,26 @@ components:
         - code
         - reward
         - balance
+    RedemptionDetail:
+      type: object
+      properties:
+        code:
+          type: string
+        rewardId:
+          type: string
+        title:
+          type: string
+        points:
+          type: integer
+        date:
+          type: string
+        usedAt:
+          type: string
+          nullable: true
+      required:
+        - code
+        - rewardId
+        - title
+        - points
+        - date
+        - usedAt

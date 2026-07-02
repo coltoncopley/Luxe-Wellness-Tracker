@@ -29,7 +29,7 @@ A patient companion app for LUXE Wellness and Aesthetics (physician-owned med sp
 - `artifacts/api-server/src/routes/` — catalog.ts, appointments.ts, tracking.ts, food.ts (incl. POST /food/analyze-photo AI meal scanner), wellness.ts (tips, dashboard summary), openai.ts (Luxe AI chat: conversation CRUD + SSE streaming), glow.ts (Glow Score summary + check-in upsert), rewards.ts (summary + redeem)
 - `artifacts/api-server/src/lib/rewards.ts` — reward catalog, point values, award/redeem helpers
 - `scripts/src/seed.ts` — seed data
-- `artifacts/luxe-wellness/` — patient-facing web app (pages: /, /book, /weight, /food, /restaurants, /glow, /rewards, /luxe-ai)
+- `artifacts/luxe-wellness/` — patient-facing web app (pages: /, /book, /weight, /food, /restaurants, /glow, /rewards, /luxe-ai, /staff)
 - `attached_assets/brand/luxe_logo.jpeg` — brand logo
 
 ## Architecture decisions
@@ -43,7 +43,8 @@ A patient companion app for LUXE Wellness and Aesthetics (physician-owned med sp
 - Chat streaming is SSE over POST; Orval can't type SSE, so the client uses raw fetch + ReadableStream (generated hooks for everything else).
 - Glow Score computed server-side (0-100): water 15 + sleep 20 (7-9h full) + stress 15 (lower better) + activity 15 (30min full) + protein 20 (100g full) + skincare 15. One check-in per day (unique date, upsert); streak counts consecutive days back from today (or yesterday if today not yet logged).
 - Meal scanner: client downscales photo to ≤1280px JPEG data URL; POST /api/food/analyze-photo uses gpt-5.4 vision (json_object), zod-parses estimate, 422 if not food. express.json limit is 15mb for this.
-- Rewards: points ledger in reward_events (never mutated, balance = sum). Earning: glow check-in +20/day, weigh-in +10/day, food log +5 (cap 3/day), +50 per 7-day streak milestone. Once-per-day and milestone awards are idempotent via unique dedupe_key (`type:date`, `glow_streak:N`); capped awards and redemptions use transactions with pg advisory locks to prevent races. Catalog is static in code; redeem returns a LUXE-XXXX code to mention at the front desk.
+- Rewards: points ledger in reward_events (never mutated, balance = sum). Earning: glow check-in +20/day, weigh-in +10/day, food log +5 (cap 3/day), +50 per 7-day streak milestone. Once-per-day and milestone awards are idempotent via unique dedupe_key (`type:date`, `glow_streak:N`); capped awards and redemptions use transactions with pg advisory locks to prevent races. Catalog is static in code.
+- Redemption codes: LUXE-XXXX-XXXX (8 chars, crypto-random, unambiguous alphabet, retry on unique collision), stored in `redemptions` table alongside the ledger row (same transaction). Staff verification page at /staff looks codes up (input normalized: case/dashes/prefix optional) and marks them used atomically (`UPDATE ... WHERE used_at IS NULL`; 409 if already used). Lookup/use endpoints are rate-limited in-memory (15/min/IP). No auth gate yet — pending the app-wide login decision.
 
 ## Product
 
@@ -56,6 +57,7 @@ A patient companion app for LUXE Wellness and Aesthetics (physician-owned med sp
 - Glow Score: daily habit check-in (water, sleep, stress, activity, protein, skincare) → one 0-100 score, streak tracking, 14-day trend chart
 - Meal Scanner: photograph a meal on /food → AI estimates calories/macros → one-tap log
 - Rewards: earn points for healthy habits, redeem for LUXE treatment perks on /rewards
+- Staff Verify (/staff): front desk enters a patient's LUXE code, sees the reward + status, marks it used (one-time use)
 
 ## User preferences
 

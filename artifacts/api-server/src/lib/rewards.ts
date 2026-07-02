@@ -1,5 +1,5 @@
 import { and, eq, sql, sum } from "drizzle-orm";
-import { db, rewardEventsTable } from "@workspace/db";
+import { db, rewardEventsTable, redemptionsTable } from "@workspace/db";
 
 export const REWARD_CATALOG = [
   {
@@ -112,6 +112,13 @@ export async function redeemPoints(
       date,
       points: -reward.points,
       description: `Redeemed: ${reward.title} (code ${code})`,
+    });
+    await tx.insert(redemptionsTable).values({
+      code,
+      rewardId: reward.id,
+      title: reward.title,
+      points: reward.points,
+      date,
     });
     return { ok: true as const, balance: balance - reward.points };
   });
