@@ -29,7 +29,7 @@ A patient companion app for LUXE Wellness and Aesthetics (physician-owned med sp
 - `artifacts/api-server/src/routes/` — catalog.ts, appointments.ts, tracking.ts, food.ts (incl. POST /food/analyze-photo AI meal scanner), wellness.ts (tips, dashboard summary), openai.ts (Luxe AI chat: conversation CRUD + SSE streaming), glow.ts (Glow Score summary + check-in upsert), briefing.ts (GET /briefing morning briefing), rewards.ts (summary + redeem)
 - `artifacts/api-server/src/lib/rewards.ts` — reward catalog, point values, award/redeem helpers
 - `scripts/src/seed.ts` — seed data
-- `artifacts/luxe-wellness/` — patient-facing web app (pages: /, /book, /weight, /food, /restaurants, /glow, /rewards, /luxe-ai, /staff)
+- `artifacts/luxe-wellness/` — patient-facing web app (pages: /, /book, /weight, /food, /restaurants, /glow, /bhrt, /rewards, /luxe-ai, /staff)
 - `attached_assets/brand/luxe_logo.jpeg` — brand logo
 
 ## Architecture decisions
@@ -57,6 +57,7 @@ A patient companion app for LUXE Wellness and Aesthetics (physician-owned med sp
 - Weight: daily weigh-ins, body-area measurements, goal setting, progress chart
 - Food: meal logging with macros, daily summary, restaurant menu search
 - Restaurants: local chains with calorie/macro data and healthy pick ordering tips
+- BHRT (/bhrt): static educational page on bioidentical hormone therapy following the Worldlink Medical / Neal Rouzier MD "Normal isn't optimal" philosophy — symptoms (women/men), hormones (estradiol, progesterone, testosterone, thyroid, DHEA), potential benefits, 4-step process, FAQ, booking CTA to Aesthetic Record. Content deliberately uses conditional, educational-only language (architect-reviewed for medical overclaiming — keep it that way when editing) with disclaimers under the hero and in the footer.
 - Luxe AI: 24/7 streaming chat assistant grounded in LUXE's service catalog and team; GLP-1 coaching, skincare/treatment Q&A, gentle treatment suggestions
 - Glow Score: daily habit check-in (water, sleep, stress, activity, protein, skincare) → one 0-100 score, streak tracking, 14-day trend chart
 - Meal Scanner: photograph a meal on /food → AI estimates calories/macros → one-tap log

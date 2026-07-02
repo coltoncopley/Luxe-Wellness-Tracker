@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { User, Calendar, Activity, Utensils, MapPin, Menu, X, Sparkles, Sun, Gift, BadgeCheck, LogOut } from "lucide-react";
+import { User, Calendar, Activity, Utensils, MapPin, Menu, X, Sparkles, Sun, Gift, BadgeCheck, LogOut, HeartPulse } from "lucide-react";
 import { useState } from "react";
 import { Show, useClerk, useUser } from "@clerk/react";
 import { useGetMe, getGetMeQueryKey } from "@workspace/api-client-react";
@@ -38,6 +38,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { href: "/food", label: "Food Log", icon: Utensils },
     { href: "/restaurants", label: "Restaurants", icon: MapPin },
     { href: "/glow", label: "Glow Score", icon: Sun },
+    { href: "/bhrt", label: "BHRT", icon: HeartPulse },
     { href: "/rewards", label: "Rewards", icon: Gift },
     { href: "/luxe-ai", label: "Luxe AI", icon: Sparkles },
     ...(isStaff ? [{ href: "/staff", label: "Staff Portal", icon: BadgeCheck }] : []),
