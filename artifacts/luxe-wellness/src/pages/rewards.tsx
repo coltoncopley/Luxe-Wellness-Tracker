@@ -3,8 +3,10 @@ import {
   useGetRewardsSummary,
   useRedeemReward,
   getGetRewardsSummaryQueryKey,
+  useGetReferralSummary,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { QRCodeSVG } from "qrcode.react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,7 +17,18 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
-import { Gift, Sparkles, Scale, Utensils, Flame, Ticket } from "lucide-react";
+import {
+  Gift,
+  Sparkles,
+  Scale,
+  Utensils,
+  Flame,
+  Ticket,
+  Share2,
+  Copy,
+  QrCode,
+  Users,
+} from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -24,7 +37,104 @@ const EARN_RULES = [
   { icon: Scale, label: "Daily weigh-in", points: "+10" },
   { icon: Utensils, label: "Log a meal (up to 3/day)", points: "+5" },
   { icon: Flame, label: "Every 7-day Glow streak", points: "+50" },
+  { icon: Users, label: "Invite a friend who joins", points: "+100" },
 ];
+
+function InviteFriendsCard() {
+  const { data: referral } = useGetReferralSummary();
+  const [qrOpen, setQrOpen] = useState(false);
+
+  if (!referral) return null;
+
+  const base = import.meta.env.BASE_URL;
+  const shareUrl = `${window.location.origin}${base}?ref=${referral.code}`;
+  const shareMessage = `Join me on the LUXE Wellness app! Track your health journey, earn rewards, and get ${referral.friendPoints} bonus points when you sign up with my link: ${shareUrl}`;
+
+  async function handleShare() {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: "LUXE Wellness & Aesthetics",
+          text: shareMessage,
+        });
+        return;
+      } catch {
+        // user cancelled or share failed — fall through to copy
+      }
+    }
+    await copyLink();
+  }
+
+  async function copyLink() {
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      toast.success("Invite link copied!");
+    } catch {
+      toast.error("Couldn't copy the link — your code is " + referral!.code);
+    }
+  }
+
+  return (
+    <Card className="border-primary/30 bg-gradient-to-br from-primary/5 to-transparent">
+      <CardHeader className="pb-2">
+        <CardTitle className="flex items-center gap-2 text-lg">
+          <Users className="h-5 w-5 text-primary" /> Invite friends, earn points
+        </CardTitle>
+        <CardDescription>
+          You get <span className="font-semibold text-primary">+{referral.referrerPoints}</span>{" "}
+          points for every friend who joins — they get{" "}
+          <span className="font-semibold text-primary">+{referral.friendPoints}</span> too.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+          <div className="flex-1 rounded-xl border border-border bg-background px-4 py-2.5 text-sm font-mono truncate">
+            {shareUrl}
+          </div>
+          <div className="flex gap-2">
+            <Button className="rounded-full" onClick={() => void handleShare()}>
+              <Share2 className="h-4 w-4 mr-1.5" /> Share
+            </Button>
+            <Button variant="outline" className="rounded-full" onClick={() => void copyLink()}>
+              <Copy className="h-4 w-4 mr-1.5" /> Copy
+            </Button>
+            <Button variant="outline" className="rounded-full" onClick={() => setQrOpen(true)}>
+              <QrCode className="h-4 w-4 mr-1.5" /> QR
+            </Button>
+          </div>
+        </div>
+        {referral.invitedCount > 0 && (
+          <p className="text-xs text-muted-foreground">
+            {referral.invitedCount} friend{referral.invitedCount === 1 ? "" : "s"} joined with your
+            invite · {referral.pointsEarned} points earned from referrals
+          </p>
+        )}
+      </CardContent>
+
+      <Dialog open={qrOpen} onOpenChange={setQrOpen}>
+        <DialogContent className="max-w-sm text-center">
+          <DialogHeader>
+            <DialogTitle className="flex items-center justify-center gap-2">
+              <QrCode className="h-5 w-5 text-primary" /> Your invite QR code
+            </DialogTitle>
+            <DialogDescription>
+              Have a friend scan this with their phone camera to join LUXE with your invite.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 flex flex-col items-center gap-4">
+            <div className="rounded-2xl border border-border bg-white p-4">
+              <QRCodeSVG value={shareUrl} size={208} level="M" />
+            </div>
+            <div className="text-sm text-muted-foreground">
+              Invite code: <span className="font-mono font-semibold text-primary">{referral.code}</span>
+            </div>
+          </div>
+          <Button onClick={() => setQrOpen(false)}>Done</Button>
+        </DialogContent>
+      </Dialog>
+    </Card>
+  );
+}
 
 export default function Rewards() {
   const queryClient = useQueryClient();
@@ -96,6 +206,8 @@ export default function Rewards() {
           </CardContent>
         </Card>
       </div>
+
+      <InviteFriendsCard />
 
       <div>
         <h2 className="text-2xl font-serif text-primary mb-4">Redeem</h2>

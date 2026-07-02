@@ -5,6 +5,7 @@ export const usersTable = pgTable("users", {
   email: text("email"),
   firstName: text("first_name"),
   role: text("role").notNull().default("patient"),
+  referralCode: text("referral_code").unique(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 

@@ -614,6 +614,36 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/RedemptionDetail"
+  /referrals/summary:
+    get:
+      operationId: getReferralSummary
+      tags: [rewards]
+      summary: The current user's referral code and invite stats
+      responses:
+        "200":
+          description: Referral summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReferralSummary"
+  /referrals/claim:
+    post:
+      operationId: claimReferral
+      tags: [rewards]
+      summary: Claim a friend's referral code after signing up
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ClaimReferralInput"
+      responses:
+        "200":
+          description: Claim outcome (claimed=false includes a reason)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ClaimReferralResult"
   /me:
     get:
       operationId: getMe
@@ -1659,3 +1689,24 @@ components:
         usedAt: { type: ["string", "null"] }
         patientEmail: { type: ["string", "null"] }
         patientName: { type: ["string", "null"] }
+    ReferralSummary:
+      type: object
+      required: [code, invitedCount, pointsEarned, referrerPoints, friendPoints]
+      properties:
+        code: { type: string }
+        invitedCount: { type: integer }
+        pointsEarned: { type: integer }
+        referrerPoints: { type: integer }
+        friendPoints: { type: integer }
+    ClaimReferralInput:
+      type: object
+      required: [code]
+      properties:
+        code: { type: string, minLength: 1 }
+    ClaimReferralResult:
+      type: object
+      required: [claimed, pointsAwarded]
+      properties:
+        claimed: { type: boolean }
+        pointsAwarded: { type: integer }
+        reason: { type: ["string", "null"] }

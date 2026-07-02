@@ -4,6 +4,8 @@ import { QueryClient, QueryClientProvider, useQueryClient } from "@tanstack/reac
 import { ClerkProvider, SignIn, SignUp, Show, useClerk } from "@clerk/react";
 import { publishableKeyFromHost } from "@clerk/react/internal";
 import { shadcn } from "@clerk/themes";
+import { useClaimReferral, getGetRewardsSummaryQueryKey } from "@workspace/api-client-react";
+import { toast } from "sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -25,6 +27,19 @@ import Support from "@/pages/support";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
+
+const REF_STORAGE_KEY = "luxe_pending_ref";
+
+(() => {
+  try {
+    const ref = new URLSearchParams(window.location.search).get("ref");
+    if (ref && ref.trim()) {
+      localStorage.setItem(REF_STORAGE_KEY, ref.trim().toUpperCase());
+    }
+  } catch {
+    // ignore storage errors
+  }
+})();
 
 const clerkPubKey = publishableKeyFromHost(
   window.location.hostname,
@@ -129,6 +144,42 @@ function ClerkQueryClientCacheInvalidator() {
   return null;
 }
 
+function ReferralClaimer() {
+  const claim = useClaimReferral();
+  const qc = useQueryClient();
+  const attemptedRef = useRef(false);
+
+  useEffect(() => {
+    if (attemptedRef.current) return;
+    let code: string | null = null;
+    try {
+      code = localStorage.getItem(REF_STORAGE_KEY);
+    } catch {
+      return;
+    }
+    if (!code) return;
+    attemptedRef.current = true;
+    claim.mutate(
+      { data: { code } },
+      {
+        onSuccess: (result) => {
+          try {
+            localStorage.removeItem(REF_STORAGE_KEY);
+          } catch {
+            // ignore
+          }
+          if (result.claimed) {
+            toast.success(`Welcome bonus! You earned ${result.pointsAwarded} LUXE points 🎉`);
+            void qc.invalidateQueries({ queryKey: getGetRewardsSummaryQueryKey() });
+          }
+        },
+      },
+    );
+  }, [claim, qc]);
+
+  return null;
+}
+
 function HomeRedirect() {
   return (
     <>
@@ -196,6 +247,9 @@ function ClerkProviderWithRoutes() {
     >
       <QueryClientProvider client={queryClient}>
         <ClerkQueryClientCacheInvalidator />
+        <Show when="signed-in">
+          <ReferralClaimer />
+        </Show>
         <TooltipProvider>
           <Switch>
             <Route path="/" component={HomeRedirect} />

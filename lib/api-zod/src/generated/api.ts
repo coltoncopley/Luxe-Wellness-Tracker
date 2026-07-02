@@ -663,6 +663,35 @@ export const MarkRedemptionUsedResponse = zod.object({
 
 
 /**
+ * @summary The current user's referral code and invite stats
+ */
+export const GetReferralSummaryResponse = zod.object({
+  "code": zod.string(),
+  "invitedCount": zod.number(),
+  "pointsEarned": zod.number(),
+  "referrerPoints": zod.number(),
+  "friendPoints": zod.number()
+})
+
+
+/**
+ * @summary Claim a friend's referral code after signing up
+ */
+
+
+
+export const ClaimReferralBody = zod.object({
+  "code": zod.string().min(1)
+})
+
+export const ClaimReferralResponse = zod.object({
+  "claimed": zod.boolean(),
+  "pointsAwarded": zod.number(),
+  "reason": zod.string().nullish()
+})
+
+
+/**
  * @summary Get the current user's profile
  */
 export const GetMeResponse = zod.object({

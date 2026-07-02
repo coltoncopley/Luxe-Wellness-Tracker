@@ -9,6 +9,7 @@ import openaiRouter from "./openai";
 import glowRouter from "./glow";
 import briefingRouter from "./briefing";
 import rewardsRouter from "./rewards";
+import referralsRouter from "./referrals";
 import meRouter from "./me";
 import adminRouter from "./admin";
 import { requireAuth, requireStaff } from "../middlewares/auth";
@@ -29,6 +30,7 @@ router.use(requireAuth, openaiRouter);
 router.use(requireAuth, glowRouter);
 router.use(requireAuth, briefingRouter);
 router.use(requireAuth, rewardsRouter);
+router.use(requireAuth, referralsRouter);
 
 // Staff-only management routes
 router.use(requireAuth, requireStaff, adminRouter);

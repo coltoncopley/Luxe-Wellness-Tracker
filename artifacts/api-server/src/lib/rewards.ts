@@ -12,6 +12,8 @@ export const POINTS = {
   weightEntry: 10,
   foodLog: 5,
   streakBonus: 50,
+  referralReferrer: 100,
+  referralFriend: 50,
 } as const;
 
 export const FOOD_LOG_DAILY_CAP = 3;

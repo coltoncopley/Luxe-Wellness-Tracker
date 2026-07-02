@@ -526,6 +526,26 @@ export interface AdminRedemption {
   patientName: string | null;
 }
 
+export interface ReferralSummary {
+  code: string;
+  invitedCount: number;
+  pointsEarned: number;
+  referrerPoints: number;
+  friendPoints: number;
+}
+
+export interface ClaimReferralInput {
+  /** @minLength 1 */
+  code: string;
+}
+
+export interface ClaimReferralResult {
+  claimed: boolean;
+  pointsAwarded: number;
+  /** @nullable */
+  reason?: string | null;
+}
+
 export type SearchMenuItemsParams = {
 q: string;
 };

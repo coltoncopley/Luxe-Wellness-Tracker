@@ -43,6 +43,19 @@ export const redemptionsTable = pgTable("redemptions", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
+export const referralsTable = pgTable("referrals", {
+  id: serial("id").primaryKey(),
+  referrerUserId: text("referrer_user_id")
+    .notNull()
+    .references(() => usersTable.id),
+  referredUserId: text("referred_user_id")
+    .notNull()
+    .unique()
+    .references(() => usersTable.id),
+  code: text("code").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
 export const rewardItemsTable = pgTable("reward_items", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
