@@ -529,6 +529,92 @@ export interface Mission {
   rewardPoints: number;
 }
 
+export type PassportEntryEntryType = typeof PassportEntryEntryType[keyof typeof PassportEntryEntryType];
+
+
+export const PassportEntryEntryType = {
+  botox: 'botox',
+  filler: 'filler',
+  laser: 'laser',
+  microneedling: 'microneedling',
+  peel: 'peel',
+  facial: 'facial',
+  iv_therapy: 'iv_therapy',
+  weight_loss: 'weight_loss',
+  skincare: 'skincare',
+  other: 'other',
+} as const;
+
+export interface PassportEntry {
+  id: number;
+  entryType: PassportEntryEntryType;
+  /** Date the treatment was performed (YYYY-MM-DD) */
+  performedOn: string;
+  /** Short name, e.g. "Botox — forehead & crow's feet" */
+  title: string;
+  /** Product/brand used, e.g. "Juvederm Ultra" */
+  product?: string | null;
+  /** Units/volume/settings, e.g. "24 units", "1.0 mL", "70mJ 3-pass" */
+  amount?: string | null;
+  /** Treatment area, e.g. "lips", "full face" */
+  area?: string | null;
+  /** Where/who performed it */
+  provider?: string | null;
+  notes?: string | null;
+}
+
+export type CreatePassportEntryInputEntryType = typeof CreatePassportEntryInputEntryType[keyof typeof CreatePassportEntryInputEntryType];
+
+
+export const CreatePassportEntryInputEntryType = {
+  botox: 'botox',
+  filler: 'filler',
+  laser: 'laser',
+  microneedling: 'microneedling',
+  peel: 'peel',
+  facial: 'facial',
+  iv_therapy: 'iv_therapy',
+  weight_loss: 'weight_loss',
+  skincare: 'skincare',
+  other: 'other',
+} as const;
+
+export interface CreatePassportEntryInput {
+  entryType: CreatePassportEntryInputEntryType;
+  /** @pattern ^\d{4}-\d{2}-\d{2}$ */
+  performedOn: string;
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  title: string;
+  /** @maxLength 200 */
+  product?: string | null;
+  /** @maxLength 200 */
+  amount?: string | null;
+  /** @maxLength 200 */
+  area?: string | null;
+  /** @maxLength 200 */
+  provider?: string | null;
+  /** @maxLength 2000 */
+  notes?: string | null;
+}
+
+export interface PassportProfile {
+  allergies: string;
+  skinType: string;
+  skincareRoutine: string;
+}
+
+export interface UpdatePassportProfileInput {
+  /** @maxLength 2000 */
+  allergies: string;
+  /** @maxLength 200 */
+  skinType: string;
+  /** @maxLength 2000 */
+  skincareRoutine: string;
+}
+
 export interface AnalyzeIngredientsInput {
   /**
      * Base64 data URL of the ingredient label photo (JPEG/PNG/WebP)
@@ -937,5 +1023,10 @@ category?: string;
 
 export type ListIngredientScans200 = {
   scans: IngredientScanResult[];
+};
+
+export type GetPassport200 = {
+  profile: PassportProfile;
+  entries: PassportEntry[];
 };
 

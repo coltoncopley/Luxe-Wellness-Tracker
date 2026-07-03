@@ -33,6 +33,7 @@ import type {
   ClaimReferralInput,
   ClaimReferralResult,
   CompAccess,
+  CreatePassportEntryInput,
   CreateProgressPhotoInput,
   DailySummary,
   DashboardSummary,
@@ -44,6 +45,7 @@ import type {
   FoodLogInput,
   FriendJourneysResponse,
   GetDailySummaryParams,
+  GetPassport200,
   GlowCheckin,
   GlowCheckinInput,
   GlowSummary,
@@ -69,6 +71,8 @@ import type {
   OpenaiError,
   OpenaiMessage,
   OpenaiMessageInput,
+  PassportEntry,
+  PassportProfile,
   ProgressPhoto,
   RedeemRewardInput,
   RedemptionDetail,
@@ -92,6 +96,7 @@ import type {
   SkinScanResult,
   StaffAccessInput,
   StaffMember,
+  UpdatePassportProfileInput,
   UploadUrlRequest,
   UploadUrlResponse,
   WeightEntry,
@@ -3403,6 +3408,293 @@ export const useDeleteIngredientScan = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getDeleteIngredientScanMutationOptions(options));
+    }
+
+export const getGetPassportUrl = () => {
+
+
+
+
+  return `/api/passport`
+}
+
+/**
+ * @summary Beauty Passport profile + treatment history for the requesting user
+ */
+export const getPassport = async ( options?: RequestInit): Promise<GetPassport200> => {
+
+  return customFetch<GetPassport200>(getGetPassportUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPassportQueryKey = () => {
+    return [
+    `/api/passport`
+    ] as const;
+    }
+
+
+export const getGetPassportQueryOptions = <TData = Awaited<ReturnType<typeof getPassport>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPassport>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPassportQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPassport>>> = ({ signal }) => getPassport({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPassport>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPassportQueryResult = NonNullable<Awaited<ReturnType<typeof getPassport>>>
+export type GetPassportQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Beauty Passport profile + treatment history for the requesting user
+ */
+
+export function useGetPassport<TData = Awaited<ReturnType<typeof getPassport>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPassport>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPassportQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdatePassportProfileUrl = () => {
+
+
+
+
+  return `/api/passport/profile`
+}
+
+/**
+ * @summary Update allergies, skin type, and skincare routine
+ */
+export const updatePassportProfile = async (updatePassportProfileInput: UpdatePassportProfileInput, options?: RequestInit): Promise<PassportProfile> => {
+
+  return customFetch<PassportProfile>(getUpdatePassportProfileUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(updatePassportProfileInput)
+  }
+);}
+
+
+
+
+export const getUpdatePassportProfileMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePassportProfile>>, TError,{data: BodyType<UpdatePassportProfileInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updatePassportProfile>>, TError,{data: BodyType<UpdatePassportProfileInput>}, TContext> => {
+
+const mutationKey = ['updatePassportProfile'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updatePassportProfile>>, {data: BodyType<UpdatePassportProfileInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updatePassportProfile(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdatePassportProfileMutationResult = NonNullable<Awaited<ReturnType<typeof updatePassportProfile>>>
+    export type UpdatePassportProfileMutationBody = BodyType<UpdatePassportProfileInput>
+    export type UpdatePassportProfileMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Update allergies, skin type, and skincare routine
+ */
+export const useUpdatePassportProfile = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePassportProfile>>, TError,{data: BodyType<UpdatePassportProfileInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updatePassportProfile>>,
+        TError,
+        {data: BodyType<UpdatePassportProfileInput>},
+        TContext
+      > => {
+      return useMutation(getUpdatePassportProfileMutationOptions(options));
+    }
+
+export const getCreatePassportEntryUrl = () => {
+
+
+
+
+  return `/api/passport/entries`
+}
+
+/**
+ * @summary Add a treatment record to the Beauty Passport
+ */
+export const createPassportEntry = async (createPassportEntryInput: CreatePassportEntryInput, options?: RequestInit): Promise<PassportEntry> => {
+
+  return customFetch<PassportEntry>(getCreatePassportEntryUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(createPassportEntryInput)
+  }
+);}
+
+
+
+
+export const getCreatePassportEntryMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPassportEntry>>, TError,{data: BodyType<CreatePassportEntryInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createPassportEntry>>, TError,{data: BodyType<CreatePassportEntryInput>}, TContext> => {
+
+const mutationKey = ['createPassportEntry'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createPassportEntry>>, {data: BodyType<CreatePassportEntryInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createPassportEntry(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreatePassportEntryMutationResult = NonNullable<Awaited<ReturnType<typeof createPassportEntry>>>
+    export type CreatePassportEntryMutationBody = BodyType<CreatePassportEntryInput>
+    export type CreatePassportEntryMutationError = ErrorType<void>
+
+    /**
+ * @summary Add a treatment record to the Beauty Passport
+ */
+export const useCreatePassportEntry = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createPassportEntry>>, TError,{data: BodyType<CreatePassportEntryInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createPassportEntry>>,
+        TError,
+        {data: BodyType<CreatePassportEntryInput>},
+        TContext
+      > => {
+      return useMutation(getCreatePassportEntryMutationOptions(options));
+    }
+
+export const getDeletePassportEntryUrl = (id: number,) => {
+
+
+
+
+  return `/api/passport/entries/${id}`
+}
+
+/**
+ * @summary Delete a treatment record
+ */
+export const deletePassportEntry = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeletePassportEntryUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeletePassportEntryMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePassportEntry>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deletePassportEntry>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deletePassportEntry'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deletePassportEntry>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deletePassportEntry(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeletePassportEntryMutationResult = NonNullable<Awaited<ReturnType<typeof deletePassportEntry>>>
+
+    export type DeletePassportEntryMutationError = ErrorType<void>
+
+    /**
+ * @summary Delete a treatment record
+ */
+export const useDeletePassportEntry = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePassportEntry>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deletePassportEntry>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeletePassportEntryMutationOptions(options));
     }
 
 export const getGetRewardsSummaryUrl = () => {

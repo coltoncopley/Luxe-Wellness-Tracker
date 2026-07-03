@@ -11,3 +11,4 @@ export * from "./messages";
 export * from "./photos";
 export * from "./skin";
 export * from "./ingredients";
+export * from "./passport";

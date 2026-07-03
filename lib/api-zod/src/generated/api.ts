@@ -817,6 +817,105 @@ export const DeleteIngredientScanResponse = zod.void()
 
 
 /**
+ * @summary Beauty Passport profile + treatment history for the requesting user
+ */
+export const GetPassportResponse = zod.object({
+  "profile": zod.object({
+  "allergies": zod.string(),
+  "skinType": zod.string(),
+  "skincareRoutine": zod.string()
+}),
+  "entries": zod.array(zod.object({
+  "id": zod.number(),
+  "entryType": zod.enum(['botox', 'filler', 'laser', 'microneedling', 'peel', 'facial', 'iv_therapy', 'weight_loss', 'skincare', 'other']),
+  "performedOn": zod.string().describe('Date the treatment was performed (YYYY-MM-DD)'),
+  "title": zod.string().describe('Short name, e.g. \"Botox — forehead & crow\'s feet\"'),
+  "product": zod.string().nullish().describe('Product\/brand used, e.g. \"Juvederm Ultra\"'),
+  "amount": zod.string().nullish().describe('Units\/volume\/settings, e.g. \"24 units\", \"1.0 mL\", \"70mJ 3-pass\"'),
+  "area": zod.string().nullish().describe('Treatment area, e.g. \"lips\", \"full face\"'),
+  "provider": zod.string().nullish().describe('Where\/who performed it'),
+  "notes": zod.string().nullish()
+}))
+})
+
+
+/**
+ * @summary Update allergies, skin type, and skincare routine
+ */
+export const updatePassportProfileBodyAllergiesMax = 2000;
+
+export const updatePassportProfileBodySkinTypeMax = 200;
+
+export const updatePassportProfileBodySkincareRoutineMax = 2000;
+
+
+
+export const UpdatePassportProfileBody = zod.object({
+  "allergies": zod.string().max(updatePassportProfileBodyAllergiesMax),
+  "skinType": zod.string().max(updatePassportProfileBodySkinTypeMax),
+  "skincareRoutine": zod.string().max(updatePassportProfileBodySkincareRoutineMax)
+})
+
+export const UpdatePassportProfileResponse = zod.object({
+  "allergies": zod.string(),
+  "skinType": zod.string(),
+  "skincareRoutine": zod.string()
+})
+
+
+/**
+ * @summary Add a treatment record to the Beauty Passport
+ */
+export const createPassportEntryBodyPerformedOnRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const createPassportEntryBodyTitleMax = 200;
+
+export const createPassportEntryBodyProductMax = 200;
+
+export const createPassportEntryBodyAmountMax = 200;
+
+export const createPassportEntryBodyAreaMax = 200;
+
+export const createPassportEntryBodyProviderMax = 200;
+
+export const createPassportEntryBodyNotesMax = 2000;
+
+
+
+export const CreatePassportEntryBody = zod.object({
+  "entryType": zod.enum(['botox', 'filler', 'laser', 'microneedling', 'peel', 'facial', 'iv_therapy', 'weight_loss', 'skincare', 'other']),
+  "performedOn": zod.string().regex(createPassportEntryBodyPerformedOnRegExp),
+  "title": zod.string().min(1).max(createPassportEntryBodyTitleMax),
+  "product": zod.string().max(createPassportEntryBodyProductMax).nullish(),
+  "amount": zod.string().max(createPassportEntryBodyAmountMax).nullish(),
+  "area": zod.string().max(createPassportEntryBodyAreaMax).nullish(),
+  "provider": zod.string().max(createPassportEntryBodyProviderMax).nullish(),
+  "notes": zod.string().max(createPassportEntryBodyNotesMax).nullish()
+})
+
+export const CreatePassportEntryResponse = zod.object({
+  "id": zod.number(),
+  "entryType": zod.enum(['botox', 'filler', 'laser', 'microneedling', 'peel', 'facial', 'iv_therapy', 'weight_loss', 'skincare', 'other']),
+  "performedOn": zod.string().describe('Date the treatment was performed (YYYY-MM-DD)'),
+  "title": zod.string().describe('Short name, e.g. \"Botox — forehead & crow\'s feet\"'),
+  "product": zod.string().nullish().describe('Product\/brand used, e.g. \"Juvederm Ultra\"'),
+  "amount": zod.string().nullish().describe('Units\/volume\/settings, e.g. \"24 units\", \"1.0 mL\", \"70mJ 3-pass\"'),
+  "area": zod.string().nullish().describe('Treatment area, e.g. \"lips\", \"full face\"'),
+  "provider": zod.string().nullish().describe('Where\/who performed it'),
+  "notes": zod.string().nullish()
+})
+
+
+/**
+ * @summary Delete a treatment record
+ */
+export const DeletePassportEntryParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DeletePassportEntryResponse = zod.void()
+
+
+/**
  * @summary Points balance, earning history, and reward catalog
  */
 export const GetRewardsSummaryResponse = zod.object({

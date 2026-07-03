@@ -763,6 +763,80 @@ paths:
           description: Deleted
         "404":
           description: Not found
+  /passport:
+    get:
+      operationId: getPassport
+      tags: [passport]
+      summary: Beauty Passport profile + treatment history for the requesting user
+      responses:
+        "200":
+          description: Passport data
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [profile, entries]
+                properties:
+                  profile:
+                    $ref: "#/components/schemas/PassportProfile"
+                  entries:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/PassportEntry"
+  /passport/profile:
+    put:
+      operationId: updatePassportProfile
+      tags: [passport]
+      summary: Update allergies, skin type, and skincare routine
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePassportProfileInput"
+      responses:
+        "200":
+          description: Updated profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PassportProfile"
+  /passport/entries:
+    post:
+      operationId: createPassportEntry
+      tags: [passport]
+      summary: Add a treatment record to the Beauty Passport
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePassportEntryInput"
+      responses:
+        "201":
+          description: Created entry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PassportEntry"
+        "400":
+          description: Invalid input
+  /passport/entries/{id}:
+    delete:
+      operationId: deletePassportEntry
+      tags: [passport]
+      summary: Delete a treatment record
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
   /rewards/summary:
     get:
       operationId: getRewardsSummary
@@ -2114,6 +2188,97 @@ components:
         rewardPoints:
           type: integer
           description: Bonus points awarded on completion
+    PassportEntry:
+      type: object
+      required: [id, entryType, performedOn, title]
+      properties:
+        id:
+          type: integer
+        entryType:
+          type: string
+          enum: [botox, filler, laser, microneedling, peel, facial, iv_therapy, weight_loss, skincare, other]
+        performedOn:
+          type: string
+          description: Date the treatment was performed (YYYY-MM-DD)
+        title:
+          type: string
+          description: Short name, e.g. "Botox — forehead & crow's feet"
+        product:
+          type: string
+          nullable: true
+          description: Product/brand used, e.g. "Juvederm Ultra"
+        amount:
+          type: string
+          nullable: true
+          description: Units/volume/settings, e.g. "24 units", "1.0 mL", "70mJ 3-pass"
+        area:
+          type: string
+          nullable: true
+          description: Treatment area, e.g. "lips", "full face"
+        provider:
+          type: string
+          nullable: true
+          description: Where/who performed it
+        notes:
+          type: string
+          nullable: true
+    CreatePassportEntryInput:
+      type: object
+      required: [entryType, performedOn, title]
+      properties:
+        entryType:
+          type: string
+          enum: [botox, filler, laser, microneedling, peel, facial, iv_therapy, weight_loss, skincare, other]
+        performedOn:
+          type: string
+          pattern: '^\d{4}-\d{2}-\d{2}$'
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        product:
+          type: string
+          maxLength: 200
+          nullable: true
+        amount:
+          type: string
+          maxLength: 200
+          nullable: true
+        area:
+          type: string
+          maxLength: 200
+          nullable: true
+        provider:
+          type: string
+          maxLength: 200
+          nullable: true
+        notes:
+          type: string
+          maxLength: 2000
+          nullable: true
+    PassportProfile:
+      type: object
+      required: [allergies, skinType, skincareRoutine]
+      properties:
+        allergies:
+          type: string
+        skinType:
+          type: string
+        skincareRoutine:
+          type: string
+    UpdatePassportProfileInput:
+      type: object
+      required: [allergies, skinType, skincareRoutine]
+      properties:
+        allergies:
+          type: string
+          maxLength: 2000
+        skinType:
+          type: string
+          maxLength: 200
+        skincareRoutine:
+          type: string
+          maxLength: 2000
     AnalyzeIngredientsInput:
       type: object
       required: [imageDataUrl]
