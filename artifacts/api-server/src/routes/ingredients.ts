@@ -103,7 +103,7 @@ router.post("/ingredients/analyze", async (req: Request, res: Response) => {
           "goodIngredients: up to 6 beneficial ingredients as 'Name — brief benefit'. " +
           "concerns: up to 6 flagged ingredients as 'Name — the concern' (comedogenic, common irritant, fragrance, drying alcohol, etc). Empty array if none. " +
           "pregnancySafety + pregnancyNote: general educational note on commonly-flagged pregnancy ingredients (e.g. retinoids, high-dose salicylic acid); ALWAYS say to confirm with their own doctor. " +
-          "suggestion: at most ONE gentle mention that LUXE offers medical-grade skincare guidance or a relevant treatment they could ask about — or null. Never pressure.",
+          "suggestion: at most ONE gentle, no-pressure invitation to ask their LUXE provider about a medical-grade alternative from the lines LUXE carries — prefer SkinMedica first, then Colorescience (only when Colorescience is the more relevant fit, e.g. mineral SPF or tinted sun protection). Name the brand and the relevant product category (e.g. 'a SkinMedica growth-factor serum'), phrased as something to ask their provider about at their next visit — never as a directive to buy or a claim it will fix their skin. Use null if no alternative genuinely makes sense.",
       },
       {
         role: "user",
