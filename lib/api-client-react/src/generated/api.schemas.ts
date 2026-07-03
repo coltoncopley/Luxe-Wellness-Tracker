@@ -245,6 +245,184 @@ export interface UpdateAnnouncementInput {
   active: boolean;
 }
 
+/**
+ * draft = awaiting approval; approved = queued to go out; sent = published
+ */
+export type DoctorTipStatus = typeof DoctorTipStatus[keyof typeof DoctorTipStatus];
+
+
+export const DoctorTipStatus = {
+  draft: 'draft',
+  approved: 'approved',
+  sent: 'sent',
+} as const;
+
+export type DoctorTipSource = typeof DoctorTipSource[keyof typeof DoctorTipSource];
+
+
+export const DoctorTipSource = {
+  ai: 'ai',
+  manual: 'manual',
+} as const;
+
+export interface DoctorTip {
+  id: number;
+  title: string;
+  body: string;
+  /** draft = awaiting approval; approved = queued to go out; sent = published */
+  status: DoctorTipStatus;
+  source: DoctorTipSource;
+  /** ISO timestamp */
+  createdAt: string;
+  /**
+     * ISO timestamp
+     * @nullable
+     */
+  approvedAt: string | null;
+  /**
+     * ISO timestamp
+     * @nullable
+     */
+  sentAt: string | null;
+}
+
+export interface DoctorTipInput {
+  /**
+     * @minLength 3
+     * @maxLength 100
+     */
+  title: string;
+  /**
+     * @minLength 10
+     * @maxLength 1000
+     */
+  body: string;
+}
+
+/**
+ * Approve (queue to send) or move back to draft; sent tips cannot change
+ */
+export type DoctorTipUpdateStatus = typeof DoctorTipUpdateStatus[keyof typeof DoctorTipUpdateStatus];
+
+
+export const DoctorTipUpdateStatus = {
+  draft: 'draft',
+  approved: 'approved',
+} as const;
+
+export interface DoctorTipUpdate {
+  /**
+     * @minLength 3
+     * @maxLength 100
+     */
+  title?: string;
+  /**
+     * @minLength 10
+     * @maxLength 1000
+     */
+  body?: string;
+  /** Approve (queue to send) or move back to draft; sent tips cannot change */
+  status?: DoctorTipUpdateStatus;
+}
+
+export interface Offer {
+  id: number;
+  title: string;
+  description: string;
+  /** ISO timestamp when the offer expires */
+  endsAt: string;
+  claimed: boolean;
+  /**
+     * The user's claim code if they already claimed this offer
+     * @nullable
+     */
+  claimCode: string | null;
+}
+
+export interface AdminOffer {
+  id: number;
+  title: string;
+  description: string;
+  /** ISO timestamp */
+  endsAt: string;
+  active: boolean;
+  /** ISO timestamp */
+  createdAt: string;
+  claimCount: number;
+  redeemedCount: number;
+}
+
+export interface OfferInput {
+  /**
+     * @minLength 3
+     * @maxLength 100
+     */
+  title: string;
+  /**
+     * @minLength 10
+     * @maxLength 1000
+     */
+  description: string;
+  /** ISO timestamp when the offer expires */
+  endsAt: string;
+}
+
+export interface OfferUpdate {
+  /**
+     * @minLength 3
+     * @maxLength 100
+     */
+  title?: string;
+  /**
+     * @minLength 10
+     * @maxLength 1000
+     */
+  description?: string;
+  /** ISO timestamp when the offer expires */
+  endsAt?: string;
+  active?: boolean;
+}
+
+export interface OfferClaimResult {
+  code: string;
+}
+
+export interface OfferClaimDetails {
+  code: string;
+  offerTitle: string;
+  offerDescription: string;
+  /** ISO timestamp */
+  offerEndsAt: string;
+  /** @nullable */
+  patientName: string | null;
+  /** @nullable */
+  patientEmail: string | null;
+  /** ISO timestamp */
+  claimedAt: string;
+  /**
+     * ISO timestamp
+     * @nullable
+     */
+  redeemedAt: string | null;
+}
+
+export interface UpdateBirthdayInput {
+  /**
+     * Birthday as MM-DD (no year), or null to clear
+     * @nullable
+     * @pattern ^(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$
+     */
+  birthday: string | null;
+}
+
+export interface BirthdayResponse {
+  /**
+     * Birthday as MM-DD, or null if not set
+     * @nullable
+     */
+  birthday: string | null;
+}
+
 export interface NotificationPrefs {
   pushEnabled: boolean;
   emailEnabled: boolean;
@@ -1182,6 +1360,11 @@ export interface Me {
   role: MeRole;
   /** Whether the user has acknowledged the privacy notice */
   privacyAcknowledged: boolean;
+  /**
+     * Birthday as MM-DD (patient-set, patient-private)
+     * @nullable
+     */
+  birthday?: string | null;
 }
 
 export interface StaffAccessInput {
@@ -1450,6 +1633,26 @@ export type ListAnnouncements200 = {
 
 export type AdminListAnnouncements200 = {
   announcements: Announcement[];
+};
+
+export type GetCurrentDoctorTip200 = {
+  tip: DoctorTip | null;
+};
+
+export type AdminListDoctorTips200 = {
+  tips: DoctorTip[];
+};
+
+export type AdminGenerateDoctorTips201 = {
+  tips: DoctorTip[];
+};
+
+export type ListOffers200 = {
+  offers: Offer[];
+};
+
+export type AdminListOffers200 = {
+  offers: AdminOffer[];
 };
 
 export type GetVapidPublicKey200 = {

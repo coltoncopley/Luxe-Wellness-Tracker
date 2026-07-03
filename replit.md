@@ -37,7 +37,7 @@ Patient companion app for LUXE Wellness and Aesthetics (physician-owned med spa 
 
 ## Product (pages)
 
-- **Home** `/`: greeting, Wellness Score, AI morning briefing (cached per user/day), to-do checklist, recap, announcements card
+- **Home** `/`: greeting, Wellness Score, AI morning briefing (cached per user/day), to-do checklist, recap, announcements card, weekly "tip from Dr. Copley" card, limited-time offers card (patients claim one code per offer, OFR-XXXX-XXXX shown inline)
 - **Book** `/book`: services + team, deep-link out, manual appointment tracking
 - **Weight** `/weight`: weigh-ins, measurements, goal, chart • **Food** `/food`: meal logs + macros, AI meal-photo scanner • **Restaurants**: 18 local chains with healthy-pick tips (staff-editable)
 - **Glow** `/glow`: daily habit check-in → 0-100 score, streak, trend • **Mind** `/mind`: daily mood check-in → Calm Score, journal/gratitude (never fed to Luxe AI, staff 403-blocked), breathing exercise
@@ -46,8 +46,9 @@ Patient companion app for LUXE Wellness and Aesthetics (physician-owned med spa 
 - **Progress Photos** `/photos`: private before/after journal via App Storage presigned uploads • **Skin Scan** `/skin`: weekly AI selfie scan, 5 cosmetic scores • **Ingredient Scanner** `/ingredients`: label photo → verdict + concerns
 - **Beauty Passport** `/passport`: self-entered lifetime treatment record (deliberately NO points — ungameable); add dialog has a ~22-item preset treatment picker (patient-friendly labels, pre-fills type/name/amount hint, "Other" for freeform); optional touch-up reminders per entry (suggested intervals by type, editable, bell toggle); printable one-page summary (window.print + `.print-only` CSS, self-reported disclaimer); passport profile + last 10 entries feed Luxe AI context (sanitized free text)
 - **Friends** `/friends`: follow-by-invite-code with approval; aggregates only per share settings (% to goal, never pounds); emoji cheers • **Community** `/community`: anonymous wins wall (no author identity anywhere, 3 posts/day cap, staff moderate content only)
-- **Notifications** `/settings`: push/email opt-in, topic toggles, test send
+- **Notifications** `/settings`: push/email opt-in, topic toggles, test send; birthday card (month+day only, optional, powers birthday points)
 - **BHRT** `/bhrt`: static educational page (Worldlink/Rouzier "Normal isn't optimal" framing, disclaimers)
+- **Engagement extras (2026-07):** weekly doctor tips (`doctor_tips`: draft→approved→sent; admin-only CRUD + AI "draft 5 ideas" with deterministic `tipIsSafe` regex filter server-side; Mon 9:00 ET scheduler in `engagementScheduler.ts` publishes oldest approved atomically; send-now from approved only; patients see latest sent via GET /doctor-tips/current). Limited-time offers (`offers`/`offer_claims`: staff CRUD + active toggle, one claim per patient enforced by unique index, OFR-XXXX-XXXX codes, staff verify/redeem tab rate-limited + atomic). Birthday perks (`users.birthday` MM-DD via PUT /me/birthday, daily 9:00 ET award 100 pts dedupe `birthday:<year>`). Staff Portal gained "Offers" (staff) and "Weekly tips" (admin) tabs.
 - **Staff Portal** `/staff` • Legal: /privacy, /terms, /support • Privacy acknowledgment dialog forced on first sign-in (`users.privacy_ack_at`; Me schema requires `privacyAcknowledged` — any Me-shaped response must include it)
 - App Store submission kit in exports/app-store/, screenshots in screenshots/appstore/
 

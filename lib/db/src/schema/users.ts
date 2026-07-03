@@ -11,6 +11,8 @@ export const usersTable = pgTable("users", {
   compUntil: timestamp("comp_until", { withTimezone: true }),
   compLifetime: boolean("comp_lifetime").notNull().default(false),
   compSource: text("comp_source"),
+  // Patient-set birthday as "MM-DD" (no year, patient-private, used for birthday perks).
+  birthday: text("birthday"),
   privacyAckAt: timestamp("privacy_ack_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });

@@ -22,6 +22,8 @@ import socialRouter from "./social";
 import announcementsRouter from "./announcements";
 import notificationsRouter from "./notifications";
 import meRouter from "./me";
+import doctorTipsRouter from "./doctorTips";
+import offersRouter from "./offers";
 import adminRouter from "./admin";
 import billingRouter from "./billing";
 import { requireAuth, requireStaff, requirePatient } from "../middlewares/auth";
@@ -39,6 +41,8 @@ router.use(requireAuth, meRouter);
 router.use(requireAuth, billingRouter);
 router.use(requireAuth, announcementsRouter);
 router.use(requireAuth, notificationsRouter);
+router.use(requireAuth, doctorTipsRouter);
+router.use(requireAuth, offersRouter);
 
 // Premium patient features: require an active (or trialing) membership
 router.use(requireAuth, requireActiveSubscription, appointmentsRouter);

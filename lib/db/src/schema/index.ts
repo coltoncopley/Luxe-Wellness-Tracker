@@ -17,3 +17,5 @@ export * from "./community";
 export * from "./announcements";
 export * from "./notifications";
 export * from "./accessCodes";
+export * from "./tips";
+export * from "./offers";

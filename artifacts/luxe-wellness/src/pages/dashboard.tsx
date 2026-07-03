@@ -3,7 +3,14 @@ import {
   useGetDailyTip,
   useGetBriefing,
   useListAnnouncements,
+  useGetCurrentDoctorTip,
+  useListOffers,
+  getListOffersQueryKey,
+  useClaimOffer,
+  useGetMe,
 } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
@@ -17,6 +24,9 @@ import {
   Circle,
   ChevronRight,
   Megaphone,
+  Stethoscope,
+  BadgePercent,
+  Ticket,
 } from "lucide-react";
 import { Link } from "wouter";
 
@@ -56,12 +66,85 @@ function ScoreRing({ score }: { score: number }) {
   );
 }
 
+function daysLeft(endsAt: string): string {
+  const ms = new Date(endsAt).getTime() - Date.now();
+  const days = Math.ceil(ms / 86_400_000);
+  if (days <= 0) return "Ends today";
+  if (days === 1) return "Ends tomorrow";
+  return `${days} days left`;
+}
+
+function OffersCard() {
+  const queryClient = useQueryClient();
+  const { data: me } = useGetMe();
+  const { data: offersData } = useListOffers();
+  const claimOffer = useClaimOffer({
+    mutation: {
+      onSuccess: () => {
+        toast.success("Offer claimed! Show your code at the front desk.");
+        void queryClient.invalidateQueries({ queryKey: getListOffersQueryKey() });
+      },
+      onError: () => toast.error("Couldn't claim this offer. Please try again."),
+    },
+  });
+  const offers = offersData?.offers ?? [];
+  if (offers.length === 0) return null;
+  const isPatient = me?.role === "patient";
+
+  return (
+    <Card className="border-primary/30 bg-primary/5 shadow-sm">
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-sans font-medium text-primary flex items-center gap-2">
+          <BadgePercent className="h-4 w-4" />
+          Limited-time offers
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {offers.map((o) => (
+          <div key={o.id} data-testid={`offer-${o.id}`}>
+            <div className="flex items-baseline justify-between gap-3">
+              <h3 className="font-serif text-lg">{o.title}</h3>
+              <span className="text-xs text-muted-foreground shrink-0">{daysLeft(o.endsAt)}</span>
+            </div>
+            <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
+              {o.description}
+            </p>
+            {o.claimed && o.claimCode ? (
+              <div className="mt-2 flex items-center gap-2 text-sm">
+                <Ticket className="h-4 w-4 text-primary" />
+                <span className="font-mono tracking-widest" data-testid={`offer-code-${o.id}`}>
+                  {o.claimCode}
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  — show this code at the front desk
+                </span>
+              </div>
+            ) : isPatient ? (
+              <Button
+                size="sm"
+                className="mt-2 rounded-full"
+                disabled={claimOffer.isPending}
+                onClick={() => claimOffer.mutate({ id: o.id })}
+                data-testid={`button-claim-offer-${o.id}`}
+              >
+                Claim this offer
+              </Button>
+            ) : null}
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function Dashboard() {
   const { data: summary, isLoading: summaryLoading } = useGetDashboardSummary();
   const { data: briefing, isLoading: briefingLoading } = useGetBriefing();
   const { data: dailyTip } = useGetDailyTip();
   const { data: announcementsData } = useListAnnouncements();
+  const { data: doctorTipData } = useGetCurrentDoctorTip();
   const announcements = announcementsData?.announcements ?? [];
+  const doctorTip = doctorTipData?.tip ?? null;
 
   if (summaryLoading || briefingLoading)
     return (
@@ -116,6 +199,29 @@ export default function Dashboard() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Weekly tip from the practice */}
+      {doctorTip && (
+        <Card className="border-border bg-card shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-sans font-medium text-primary flex items-center gap-2">
+              <Stethoscope className="h-4 w-4" />
+              This week's tip from Dr. Copley
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <h3 className="font-serif text-lg mb-1" data-testid="text-doctor-tip-title">
+              {doctorTip.title}
+            </h3>
+            <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
+              {doctorTip.body}
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Limited-time offers */}
+      <OffersCard />
 
       {/* Spa announcements */}
       {announcements.length > 0 && (

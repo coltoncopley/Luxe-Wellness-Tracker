@@ -19,6 +19,7 @@ export const POINTS = {
   ingredientScan: 5,
   mindCheckin: 15,
   communityPost: 10,
+  birthday: 100,
 } as const;
 
 export const INGREDIENT_SCAN_DAILY_CAP = 2;

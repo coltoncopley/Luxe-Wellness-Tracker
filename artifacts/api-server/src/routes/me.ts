@@ -6,6 +6,8 @@ import {
   ActivateStaffAccessBody,
   ActivateStaffAccessResponse,
   AcknowledgePrivacyNoticeResponse,
+  UpdateBirthdayBody,
+  UpdateBirthdayResponse,
 } from "@workspace/api-zod";
 import { userIdOf } from "../middlewares/auth";
 
@@ -47,8 +49,28 @@ router.get("/me", async (_req, res): Promise<void> => {
       firstName: user.firstName,
       role: user.role,
       privacyAcknowledged: user.privacyAckAt !== null,
+      birthday: user.birthday,
     }),
   );
+});
+
+router.put("/me/birthday", async (req, res): Promise<void> => {
+  const userId = userIdOf(res);
+  const body = UpdateBirthdayBody.safeParse(req.body);
+  if (!body.success) {
+    res.status(400).json({ error: "Birthday must be in MM-DD format" });
+    return;
+  }
+  const [user] = await db
+    .update(usersTable)
+    .set({ birthday: body.data.birthday })
+    .where(eq(usersTable.id, userId))
+    .returning();
+  if (!user) {
+    res.status(401).json({ error: "Not signed in" });
+    return;
+  }
+  res.json(UpdateBirthdayResponse.parse({ birthday: user.birthday }));
 });
 
 router.post("/me/privacy-ack", async (_req, res): Promise<void> => {

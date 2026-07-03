@@ -1376,6 +1376,24 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/OpenaiError"
+  /me/birthday:
+    put:
+      operationId: updateBirthday
+      tags: [me]
+      summary: Set or clear the user's birthday (MM-DD, patient-private)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateBirthdayInput"
+      responses:
+        "200":
+          description: Updated birthday
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BirthdayResponse"
   /admin/services:
     post:
       operationId: adminCreateService
@@ -1892,6 +1910,287 @@ paths:
           description: Deleted
         "404":
           description: Announcement not found
+  /doctor-tips/current:
+    get:
+      operationId: getCurrentDoctorTip
+      tags: [tips]
+      summary: The most recently published tip from the doctor (null if none yet)
+      responses:
+        "200":
+          description: Current published tip
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [tip]
+                properties:
+                  tip:
+                    anyOf:
+                      - $ref: "#/components/schemas/DoctorTip"
+                      - type: "null"
+  /admin/doctor-tips:
+    get:
+      operationId: adminListDoctorTips
+      tags: [admin]
+      summary: All doctor tips in the approval queue (admin only)
+      responses:
+        "200":
+          description: Tips, newest first
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [tips]
+                properties:
+                  tips:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/DoctorTip"
+    post:
+      operationId: adminCreateDoctorTip
+      tags: [admin]
+      summary: Write a tip manually (admin only, starts as draft)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DoctorTipInput"
+      responses:
+        "201":
+          description: Created tip
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DoctorTip"
+  /admin/doctor-tips/generate:
+    post:
+      operationId: adminGenerateDoctorTips
+      tags: [admin]
+      summary: Have AI draft a batch of tip ideas for review (admin only)
+      responses:
+        "201":
+          description: Newly drafted tips
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [tips]
+                properties:
+                  tips:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/DoctorTip"
+  /admin/doctor-tips/{id}:
+    patch:
+      operationId: adminUpdateDoctorTip
+      tags: [admin]
+      summary: Edit, approve, or unapprove a tip (admin only; sent tips cannot be edited)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DoctorTipUpdate"
+      responses:
+        "200":
+          description: Updated tip
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DoctorTip"
+        "404":
+          description: Tip not found
+    delete:
+      operationId: adminDeleteDoctorTip
+      tags: [admin]
+      summary: Delete a tip (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Tip not found
+  /admin/doctor-tips/{id}/send-now:
+    post:
+      operationId: adminSendDoctorTipNow
+      tags: [admin]
+      summary: Publish an approved tip immediately (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Published tip
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DoctorTip"
+        "404":
+          description: Tip not found
+        "400":
+          description: Tip is not approved
+  /offers:
+    get:
+      operationId: listOffers
+      tags: [offers]
+      summary: Active limited-time offers with the user's claim status
+      responses:
+        "200":
+          description: Active offers
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [offers]
+                properties:
+                  offers:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Offer"
+  /offers/{id}/claim:
+    post:
+      operationId: claimOffer
+      tags: [offers]
+      summary: Claim an active offer (once per offer) and get a claim code
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "201":
+          description: Claimed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OfferClaimResult"
+        "404":
+          description: Offer not found or no longer active
+        "409":
+          description: Already claimed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OfferClaimResult"
+  /admin/offers:
+    get:
+      operationId: adminListOffers
+      tags: [admin]
+      summary: All offers with claim counts (staff)
+      responses:
+        "200":
+          description: Offers, newest first
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [offers]
+                properties:
+                  offers:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AdminOffer"
+    post:
+      operationId: adminCreateOffer
+      tags: [admin]
+      summary: Create a limited-time offer (staff)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OfferInput"
+      responses:
+        "201":
+          description: Created offer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminOffer"
+  /admin/offers/{id}:
+    patch:
+      operationId: adminUpdateOffer
+      tags: [admin]
+      summary: Edit or deactivate an offer (staff)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OfferUpdate"
+      responses:
+        "200":
+          description: Updated offer
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminOffer"
+        "404":
+          description: Offer not found
+  /admin/offer-claims/{code}:
+    get:
+      operationId: adminGetOfferClaim
+      tags: [admin]
+      summary: Look up an offer claim code (staff, rate-limited)
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Claim details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OfferClaimDetails"
+        "404":
+          description: Claim not found
+  /admin/offer-claims/{code}/redeem:
+    post:
+      operationId: adminRedeemOfferClaim
+      tags: [admin]
+      summary: Mark an offer claim as used (staff)
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Claim marked used
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OfferClaimDetails"
+        "404":
+          description: Claim not found
+        "409":
+          description: Claim already used
   /admin/metrics:
     get:
       operationId: adminGetMetrics
@@ -2296,6 +2595,138 @@ components:
       properties:
         active:
           type: boolean
+    DoctorTip:
+      type: object
+      required: [id, title, body, status, source, createdAt, approvedAt, sentAt]
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        body: { type: string }
+        status:
+          type: string
+          enum: [draft, approved, sent]
+          description: draft = awaiting approval; approved = queued to go out; sent = published
+        source:
+          type: string
+          enum: [ai, manual]
+        createdAt: { type: string, description: ISO timestamp }
+        approvedAt: { type: ["string", "null"], description: ISO timestamp }
+        sentAt: { type: ["string", "null"], description: ISO timestamp }
+    DoctorTipInput:
+      type: object
+      required: [title, body]
+      properties:
+        title:
+          type: string
+          minLength: 3
+          maxLength: 100
+        body:
+          type: string
+          minLength: 10
+          maxLength: 1000
+    DoctorTipUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 3
+          maxLength: 100
+        body:
+          type: string
+          minLength: 10
+          maxLength: 1000
+        status:
+          type: string
+          enum: [draft, approved]
+          description: Approve (queue to send) or move back to draft; sent tips cannot change
+    Offer:
+      type: object
+      required: [id, title, description, endsAt, claimed, claimCode]
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        description: { type: string }
+        endsAt: { type: string, description: ISO timestamp when the offer expires }
+        claimed: { type: boolean }
+        claimCode:
+          type: ["string", "null"]
+          description: The user's claim code if they already claimed this offer
+    AdminOffer:
+      type: object
+      required: [id, title, description, endsAt, active, createdAt, claimCount, redeemedCount]
+      properties:
+        id: { type: integer }
+        title: { type: string }
+        description: { type: string }
+        endsAt: { type: string, description: ISO timestamp }
+        active: { type: boolean }
+        createdAt: { type: string, description: ISO timestamp }
+        claimCount: { type: integer }
+        redeemedCount: { type: integer }
+    OfferInput:
+      type: object
+      required: [title, description, endsAt]
+      properties:
+        title:
+          type: string
+          minLength: 3
+          maxLength: 100
+        description:
+          type: string
+          minLength: 10
+          maxLength: 1000
+        endsAt:
+          type: string
+          description: ISO timestamp when the offer expires
+    OfferUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 3
+          maxLength: 100
+        description:
+          type: string
+          minLength: 10
+          maxLength: 1000
+        endsAt:
+          type: string
+          description: ISO timestamp when the offer expires
+        active:
+          type: boolean
+    OfferClaimResult:
+      type: object
+      required: [code]
+      properties:
+        code: { type: string }
+    OfferClaimDetails:
+      type: object
+      required:
+        [code, offerTitle, offerDescription, offerEndsAt, patientName, patientEmail, claimedAt, redeemedAt]
+      properties:
+        code: { type: string }
+        offerTitle: { type: string }
+        offerDescription: { type: string }
+        offerEndsAt: { type: string, description: ISO timestamp }
+        patientName: { type: ["string", "null"] }
+        patientEmail: { type: ["string", "null"] }
+        claimedAt: { type: string, description: ISO timestamp }
+        redeemedAt: { type: ["string", "null"], description: ISO timestamp }
+    UpdateBirthdayInput:
+      type: object
+      required: [birthday]
+      properties:
+        birthday:
+          type: ["string", "null"]
+          pattern: "^(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$"
+          description: Birthday as MM-DD (no year), or null to clear
+    BirthdayResponse:
+      type: object
+      required: [birthday]
+      properties:
+        birthday:
+          type: ["string", "null"]
+          description: Birthday as MM-DD, or null if not set
     NotificationPrefs:
       type: object
       required:
@@ -3462,6 +3893,9 @@ components:
         privacyAcknowledged:
           type: boolean
           description: Whether the user has acknowledged the privacy notice
+        birthday:
+          type: ["string", "null"]
+          description: Birthday as MM-DD (patient-set, patient-private)
     StaffAccessInput:
       type: object
       required: [code]

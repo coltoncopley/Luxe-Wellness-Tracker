@@ -1,6 +1,14 @@
-import { Router, type IRouter } from "express";
+import {
+  Router,
+  type IRouter,
+  type Request,
+  type Response,
+  type NextFunction,
+} from "express";
 import crypto from "node:crypto";
-import { asc, desc, eq, gt, inArray, or, sql } from "drizzle-orm";
+import { z } from "zod/v4";
+import { and, asc, desc, eq, gt, inArray, isNull, or, sql } from "drizzle-orm";
+import { openai } from "@workspace/integrations-openai-ai-server";
 import {
   db,
   servicesTable,
@@ -15,6 +23,10 @@ import {
   rewardEventsTable,
   membershipCodesTable,
   type MembershipCode,
+  doctorTipsTable,
+  type DoctorTip,
+  offersTable,
+  offerClaimsTable,
 } from "@workspace/db";
 import {
   AdminCreateServiceBody,
@@ -52,6 +64,20 @@ import {
   AdminCreateMembershipCodeBody,
   AdminCreateMembershipCodeResponse,
   AdminRevokeMembershipCodeResponse,
+  AdminListDoctorTipsResponse,
+  AdminCreateDoctorTipBody,
+  AdminCreateDoctorTipResponse,
+  AdminGenerateDoctorTipsResponse,
+  AdminUpdateDoctorTipBody,
+  AdminUpdateDoctorTipResponse,
+  AdminSendDoctorTipNowResponse,
+  AdminListOffersResponse,
+  AdminCreateOfferBody,
+  AdminCreateOfferResponse,
+  AdminUpdateOfferBody,
+  AdminUpdateOfferResponse,
+  AdminGetOfferClaimResponse,
+  AdminRedeemOfferClaimResponse,
 } from "@workspace/api-zod";
 import { clearSubscriptionCache } from "../middlewares/subscription";
 import { fanOutAnnouncement } from "../lib/notifications";
@@ -848,5 +874,382 @@ router.get("/admin/metrics", requireAdmin, async (_req, res): Promise<void> => {
     }),
   );
 });
+
+// ---- Doctor tips (weekly tips with admin approval queue) ----
+
+function toDoctorTipResponse(t: DoctorTip) {
+  return {
+    id: t.id,
+    title: t.title,
+    body: t.body,
+    status: t.status,
+    source: t.source,
+    createdAt: t.createdAt.toISOString(),
+    approvedAt: t.approvedAt ? t.approvedAt.toISOString() : null,
+    sentAt: t.sentAt ? t.sentAt.toISOString() : null,
+  };
+}
+
+router.get("/admin/doctor-tips", requireAdmin, async (_req, res): Promise<void> => {
+  const rows = await db
+    .select()
+    .from(doctorTipsTable)
+    .orderBy(desc(doctorTipsTable.createdAt))
+    .limit(500);
+  res.json(AdminListDoctorTipsResponse.parse({ tips: rows.map(toDoctorTipResponse) }));
+});
+
+router.post("/admin/doctor-tips", requireAdmin, async (req, res): Promise<void> => {
+  const body = AdminCreateDoctorTipBody.safeParse(req.body);
+  if (!body.success) {
+    res.status(400).json({ error: "Invalid input" });
+    return;
+  }
+  const actorId = res.locals.userId as string;
+  const [row] = await db
+    .insert(doctorTipsTable)
+    .values({ title: body.data.title, body: body.data.body, source: "manual", createdBy: actorId })
+    .returning();
+  res.status(201).json(AdminCreateDoctorTipResponse.parse(toDoctorTipResponse(row!)));
+});
+
+const tipIdeasSchema = z.object({
+  tips: z
+    .array(z.object({ title: z.string().min(3).max(100), body: z.string().min(10).max(1000) }))
+    .min(1)
+    .max(6),
+});
+
+// Deterministic safety filter: drop any generated tip whose language crosses from
+// educational wellness content into diagnosis, prescribing, dosing, or absolute
+// medical claims. Mirrors the enforceSafetyLanguage pattern used for ingredient scans.
+const TIP_UNSAFE_PATTERNS: RegExp[] = [
+  /\bdiagnos(e|is|ed|ing)\b/i,
+  /\bprescri(be|bed|ption|ptions)\b/i,
+  /\b\d+(\.\d+)?\s?(mg|mcg|µg|ml|milligrams?|micrograms?|units?|iu)\b/i, // dosing amounts
+  /\bdos(e|es|age|ing)\b/i,
+  /\b(cure|cures|cured|curing)\b/i,
+  /\bguarantee(s|d)?\b/i,
+  /\b(will|proven to)\s+(treat|heal|cure|eliminate|fix|reverse)\b/i,
+  /\bstop(ping)?\s+(taking\s+)?(your\s+)?(medication|meds|medicine)\b/i,
+  /\b(increase|decrease|adjust|change|skip|double)\s+(your\s+)?(dose|dosage|medication|meds|injection)\b/i,
+  /\byou\s+(have|are suffering from|likely have)\b/i, // diagnostic phrasing
+];
+
+function tipIsSafe(tip: { title: string; body: string }): boolean {
+  const text = `${tip.title} ${tip.body}`;
+  return !TIP_UNSAFE_PATTERNS.some((p) => p.test(text));
+}
+
+router.post("/admin/doctor-tips/generate", requireAdmin, async (req, res): Promise<void> => {
+  const actorId = res.locals.userId as string;
+  const existing = await db
+    .select({ title: doctorTipsTable.title })
+    .from(doctorTipsTable)
+    .orderBy(desc(doctorTipsTable.createdAt))
+    .limit(50);
+  const completion = await openai.chat.completions.create({
+    model: "gpt-5.4",
+    messages: [
+      {
+        role: "system",
+        content:
+          "You draft short weekly wellness tips for patients of LUXE Wellness & Aesthetics, a physician-owned med spa, written in the friendly voice of the practice. " +
+          "Topics: skincare habits, sun protection, hydration, sleep, gentle nutrition (many patients are on GLP-1 weight-loss medication), stress relief, and treatment aftercare basics. " +
+          "Rules: educational only — no diagnosis, no medical advice, no medication dosing; use conditional language ('may', 'can help'); no product sales pressure; each tip stands alone. " +
+          'Respond ONLY with JSON matching {"tips": [{"title": string, "body": string}]} — exactly 5 tips, titles under 80 characters, bodies 2-4 friendly sentences.' +
+          (existing.length > 0
+            ? ` Avoid repeating these existing tip titles: ${existing.map((t) => t.title).join("; ")}.`
+            : ""),
+      },
+      { role: "user", content: "Draft 5 new weekly tip ideas for the approval queue." },
+    ],
+    response_format: { type: "json_object" },
+  });
+  const raw = completion.choices[0]?.message?.content;
+  let ideas: z.infer<typeof tipIdeasSchema>;
+  try {
+    ideas = tipIdeasSchema.parse(JSON.parse(raw ?? ""));
+  } catch {
+    req.log.warn({ raw }, "Unparseable tip ideas from model");
+    res.status(422).json({ error: "Could not draft tips — please try again" });
+    return;
+  }
+  const safeTips = ideas.tips.filter(tipIsSafe);
+  if (safeTips.length < ideas.tips.length) {
+    req.log.warn(
+      { dropped: ideas.tips.length - safeTips.length },
+      "Dropped generated tips that failed the safety-language filter",
+    );
+  }
+  if (safeTips.length === 0) {
+    res.status(422).json({ error: "Could not draft tips — please try again" });
+    return;
+  }
+  const rows = await db
+    .insert(doctorTipsTable)
+    .values(
+      safeTips.map((t) => ({
+        title: t.title,
+        body: t.body,
+        source: "ai",
+        createdBy: actorId,
+      })),
+    )
+    .returning();
+  res.status(201).json(AdminGenerateDoctorTipsResponse.parse({ tips: rows.map(toDoctorTipResponse) }));
+});
+
+router.patch("/admin/doctor-tips/:id", requireAdmin, async (req, res): Promise<void> => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) {
+    res.status(404).json({ error: "Tip not found" });
+    return;
+  }
+  const body = AdminUpdateDoctorTipBody.safeParse(req.body);
+  if (!body.success) {
+    res.status(400).json({ error: "Invalid input" });
+    return;
+  }
+  const [current] = await db.select().from(doctorTipsTable).where(eq(doctorTipsTable.id, id));
+  if (!current) {
+    res.status(404).json({ error: "Tip not found" });
+    return;
+  }
+  if (current.status === "sent") {
+    res.status(400).json({ error: "This tip has already been sent and can no longer be changed" });
+    return;
+  }
+  const updates: Partial<typeof doctorTipsTable.$inferInsert> = {};
+  if (body.data.title !== undefined) updates.title = body.data.title;
+  if (body.data.body !== undefined) updates.body = body.data.body;
+  if (body.data.status !== undefined) {
+    updates.status = body.data.status;
+    updates.approvedAt = body.data.status === "approved" ? new Date() : null;
+  }
+  const [row] = await db
+    .update(doctorTipsTable)
+    .set(updates)
+    .where(eq(doctorTipsTable.id, id))
+    .returning();
+  res.json(AdminUpdateDoctorTipResponse.parse(toDoctorTipResponse(row!)));
+});
+
+router.delete("/admin/doctor-tips/:id", requireAdmin, async (req, res): Promise<void> => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) {
+    res.status(404).json({ error: "Tip not found" });
+    return;
+  }
+  const deleted = await db
+    .delete(doctorTipsTable)
+    .where(eq(doctorTipsTable.id, id))
+    .returning({ id: doctorTipsTable.id });
+  if (deleted.length === 0) {
+    res.status(404).json({ error: "Tip not found" });
+    return;
+  }
+  res.status(204).end();
+});
+
+router.post("/admin/doctor-tips/:id/send-now", requireAdmin, async (req, res): Promise<void> => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) {
+    res.status(404).json({ error: "Tip not found" });
+    return;
+  }
+  // Atomic: only an approved tip can be published.
+  const [row] = await db
+    .update(doctorTipsTable)
+    .set({ status: "sent", sentAt: new Date() })
+    .where(and(eq(doctorTipsTable.id, id), eq(doctorTipsTable.status, "approved")))
+    .returning();
+  if (!row) {
+    const [exists] = await db.select().from(doctorTipsTable).where(eq(doctorTipsTable.id, id));
+    if (!exists) {
+      res.status(404).json({ error: "Tip not found" });
+      return;
+    }
+    res.status(400).json({ error: "Only approved tips can be sent" });
+    return;
+  }
+  res.json(AdminSendDoctorTipNowResponse.parse(toDoctorTipResponse(row)));
+});
+
+// ---- Limited-time offers ----
+
+async function toAdminOfferResponses(rows: (typeof offersTable.$inferSelect)[]) {
+  if (rows.length === 0) return [];
+  const counts = await db
+    .select({
+      offerId: offerClaimsTable.offerId,
+      claimCount: sql<number>`count(*)::int`,
+      redeemedCount: sql<number>`count(${offerClaimsTable.redeemedAt})::int`,
+    })
+    .from(offerClaimsTable)
+    .where(
+      inArray(
+        offerClaimsTable.offerId,
+        rows.map((r) => r.id),
+      ),
+    )
+    .groupBy(offerClaimsTable.offerId);
+  const byOffer = new Map(counts.map((c) => [c.offerId, c]));
+  return rows.map((o) => ({
+    id: o.id,
+    title: o.title,
+    description: o.description,
+    endsAt: o.endsAt.toISOString(),
+    active: o.active,
+    createdAt: o.createdAt.toISOString(),
+    claimCount: byOffer.get(o.id)?.claimCount ?? 0,
+    redeemedCount: byOffer.get(o.id)?.redeemedCount ?? 0,
+  }));
+}
+
+router.get("/admin/offers", async (_req, res): Promise<void> => {
+  const rows = await db.select().from(offersTable).orderBy(desc(offersTable.createdAt)).limit(500);
+  res.json(AdminListOffersResponse.parse({ offers: await toAdminOfferResponses(rows) }));
+});
+
+router.post("/admin/offers", async (req, res): Promise<void> => {
+  const body = AdminCreateOfferBody.safeParse(req.body);
+  if (!body.success) {
+    res.status(400).json({ error: "Invalid input" });
+    return;
+  }
+  const endsAt = new Date(body.data.endsAt);
+  if (Number.isNaN(endsAt.getTime()) || endsAt <= new Date()) {
+    res.status(400).json({ error: "End date must be a valid date in the future" });
+    return;
+  }
+  const actorId = res.locals.userId as string;
+  const [row] = await db
+    .insert(offersTable)
+    .values({
+      title: body.data.title,
+      description: body.data.description,
+      endsAt,
+      createdBy: actorId,
+    })
+    .returning();
+  const [payload] = await toAdminOfferResponses([row!]);
+  res.status(201).json(AdminCreateOfferResponse.parse(payload));
+});
+
+router.patch("/admin/offers/:id", async (req, res): Promise<void> => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id <= 0) {
+    res.status(404).json({ error: "Offer not found" });
+    return;
+  }
+  const body = AdminUpdateOfferBody.safeParse(req.body);
+  if (!body.success) {
+    res.status(400).json({ error: "Invalid input" });
+    return;
+  }
+  const updates: Partial<typeof offersTable.$inferInsert> = {};
+  if (body.data.title !== undefined) updates.title = body.data.title;
+  if (body.data.description !== undefined) updates.description = body.data.description;
+  if (body.data.active !== undefined) updates.active = body.data.active;
+  if (body.data.endsAt !== undefined) {
+    const endsAt = new Date(body.data.endsAt);
+    if (Number.isNaN(endsAt.getTime())) {
+      res.status(400).json({ error: "End date must be a valid date" });
+      return;
+    }
+    updates.endsAt = endsAt;
+  }
+  if (Object.keys(updates).length === 0) {
+    res.status(400).json({ error: "Nothing to update" });
+    return;
+  }
+  const [row] = await db.update(offersTable).set(updates).where(eq(offersTable.id, id)).returning();
+  if (!row) {
+    res.status(404).json({ error: "Offer not found" });
+    return;
+  }
+  const [payload] = await toAdminOfferResponses([row]);
+  res.json(AdminUpdateOfferResponse.parse(payload));
+});
+
+const claimLookupHits = new Map<string, { count: number; windowStart: number }>();
+const CLAIM_LOOKUP_LIMIT = 15;
+const CLAIM_LOOKUP_WINDOW_MS = 60_000;
+
+function rateLimitClaimLookup(req: Request, res: Response, next: NextFunction): void {
+  const key = req.ip ?? "unknown";
+  const now = Date.now();
+  const entry = claimLookupHits.get(key);
+  if (!entry || now - entry.windowStart > CLAIM_LOOKUP_WINDOW_MS) {
+    if (claimLookupHits.size > 1000) claimLookupHits.clear();
+    claimLookupHits.set(key, { count: 1, windowStart: now });
+    next();
+    return;
+  }
+  entry.count += 1;
+  if (entry.count > CLAIM_LOOKUP_LIMIT) {
+    res.status(429).json({ error: "Too many lookups — try again in a minute" });
+    return;
+  }
+  next();
+}
+
+async function offerClaimDetails(code: string) {
+  const [claim] = await db
+    .select()
+    .from(offerClaimsTable)
+    .where(eq(offerClaimsTable.code, code.trim().toUpperCase()));
+  if (!claim) return null;
+  const [offer] = await db.select().from(offersTable).where(eq(offersTable.id, claim.offerId));
+  const [patient] = await db
+    .select({ firstName: usersTable.firstName, email: usersTable.email })
+    .from(usersTable)
+    .where(eq(usersTable.id, claim.userId));
+  return {
+    code: claim.code,
+    offerTitle: offer?.title ?? "Unknown offer",
+    offerDescription: offer?.description ?? "",
+    offerEndsAt: (offer?.endsAt ?? claim.claimedAt).toISOString(),
+    patientName: patient?.firstName ?? null,
+    patientEmail: patient?.email ?? null,
+    claimedAt: claim.claimedAt.toISOString(),
+    redeemedAt: claim.redeemedAt ? claim.redeemedAt.toISOString() : null,
+  };
+}
+
+router.get("/admin/offer-claims/:code", rateLimitClaimLookup, async (req, res): Promise<void> => {
+  const details = await offerClaimDetails(String(req.params.code ?? ""));
+  if (!details) {
+    res.status(404).json({ error: "Claim not found" });
+    return;
+  }
+  res.json(AdminGetOfferClaimResponse.parse(details));
+});
+
+router.post(
+  "/admin/offer-claims/:code/redeem",
+  rateLimitClaimLookup,
+  async (req, res): Promise<void> => {
+    const code = String(req.params.code ?? "").trim().toUpperCase();
+    // Atomic: only an unused claim can be marked used.
+    const [row] = await db
+      .update(offerClaimsTable)
+      .set({ redeemedAt: new Date(), redeemedBy: res.locals.userId as string })
+      .where(and(eq(offerClaimsTable.code, code), isNull(offerClaimsTable.redeemedAt)))
+      .returning();
+    if (!row) {
+      const details = await offerClaimDetails(code);
+      if (!details) {
+        res.status(404).json({ error: "Claim not found" });
+        return;
+      }
+      res.status(409).json({ error: "This claim code has already been used" });
+      return;
+    }
+    const details = await offerClaimDetails(code);
+    res.json(AdminRedeemOfferClaimResponse.parse(details));
+  },
+);
 
 export default router;

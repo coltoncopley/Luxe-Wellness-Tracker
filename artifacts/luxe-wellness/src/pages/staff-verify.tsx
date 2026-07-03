@@ -50,6 +50,22 @@ import {
   useAdminUpdateAnnouncement,
   useAdminDeleteAnnouncement,
   useAdminGetMetrics,
+  useAdminListDoctorTips,
+  getAdminListDoctorTipsQueryKey,
+  useAdminCreateDoctorTip,
+  useAdminGenerateDoctorTips,
+  useAdminUpdateDoctorTip,
+  useAdminDeleteDoctorTip,
+  useAdminSendDoctorTipNow,
+  type DoctorTip,
+  useAdminListOffers,
+  getAdminListOffersQueryKey,
+  useAdminCreateOffer,
+  useAdminUpdateOffer,
+  adminGetOfferClaim,
+  useAdminRedeemOfferClaim,
+  type AdminOffer,
+  type OfferClaimDetails,
   type Announcement,
   type AdminStaffMember,
   type CompAccess,
@@ -99,6 +115,10 @@ import {
   Copy,
   Ban,
   TicketPercent,
+  Stethoscope,
+  Wand2,
+  Send,
+  BadgePercent,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -2103,6 +2123,578 @@ function AdminTab({ myUserId }: { myUserId: string }) {
   );
 }
 
+/* ---------- Weekly tips tab (admin only) ---------- */
+
+function tipStatusBadge(status: DoctorTip["status"]) {
+  if (status === "sent")
+    return <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100">Published</Badge>;
+  if (status === "approved")
+    return <Badge className="bg-sky-100 text-sky-800 hover:bg-sky-100">Approved — queued</Badge>;
+  return <Badge variant="secondary">Draft</Badge>;
+}
+
+function TipsTab() {
+  const queryClient = useQueryClient();
+  const { data: tipsData, isLoading } = useAdminListDoctorTips({
+    query: { queryKey: getAdminListDoctorTipsQueryKey() },
+  });
+  const createTip = useAdminCreateDoctorTip();
+  const generateTips = useAdminGenerateDoctorTips();
+  const updateTip = useAdminUpdateDoctorTip();
+  const deleteTip = useAdminDeleteDoctorTip();
+  const sendNow = useAdminSendDoctorTipNow();
+
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editTitle, setEditTitle] = useState("");
+  const [editBody, setEditBody] = useState("");
+
+  function refresh() {
+    void queryClient.invalidateQueries({ queryKey: getAdminListDoctorTipsQueryKey() });
+  }
+
+  function handleCreate(e: React.FormEvent) {
+    e.preventDefault();
+    createTip.mutate(
+      { data: { title: title.trim(), body: body.trim() } },
+      {
+        onSuccess: () => {
+          toast.success("Tip added to the queue as a draft");
+          setTitle("");
+          setBody("");
+          refresh();
+        },
+        onError: () => toast.error("Couldn't save the tip. Please try again."),
+      },
+    );
+  }
+
+  function handleGenerate() {
+    generateTips.mutate(undefined, {
+      onSuccess: (result) => {
+        toast.success(`${result.tips.length} tip ideas drafted — review and approve the ones you like`);
+        refresh();
+      },
+      onError: () => toast.error("Couldn't draft ideas right now. Please try again."),
+    });
+  }
+
+  function startEdit(t: DoctorTip) {
+    setEditingId(t.id);
+    setEditTitle(t.title);
+    setEditBody(t.body);
+  }
+
+  function saveEdit(id: number) {
+    updateTip.mutate(
+      { id, data: { title: editTitle.trim(), body: editBody.trim() } },
+      {
+        onSuccess: () => {
+          toast.success("Tip updated");
+          setEditingId(null);
+          refresh();
+        },
+        onError: () => toast.error("Couldn't update the tip."),
+      },
+    );
+  }
+
+  function setStatus(t: DoctorTip, status: "draft" | "approved") {
+    updateTip.mutate(
+      { id: t.id, data: { status } },
+      {
+        onSuccess: () => {
+          toast.success(status === "approved" ? "Tip approved — it'll go out on a Monday" : "Moved back to drafts");
+          refresh();
+        },
+        onError: () => toast.error("Couldn't update the tip."),
+      },
+    );
+  }
+
+  function handleSendNow(t: DoctorTip) {
+    if (!window.confirm(`Publish "${t.title}" to every patient's home page right now?`)) return;
+    sendNow.mutate(
+      { id: t.id },
+      {
+        onSuccess: () => {
+          toast.success("Tip published — patients will see it on their home page");
+          refresh();
+        },
+        onError: () => toast.error("Couldn't publish the tip."),
+      },
+    );
+  }
+
+  function handleDelete(t: DoctorTip) {
+    if (!window.confirm(`Delete "${t.title}"?`)) return;
+    deleteTip.mutate(
+      { id: t.id },
+      {
+        onSuccess: () => {
+          toast.success("Tip deleted");
+          refresh();
+        },
+        onError: () => toast.error("Couldn't delete the tip."),
+      },
+    );
+  }
+
+  const tips = tipsData?.tips ?? [];
+  const drafts = tips.filter((t) => t.status === "draft");
+  const approved = tips.filter((t) => t.status === "approved");
+  const sent = tips.filter((t) => t.status === "sent");
+
+  function tipRow(t: DoctorTip) {
+    const busy = updateTip.isPending || deleteTip.isPending || sendNow.isPending;
+    return (
+      <div key={t.id} className="rounded-xl border border-border p-4 space-y-2">
+        {editingId === t.id ? (
+          <div className="space-y-2">
+            <Input
+              value={editTitle}
+              onChange={(e) => setEditTitle(e.target.value)}
+              maxLength={100}
+            />
+            <Textarea
+              value={editBody}
+              onChange={(e) => setEditBody(e.target.value)}
+              maxLength={1000}
+              rows={4}
+            />
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                disabled={busy || editTitle.trim().length < 3 || editBody.trim().length < 10}
+                onClick={() => saveEdit(t.id)}
+              >
+                Save
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}>
+                Cancel
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <div className="flex items-start justify-between gap-3">
+              <div className="font-medium">{t.title}</div>
+              <div className="flex items-center gap-1.5 shrink-0">
+                {t.source === "ai" && (
+                  <Badge variant="outline" className="text-xs">
+                    AI idea
+                  </Badge>
+                )}
+                {tipStatusBadge(t.status)}
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground whitespace-pre-line">{t.body}</p>
+            {t.status === "sent" ? (
+              <p className="text-xs text-muted-foreground">
+                Published {t.sentAt ? format(new Date(t.sentAt), "MMM d, yyyy") : ""}
+              </p>
+            ) : (
+              <div className="flex flex-wrap gap-2 pt-1">
+                <Button size="sm" variant="outline" disabled={busy} onClick={() => startEdit(t)}>
+                  <Pencil className="h-3.5 w-3.5 mr-1" /> Edit
+                </Button>
+                {t.status === "draft" ? (
+                  <Button size="sm" disabled={busy} onClick={() => setStatus(t, "approved")}>
+                    <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Approve
+                  </Button>
+                ) : (
+                  <>
+                    <Button size="sm" disabled={busy} onClick={() => handleSendNow(t)}>
+                      <Send className="h-3.5 w-3.5 mr-1" /> Publish now
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={busy}
+                      onClick={() => setStatus(t, "draft")}
+                    >
+                      Back to draft
+                    </Button>
+                  </>
+                )}
+                <Button size="sm" variant="ghost" disabled={busy} onClick={() => handleDelete(t)}>
+                  <Trash2 className="h-3.5 w-3.5" />
+                </Button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Weekly tip from Dr. Copley</CardTitle>
+          <CardDescription>
+            Approved tips go out automatically every Monday morning, one per week (oldest approved
+            first). Patients see the latest published tip on their home page.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Button
+            variant="outline"
+            disabled={generateTips.isPending}
+            onClick={handleGenerate}
+            data-testid="button-generate-tips"
+          >
+            <Wand2 className="h-4 w-4 mr-2" />
+            {generateTips.isPending ? "Drafting ideas..." : "Draft 5 ideas with AI"}
+          </Button>
+          <form onSubmit={handleCreate} className="space-y-2">
+            <Label>Or write your own</Label>
+            <Input
+              placeholder="Tip title"
+              value={title}
+              maxLength={100}
+              onChange={(e) => setTitle(e.target.value)}
+              data-testid="input-tip-title"
+            />
+            <Textarea
+              placeholder="A few friendly sentences of wellness guidance..."
+              value={body}
+              maxLength={1000}
+              rows={3}
+              onChange={(e) => setBody(e.target.value)}
+              data-testid="input-tip-body"
+            />
+            <Button
+              type="submit"
+              disabled={createTip.isPending || title.trim().length < 3 || body.trim().length < 10}
+              data-testid="button-add-tip"
+            >
+              <Plus className="h-4 w-4 mr-1" /> Add draft
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      {isLoading ? (
+        <p className="text-muted-foreground">Loading tips…</p>
+      ) : (
+        <>
+          {drafts.length > 0 && (
+            <div className="space-y-3">
+              <h3 className="font-medium">Awaiting approval ({drafts.length})</h3>
+              {drafts.map(tipRow)}
+            </div>
+          )}
+          {approved.length > 0 && (
+            <div className="space-y-3">
+              <h3 className="font-medium">Approved — queued for Mondays ({approved.length})</h3>
+              {approved.map(tipRow)}
+            </div>
+          )}
+          {sent.length > 0 && (
+            <div className="space-y-3">
+              <h3 className="font-medium">Published ({sent.length})</h3>
+              {sent.map(tipRow)}
+            </div>
+          )}
+          {tips.length === 0 && (
+            <p className="text-muted-foreground text-sm">
+              No tips yet — draft some ideas with AI or write your own above.
+            </p>
+          )}
+        </>
+      )}
+    </div>
+  );
+}
+
+/* ---------- Limited-time offers tab ---------- */
+
+function toDateTimeLocalEndOfDay(dateStr: string): string {
+  return new Date(`${dateStr}T23:59:59`).toISOString();
+}
+
+function OffersTab() {
+  const queryClient = useQueryClient();
+  const { data: offersData, isLoading } = useAdminListOffers({
+    query: { queryKey: getAdminListOffersQueryKey() },
+  });
+  const createOffer = useAdminCreateOffer();
+  const updateOffer = useAdminUpdateOffer();
+  const redeemClaim = useAdminRedeemOfferClaim();
+
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [endsOn, setEndsOn] = useState("");
+
+  const [claimInput, setClaimInput] = useState("");
+  const [claimResult, setClaimResult] = useState<OfferClaimDetails | null>(null);
+  const [claimNotFound, setClaimNotFound] = useState(false);
+  const [claimLooking, setClaimLooking] = useState(false);
+
+  function refresh() {
+    void queryClient.invalidateQueries({ queryKey: getAdminListOffersQueryKey() });
+  }
+
+  function handleCreate(e: React.FormEvent) {
+    e.preventDefault();
+    createOffer.mutate(
+      {
+        data: {
+          title: title.trim(),
+          description: description.trim(),
+          endsAt: toDateTimeLocalEndOfDay(endsOn),
+        },
+      },
+      {
+        onSuccess: () => {
+          toast.success("Offer is live — patients will see it on their home page");
+          setTitle("");
+          setDescription("");
+          setEndsOn("");
+          refresh();
+        },
+        onError: () => toast.error("Couldn't create the offer. Check the end date and try again."),
+      },
+    );
+  }
+
+  function toggleActive(o: AdminOffer, active: boolean) {
+    updateOffer.mutate(
+      { id: o.id, data: { active } },
+      {
+        onSuccess: () => {
+          toast.success(active ? "Offer turned on" : "Offer hidden from patients");
+          refresh();
+        },
+        onError: () => toast.error("Couldn't update the offer."),
+      },
+    );
+  }
+
+  async function handleClaimLookup() {
+    const raw = claimInput.trim();
+    if (!raw) return;
+    setClaimLooking(true);
+    setClaimResult(null);
+    setClaimNotFound(false);
+    try {
+      const detail = await adminGetOfferClaim(encodeURIComponent(raw));
+      setClaimResult(detail);
+    } catch {
+      setClaimNotFound(true);
+    } finally {
+      setClaimLooking(false);
+    }
+  }
+
+  function handleRedeemClaim() {
+    if (!claimResult) return;
+    redeemClaim.mutate(
+      { code: encodeURIComponent(claimResult.code) },
+      {
+        onSuccess: (updated) => {
+          setClaimResult(updated);
+          toast.success("Offer code marked as used");
+          refresh();
+        },
+        onError: () => toast.error("Couldn't mark it used — it may already be used."),
+      },
+    );
+  }
+
+  const offers = offersData?.offers ?? [];
+  const claimUsed = claimResult?.redeemedAt != null;
+  const claimExpired = claimResult ? new Date(claimResult.offerEndsAt) < new Date() : false;
+  const minEndsOn = format(new Date(), "yyyy-MM-dd");
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Verify an offer code</CardTitle>
+          <CardDescription>Codes look like OFR-K4TP-9WM2</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form
+            className="flex gap-2"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void handleClaimLookup();
+            }}
+          >
+            <Input
+              value={claimInput}
+              onChange={(e) => setClaimInput(e.target.value.toUpperCase())}
+              placeholder="OFR-XXXX-XXXX"
+              className="font-mono tracking-widest uppercase"
+              data-testid="input-offer-claim-code"
+            />
+            <Button type="submit" disabled={claimLooking || !claimInput.trim()}>
+              <Search className="w-4 h-4 mr-2" />
+              {claimLooking ? "Checking..." : "Verify"}
+            </Button>
+          </form>
+          {claimNotFound && (
+            <p className="text-sm text-rose-600 mt-3 flex items-center gap-2">
+              <XCircle className="h-4 w-4" /> Code not found — double-check it with the patient.
+            </p>
+          )}
+          {claimResult && (
+            <div
+              className={`mt-4 rounded-xl border p-4 space-y-2 ${
+                claimUsed || claimExpired ? "border-amber-300" : "border-emerald-300"
+              }`}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span className="font-mono tracking-widest">{claimResult.code}</span>
+                {claimUsed ? (
+                  <Badge variant="secondary" className="bg-amber-100 text-amber-800">
+                    Already used
+                  </Badge>
+                ) : claimExpired ? (
+                  <Badge variant="secondary" className="bg-amber-100 text-amber-800">
+                    Offer expired
+                  </Badge>
+                ) : (
+                  <Badge variant="secondary" className="bg-emerald-100 text-emerald-800">
+                    Valid — not yet used
+                  </Badge>
+                )}
+              </div>
+              <div>
+                <div className="font-medium">{claimResult.offerTitle}</div>
+                <div className="text-sm text-muted-foreground">{claimResult.offerDescription}</div>
+              </div>
+              <div className="text-sm text-muted-foreground">
+                Claimed by {claimResult.patientName ?? "a patient"}
+                {claimResult.patientEmail ? ` (${claimResult.patientEmail})` : ""} on{" "}
+                {format(new Date(claimResult.claimedAt), "MMM d, yyyy")}
+              </div>
+              {claimUsed && claimResult.redeemedAt && (
+                <div className="text-sm text-amber-700">
+                  Used {format(new Date(claimResult.redeemedAt), "MMM d, yyyy 'at' h:mm a")}
+                </div>
+              )}
+              {!claimUsed && (
+                <Button
+                  className="w-full"
+                  disabled={redeemClaim.isPending}
+                  onClick={handleRedeemClaim}
+                  data-testid="button-redeem-offer-claim"
+                >
+                  <CheckCircle2 className="w-4 h-4 mr-2" />
+                  {redeemClaim.isPending ? "Updating..." : "Mark as used"}
+                </Button>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Create a limited-time offer</CardTitle>
+          <CardDescription>
+            Shows on every patient's home page until the end date. Each patient can claim one code.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleCreate} className="space-y-2">
+            <Input
+              placeholder='Offer title, e.g. "20% off HydraFacial this week"'
+              value={title}
+              maxLength={100}
+              onChange={(e) => setTitle(e.target.value)}
+              data-testid="input-offer-title"
+            />
+            <Textarea
+              placeholder="Details patients should know — what's included, how to book..."
+              value={description}
+              maxLength={1000}
+              rows={3}
+              onChange={(e) => setDescription(e.target.value)}
+              data-testid="input-offer-description"
+            />
+            <div className="flex items-end gap-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="offer-ends">Last day of the offer</Label>
+                <Input
+                  id="offer-ends"
+                  type="date"
+                  value={endsOn}
+                  min={minEndsOn}
+                  onChange={(e) => setEndsOn(e.target.value)}
+                  data-testid="input-offer-ends"
+                />
+              </div>
+              <Button
+                type="submit"
+                disabled={
+                  createOffer.isPending ||
+                  title.trim().length < 3 ||
+                  description.trim().length < 10 ||
+                  !endsOn
+                }
+                data-testid="button-create-offer"
+              >
+                <Plus className="h-4 w-4 mr-1" /> Launch offer
+              </Button>
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+
+      {isLoading ? (
+        <p className="text-muted-foreground">Loading offers…</p>
+      ) : offers.length === 0 ? (
+        <p className="text-muted-foreground text-sm">No offers yet.</p>
+      ) : (
+        <div className="space-y-3">
+          {offers.map((o) => {
+            const expired = new Date(o.endsAt) < new Date();
+            return (
+              <div key={o.id} className="rounded-xl border border-border p-4 space-y-2">
+                <div className="flex items-start justify-between gap-3">
+                  <div>
+                    <div className="font-medium">{o.title}</div>
+                    <p className="text-sm text-muted-foreground whitespace-pre-line">
+                      {o.description}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {expired ? (
+                      <Badge variant="secondary">Ended</Badge>
+                    ) : o.active ? (
+                      <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100">
+                        Live
+                      </Badge>
+                    ) : (
+                      <Badge variant="secondary">Hidden</Badge>
+                    )}
+                    <Switch
+                      checked={o.active}
+                      disabled={updateOffer.isPending}
+                      onCheckedChange={(checked) => toggleActive(o, checked)}
+                      data-testid={`switch-offer-active-${o.id}`}
+                    />
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Ends {format(new Date(o.endsAt), "MMM d, yyyy")} · {o.claimCount} claimed ·{" "}
+                  {o.redeemedCount} used
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function StaffVerify() {
   const { data: me, isLoading } = useGetMe();
 
@@ -2156,6 +2748,14 @@ export default function StaffVerify() {
           <TabsTrigger value="announcements">
             <Bell className="h-4 w-4 mr-1" /> Announcements
           </TabsTrigger>
+          <TabsTrigger value="offers">
+            <BadgePercent className="h-4 w-4 mr-1" /> Offers
+          </TabsTrigger>
+          {isAdmin && (
+            <TabsTrigger value="tips">
+              <Stethoscope className="h-4 w-4 mr-1" /> Weekly tips
+            </TabsTrigger>
+          )}
           {isAdmin && (
             <TabsTrigger value="insights">
               <BarChart3 className="h-4 w-4 mr-1" /> Insights
@@ -2194,6 +2794,14 @@ export default function StaffVerify() {
         <TabsContent value="announcements" className="mt-6">
           <AnnouncementsTab />
         </TabsContent>
+        <TabsContent value="offers" className="mt-6">
+          <OffersTab />
+        </TabsContent>
+        {isAdmin && (
+          <TabsContent value="tips" className="mt-6">
+            <TipsTab />
+          </TabsContent>
+        )}
         {isAdmin && (
           <TabsContent value="insights" className="mt-6">
             <InsightsTab />

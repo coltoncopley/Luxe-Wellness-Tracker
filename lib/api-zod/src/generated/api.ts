@@ -1411,7 +1411,8 @@ export const AcknowledgePrivacyNoticeResponse = zod.object({
   "email": zod.string().nullish(),
   "firstName": zod.string().nullish(),
   "role": zod.enum(['patient', 'staff', 'admin']),
-  "privacyAcknowledged": zod.boolean().describe('Whether the user has acknowledged the privacy notice')
+  "privacyAcknowledged": zod.boolean().describe('Whether the user has acknowledged the privacy notice'),
+  "birthday": zod.string().nullish().describe('Birthday as MM-DD (patient-set, patient-private)')
 })
 
 
@@ -1423,7 +1424,8 @@ export const GetMeResponse = zod.object({
   "email": zod.string().nullish(),
   "firstName": zod.string().nullish(),
   "role": zod.enum(['patient', 'staff', 'admin']),
-  "privacyAcknowledged": zod.boolean().describe('Whether the user has acknowledged the privacy notice')
+  "privacyAcknowledged": zod.boolean().describe('Whether the user has acknowledged the privacy notice'),
+  "birthday": zod.string().nullish().describe('Birthday as MM-DD (patient-set, patient-private)')
 })
 
 
@@ -1442,7 +1444,23 @@ export const ActivateStaffAccessResponse = zod.object({
   "email": zod.string().nullish(),
   "firstName": zod.string().nullish(),
   "role": zod.enum(['patient', 'staff', 'admin']),
-  "privacyAcknowledged": zod.boolean().describe('Whether the user has acknowledged the privacy notice')
+  "privacyAcknowledged": zod.boolean().describe('Whether the user has acknowledged the privacy notice'),
+  "birthday": zod.string().nullish().describe('Birthday as MM-DD (patient-set, patient-private)')
+})
+
+
+/**
+ * @summary Set or clear the user's birthday (MM-DD, patient-private)
+ */
+export const updateBirthdayBodyBirthdayRegExp = new RegExp('^(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])$');
+
+
+export const UpdateBirthdayBody = zod.object({
+  "birthday": zod.string().regex(updateBirthdayBodyBirthdayRegExp).nullable().describe('Birthday as MM-DD (no year), or null to clear')
+})
+
+export const UpdateBirthdayResponse = zod.object({
+  "birthday": zod.string().nullable().describe('Birthday as MM-DD, or null if not set')
 })
 
 
@@ -1942,6 +1960,292 @@ export const AdminDeleteAnnouncementParams = zod.object({
 })
 
 export const AdminDeleteAnnouncementResponse = zod.void()
+
+
+/**
+ * @summary The most recently published tip from the doctor (null if none yet)
+ */
+export const GetCurrentDoctorTipResponse = zod.object({
+  "tip": zod.union([zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "body": zod.string(),
+  "status": zod.enum(['draft', 'approved', 'sent']).describe('draft = awaiting approval; approved = queued to go out; sent = published'),
+  "source": zod.enum(['ai', 'manual']),
+  "createdAt": zod.string().describe('ISO timestamp'),
+  "approvedAt": zod.string().nullable().describe('ISO timestamp'),
+  "sentAt": zod.string().nullable().describe('ISO timestamp')
+}),zod.null()])
+})
+
+
+/**
+ * @summary All doctor tips in the approval queue (admin only)
+ */
+export const AdminListDoctorTipsResponse = zod.object({
+  "tips": zod.array(zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "body": zod.string(),
+  "status": zod.enum(['draft', 'approved', 'sent']).describe('draft = awaiting approval; approved = queued to go out; sent = published'),
+  "source": zod.enum(['ai', 'manual']),
+  "createdAt": zod.string().describe('ISO timestamp'),
+  "approvedAt": zod.string().nullable().describe('ISO timestamp'),
+  "sentAt": zod.string().nullable().describe('ISO timestamp')
+}))
+})
+
+
+/**
+ * @summary Write a tip manually (admin only, starts as draft)
+ */
+export const adminCreateDoctorTipBodyTitleMin = 3;
+export const adminCreateDoctorTipBodyTitleMax = 100;
+
+export const adminCreateDoctorTipBodyBodyMin = 10;
+export const adminCreateDoctorTipBodyBodyMax = 1000;
+
+
+
+export const AdminCreateDoctorTipBody = zod.object({
+  "title": zod.string().min(adminCreateDoctorTipBodyTitleMin).max(adminCreateDoctorTipBodyTitleMax),
+  "body": zod.string().min(adminCreateDoctorTipBodyBodyMin).max(adminCreateDoctorTipBodyBodyMax)
+})
+
+export const AdminCreateDoctorTipResponse = zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "body": zod.string(),
+  "status": zod.enum(['draft', 'approved', 'sent']).describe('draft = awaiting approval; approved = queued to go out; sent = published'),
+  "source": zod.enum(['ai', 'manual']),
+  "createdAt": zod.string().describe('ISO timestamp'),
+  "approvedAt": zod.string().nullable().describe('ISO timestamp'),
+  "sentAt": zod.string().nullable().describe('ISO timestamp')
+})
+
+
+/**
+ * @summary Have AI draft a batch of tip ideas for review (admin only)
+ */
+export const AdminGenerateDoctorTipsResponse = zod.object({
+  "tips": zod.array(zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "body": zod.string(),
+  "status": zod.enum(['draft', 'approved', 'sent']).describe('draft = awaiting approval; approved = queued to go out; sent = published'),
+  "source": zod.enum(['ai', 'manual']),
+  "createdAt": zod.string().describe('ISO timestamp'),
+  "approvedAt": zod.string().nullable().describe('ISO timestamp'),
+  "sentAt": zod.string().nullable().describe('ISO timestamp')
+}))
+})
+
+
+/**
+ * @summary Edit, approve, or unapprove a tip (admin only; sent tips cannot be edited)
+ */
+export const AdminUpdateDoctorTipParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const adminUpdateDoctorTipBodyTitleMin = 3;
+export const adminUpdateDoctorTipBodyTitleMax = 100;
+
+export const adminUpdateDoctorTipBodyBodyMin = 10;
+export const adminUpdateDoctorTipBodyBodyMax = 1000;
+
+
+
+export const AdminUpdateDoctorTipBody = zod.object({
+  "title": zod.string().min(adminUpdateDoctorTipBodyTitleMin).max(adminUpdateDoctorTipBodyTitleMax).optional(),
+  "body": zod.string().min(adminUpdateDoctorTipBodyBodyMin).max(adminUpdateDoctorTipBodyBodyMax).optional(),
+  "status": zod.enum(['draft', 'approved']).optional().describe('Approve (queue to send) or move back to draft; sent tips cannot change')
+})
+
+export const AdminUpdateDoctorTipResponse = zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "body": zod.string(),
+  "status": zod.enum(['draft', 'approved', 'sent']).describe('draft = awaiting approval; approved = queued to go out; sent = published'),
+  "source": zod.enum(['ai', 'manual']),
+  "createdAt": zod.string().describe('ISO timestamp'),
+  "approvedAt": zod.string().nullable().describe('ISO timestamp'),
+  "sentAt": zod.string().nullable().describe('ISO timestamp')
+})
+
+
+/**
+ * @summary Delete a tip (admin only)
+ */
+export const AdminDeleteDoctorTipParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const AdminDeleteDoctorTipResponse = zod.void()
+
+
+/**
+ * @summary Publish an approved tip immediately (admin only)
+ */
+export const AdminSendDoctorTipNowParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const AdminSendDoctorTipNowResponse = zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "body": zod.string(),
+  "status": zod.enum(['draft', 'approved', 'sent']).describe('draft = awaiting approval; approved = queued to go out; sent = published'),
+  "source": zod.enum(['ai', 'manual']),
+  "createdAt": zod.string().describe('ISO timestamp'),
+  "approvedAt": zod.string().nullable().describe('ISO timestamp'),
+  "sentAt": zod.string().nullable().describe('ISO timestamp')
+})
+
+
+/**
+ * @summary Active limited-time offers with the user's claim status
+ */
+export const ListOffersResponse = zod.object({
+  "offers": zod.array(zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "endsAt": zod.string().describe('ISO timestamp when the offer expires'),
+  "claimed": zod.boolean(),
+  "claimCode": zod.string().nullable().describe('The user\'s claim code if they already claimed this offer')
+}))
+})
+
+
+/**
+ * @summary Claim an active offer (once per offer) and get a claim code
+ */
+export const ClaimOfferParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ClaimOfferResponse = zod.object({
+  "code": zod.string()
+})
+
+
+/**
+ * @summary All offers with claim counts (staff)
+ */
+export const AdminListOffersResponse = zod.object({
+  "offers": zod.array(zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "endsAt": zod.string().describe('ISO timestamp'),
+  "active": zod.boolean(),
+  "createdAt": zod.string().describe('ISO timestamp'),
+  "claimCount": zod.number(),
+  "redeemedCount": zod.number()
+}))
+})
+
+
+/**
+ * @summary Create a limited-time offer (staff)
+ */
+export const adminCreateOfferBodyTitleMin = 3;
+export const adminCreateOfferBodyTitleMax = 100;
+
+export const adminCreateOfferBodyDescriptionMin = 10;
+export const adminCreateOfferBodyDescriptionMax = 1000;
+
+
+
+export const AdminCreateOfferBody = zod.object({
+  "title": zod.string().min(adminCreateOfferBodyTitleMin).max(adminCreateOfferBodyTitleMax),
+  "description": zod.string().min(adminCreateOfferBodyDescriptionMin).max(adminCreateOfferBodyDescriptionMax),
+  "endsAt": zod.string().describe('ISO timestamp when the offer expires')
+})
+
+export const AdminCreateOfferResponse = zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "endsAt": zod.string().describe('ISO timestamp'),
+  "active": zod.boolean(),
+  "createdAt": zod.string().describe('ISO timestamp'),
+  "claimCount": zod.number(),
+  "redeemedCount": zod.number()
+})
+
+
+/**
+ * @summary Edit or deactivate an offer (staff)
+ */
+export const AdminUpdateOfferParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const adminUpdateOfferBodyTitleMin = 3;
+export const adminUpdateOfferBodyTitleMax = 100;
+
+export const adminUpdateOfferBodyDescriptionMin = 10;
+export const adminUpdateOfferBodyDescriptionMax = 1000;
+
+
+
+export const AdminUpdateOfferBody = zod.object({
+  "title": zod.string().min(adminUpdateOfferBodyTitleMin).max(adminUpdateOfferBodyTitleMax).optional(),
+  "description": zod.string().min(adminUpdateOfferBodyDescriptionMin).max(adminUpdateOfferBodyDescriptionMax).optional(),
+  "endsAt": zod.string().optional().describe('ISO timestamp when the offer expires'),
+  "active": zod.boolean().optional()
+})
+
+export const AdminUpdateOfferResponse = zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "endsAt": zod.string().describe('ISO timestamp'),
+  "active": zod.boolean(),
+  "createdAt": zod.string().describe('ISO timestamp'),
+  "claimCount": zod.number(),
+  "redeemedCount": zod.number()
+})
+
+
+/**
+ * @summary Look up an offer claim code (staff, rate-limited)
+ */
+export const AdminGetOfferClaimParams = zod.object({
+  "code": zod.coerce.string()
+})
+
+export const AdminGetOfferClaimResponse = zod.object({
+  "code": zod.string(),
+  "offerTitle": zod.string(),
+  "offerDescription": zod.string(),
+  "offerEndsAt": zod.string().describe('ISO timestamp'),
+  "patientName": zod.string().nullable(),
+  "patientEmail": zod.string().nullable(),
+  "claimedAt": zod.string().describe('ISO timestamp'),
+  "redeemedAt": zod.string().nullable().describe('ISO timestamp')
+})
+
+
+/**
+ * @summary Mark an offer claim as used (staff)
+ */
+export const AdminRedeemOfferClaimParams = zod.object({
+  "code": zod.coerce.string()
+})
+
+export const AdminRedeemOfferClaimResponse = zod.object({
+  "code": zod.string(),
+  "offerTitle": zod.string(),
+  "offerDescription": zod.string(),
+  "offerEndsAt": zod.string().describe('ISO timestamp'),
+  "patientName": zod.string().nullable(),
+  "patientEmail": zod.string().nullable(),
+  "claimedAt": zod.string().describe('ISO timestamp'),
+  "redeemedAt": zod.string().nullable().describe('ISO timestamp')
+})
 
 
 /**

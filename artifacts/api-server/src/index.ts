@@ -37,6 +37,10 @@ import("./lib/notificationScheduler")
   .then(({ startNotificationScheduler }) => startNotificationScheduler())
   .catch((err: unknown) => logger.error({ err }, "Failed to start notification scheduler"));
 
+import("./lib/engagementScheduler")
+  .then(({ startEngagementScheduler }) => startEngagementScheduler())
+  .catch((err: unknown) => logger.error({ err }, "Failed to start engagement scheduler"));
+
 const rawPort = process.env["PORT"];
 
 if (!rawPort) {

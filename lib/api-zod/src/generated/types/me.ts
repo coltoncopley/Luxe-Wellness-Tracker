@@ -16,4 +16,9 @@ export interface Me {
   role: MeRole;
   /** Whether the user has acknowledged the privacy notice */
   privacyAcknowledged: boolean;
+  /**
+     * Birthday as MM-DD (patient-set, patient-private)
+     * @nullable
+     */
+  birthday?: string | null;
 }

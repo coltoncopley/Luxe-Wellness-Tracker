@@ -8,6 +8,9 @@ import {
   useUnsubscribePush,
   useSendTestNotification,
   getVapidPublicKey,
+  useGetMe,
+  getGetMeQueryKey,
+  useUpdateBirthday,
 } from "@workspace/api-client-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
@@ -15,8 +18,150 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { toast } from "sonner";
-import { Bell, Mail, Smartphone, Loader2, Send } from "lucide-react";
+import { Bell, Mail, Smartphone, Loader2, Send, Cake } from "lucide-react";
+
+const MONTHS = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
+const DAYS_IN_MONTH = [31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+
+function BirthdayCard() {
+  const queryClient = useQueryClient();
+  const { data: me } = useGetMe();
+  const [month, setMonth] = useState<string | null>(null);
+  const [day, setDay] = useState<string | null>(null);
+  const updateBirthday = useUpdateBirthday({
+    mutation: {
+      onSuccess: () => {
+        void queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
+      },
+      onError: () => toast.error("Couldn't save your birthday. Please try again."),
+    },
+  });
+
+  const saved = me?.birthday ?? null;
+  const savedMonth = saved ? saved.slice(0, 2) : null;
+  const savedDay = saved ? saved.slice(3) : null;
+  const effMonth = month ?? savedMonth;
+  const effDay = day ?? savedDay;
+  const maxDay = effMonth ? DAYS_IN_MONTH[Number(effMonth) - 1]! : 31;
+  const dirty = effMonth !== savedMonth || effDay !== savedDay;
+
+  function save() {
+    if (!effMonth || !effDay) return;
+    updateBirthday.mutate(
+      { data: { birthday: `${effMonth}-${effDay.padStart(2, "0")}` } },
+      {
+        onSuccess: () => {
+          toast.success("Birthday saved — a treat will be waiting for you! 🎂");
+          setMonth(null);
+          setDay(null);
+        },
+      },
+    );
+  }
+
+  function clear() {
+    updateBirthday.mutate(
+      { data: { birthday: null } },
+      {
+        onSuccess: () => {
+          toast.success("Birthday removed.");
+          setMonth(null);
+          setDay(null);
+        },
+      },
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-lg">
+          <Cake className="h-5 w-5 text-primary" />
+          Birthday treat
+        </CardTitle>
+        <CardDescription>
+          Tell us your birthday (month and day only) and we'll surprise you with bonus reward
+          points on your special day.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="flex flex-wrap items-end gap-2">
+          <div className="space-y-1.5">
+            <Label>Month</Label>
+            <Select value={effMonth ?? ""} onValueChange={(v) => setMonth(v)}>
+              <SelectTrigger className="w-36" data-testid="select-birthday-month">
+                <SelectValue placeholder="Month" />
+              </SelectTrigger>
+              <SelectContent>
+                {MONTHS.map((m, i) => (
+                  <SelectItem key={m} value={String(i + 1).padStart(2, "0")}>
+                    {m}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Day</Label>
+            <Select value={effDay ?? ""} onValueChange={(v) => setDay(v)}>
+              <SelectTrigger className="w-24" data-testid="select-birthday-day">
+                <SelectValue placeholder="Day" />
+              </SelectTrigger>
+              <SelectContent>
+                {Array.from({ length: maxDay }, (_, i) => (
+                  <SelectItem key={i + 1} value={String(i + 1).padStart(2, "0")}>
+                    {i + 1}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          {dirty && effMonth && effDay && (
+            <Button
+              onClick={save}
+              disabled={updateBirthday.isPending}
+              data-testid="button-save-birthday"
+            >
+              Save
+            </Button>
+          )}
+          {saved && (
+            <Button variant="ghost" onClick={clear} disabled={updateBirthday.isPending}>
+              Remove
+            </Button>
+          )}
+        </div>
+        <p className="text-xs text-muted-foreground">
+          {saved
+            ? "Your birthday is saved. It's only used for your in-app treat — never shared."
+            : "Optional — only the month and day, never the year."}
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -355,6 +500,8 @@ export default function Settings() {
           </Button>
         </CardContent>
       </Card>
+
+      <BirthdayCard />
 
       <p className="text-xs text-muted-foreground">
         Notifications never include your private health details — just friendly nudges and spa
