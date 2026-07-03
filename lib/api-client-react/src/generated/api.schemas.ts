@@ -1286,6 +1286,8 @@ export const ProgressPhotoCategory = {
 } as const;
 
 export interface ProgressPhoto {
+  /** Whether this photo is visible to approved friends (requires the master sharePhotos toggle too) */
+  sharedWithFriends: boolean;
   id: number;
   /** Date the photo was taken (YYYY-MM-DD) */
   takenOn: string;
@@ -1522,6 +1524,13 @@ export interface FollowActionResult {
   status: FollowActionResultStatus;
 }
 
+export interface FriendSharedPhoto {
+  id: number;
+  /** Date the photo was taken (YYYY-MM-DD) */
+  takenOn: string;
+  category: string;
+}
+
 export interface FriendJourney {
   userId: string;
   name: string;
@@ -1535,6 +1544,13 @@ export interface FriendJourney {
   weightProgressPct?: number | null;
   /** @nullable */
   lastActiveDate?: string | null;
+  /** @nullable */
+  pointsBalance?: number | null;
+  /** @nullable */
+  tier?: string | null;
+  /** @nullable */
+  poundsLost?: number | null;
+  sharedPhotos?: FriendSharedPhoto[];
 }
 
 export interface FriendJourneysResponse {
@@ -1545,6 +1561,13 @@ export interface SharingSettings {
   shareGlow: boolean;
   shareWeightProgress: boolean;
   shareStreak: boolean;
+  sharePoints: boolean;
+  shareNumbers: boolean;
+  sharePhotos: boolean;
+}
+
+export interface SetPhotoSharedInput {
+  shared: boolean;
 }
 
 export interface SendCheerInput {

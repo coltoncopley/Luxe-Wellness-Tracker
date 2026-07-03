@@ -10,4 +10,7 @@ export interface SharingSettings {
   shareGlow: boolean;
   shareWeightProgress: boolean;
   shareStreak: boolean;
+  sharePoints: boolean;
+  shareNumbers: boolean;
+  sharePhotos: boolean;
 }

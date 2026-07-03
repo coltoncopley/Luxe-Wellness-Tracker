@@ -686,6 +686,7 @@ export const RequestUploadUrlResponse = zod.object({
  * @summary List the requesting user's progress photos (newest first)
  */
 export const ListProgressPhotosResponseItem = zod.object({
+  "sharedWithFriends": zod.boolean().describe('Whether this photo is visible to approved friends (requires the master sharePhotos toggle too)'),
   "id": zod.number(),
   "takenOn": zod.string().describe('Date the photo was taken (YYYY-MM-DD)'),
   "category": zod.enum(['weight', 'skin']),
@@ -713,6 +714,7 @@ export const CreateProgressPhotoBody = zod.object({
 })
 
 export const CreateProgressPhotoResponse = zod.object({
+  "sharedWithFriends": zod.boolean().describe('Whether this photo is visible to approved friends (requires the master sharePhotos toggle too)'),
   "id": zod.number(),
   "takenOn": zod.string().describe('Date the photo was taken (YYYY-MM-DD)'),
   "category": zod.enum(['weight', 'skin']),
@@ -730,6 +732,28 @@ export const DeleteProgressPhotoParams = zod.object({
 })
 
 export const DeleteProgressPhotoResponse = zod.void()
+
+
+/**
+ * @summary Toggle whether one of your progress photos is visible to approved friends
+ */
+export const SetProgressPhotoSharedParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const SetProgressPhotoSharedBody = zod.object({
+  "shared": zod.boolean()
+})
+
+export const SetProgressPhotoSharedResponse = zod.object({
+  "sharedWithFriends": zod.boolean().describe('Whether this photo is visible to approved friends (requires the master sharePhotos toggle too)'),
+  "id": zod.number(),
+  "takenOn": zod.string().describe('Date the photo was taken (YYYY-MM-DD)'),
+  "category": zod.enum(['weight', 'skin']),
+  "note": zod.string().nullish(),
+  "objectPath": zod.string().describe('Path to fetch the image via \/api\/storage{objectPath}'),
+  "createdAt": zod.string()
+})
 
 
 /**
@@ -1338,9 +1362,28 @@ export const GetFriendJourneysResponse = zod.object({
   "glowScoreToday": zod.number().nullish(),
   "checkinsLast7Days": zod.number().nullish(),
   "weightProgressPct": zod.number().nullish(),
-  "lastActiveDate": zod.string().nullish()
+  "lastActiveDate": zod.string().nullish(),
+  "pointsBalance": zod.number().nullish(),
+  "tier": zod.string().nullish(),
+  "poundsLost": zod.number().nullish(),
+  "sharedPhotos": zod.array(zod.object({
+  "id": zod.number(),
+  "takenOn": zod.string().describe('Date the photo was taken (YYYY-MM-DD)'),
+  "category": zod.string()
+})).optional()
 }))
 })
+
+
+/**
+ * @summary Stream a friend's shared progress photo (accepted follow + their opt-in required)
+ */
+export const GetFriendPhotoImageParams = zod.object({
+  "friendId": zod.coerce.string(),
+  "photoId": zod.coerce.number()
+})
+
+export const GetFriendPhotoImageResponse = zod.unknown()
 
 
 /**
@@ -1349,7 +1392,10 @@ export const GetFriendJourneysResponse = zod.object({
 export const GetSharingSettingsResponse = zod.object({
   "shareGlow": zod.boolean(),
   "shareWeightProgress": zod.boolean(),
-  "shareStreak": zod.boolean()
+  "shareStreak": zod.boolean(),
+  "sharePoints": zod.boolean(),
+  "shareNumbers": zod.boolean(),
+  "sharePhotos": zod.boolean()
 })
 
 
@@ -1359,13 +1405,19 @@ export const GetSharingSettingsResponse = zod.object({
 export const UpdateSharingSettingsBody = zod.object({
   "shareGlow": zod.boolean(),
   "shareWeightProgress": zod.boolean(),
-  "shareStreak": zod.boolean()
+  "shareStreak": zod.boolean(),
+  "sharePoints": zod.boolean(),
+  "shareNumbers": zod.boolean(),
+  "sharePhotos": zod.boolean()
 })
 
 export const UpdateSharingSettingsResponse = zod.object({
   "shareGlow": zod.boolean(),
   "shareWeightProgress": zod.boolean(),
-  "shareStreak": zod.boolean()
+  "shareStreak": zod.boolean(),
+  "sharePoints": zod.boolean(),
+  "shareNumbers": zod.boolean(),
+  "sharePhotos": zod.boolean()
 })
 
 

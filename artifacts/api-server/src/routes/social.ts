@@ -1,5 +1,7 @@
 import { Router, type IRouter } from "express";
-import { and, desc, eq, gte, inArray, or, asc } from "drizzle-orm";
+import { Readable } from "stream";
+import type { ReadableStream } from "stream/web";
+import { and, desc, eq, gte, inArray, or, asc, sql, sum } from "drizzle-orm";
 import {
   db,
   usersTable,
@@ -9,8 +11,11 @@ import {
   glowCheckinsTable,
   weightEntriesTable,
   goalsTable,
+  progressPhotosTable,
+  rewardEventsTable,
   type User,
   type GlowCheckin,
+  type ProgressPhoto,
 } from "@workspace/db";
 import {
   GetFollowsResponse,
@@ -28,9 +33,12 @@ import {
 } from "@workspace/api-zod";
 import { userIdOf } from "../middlewares/auth";
 import { computeGlowScore } from "./glow";
+import { getTierInfo } from "../lib/rewards";
+import { ObjectStorageService, ObjectNotFoundError } from "../lib/objectStorage";
 import type { Request, Response, NextFunction } from "express";
 
 const router: IRouter = Router();
+const objectStorageService = new ObjectStorageService();
 
 const socialHits = new Map<string, { count: number; windowStart: number }>();
 
@@ -57,6 +65,7 @@ function makeRateLimiter(prefix: string, limit: number, windowMs: number) {
 
 const rateLimitFollowRequests = makeRateLimiter("follow", 5, 60_000);
 const rateLimitCheers = makeRateLimiter("cheer", 10, 60_000);
+const rateLimitFriendPhotos = makeRateLimiter("friendphoto", 120, 60_000);
 
 function displayName(user: Pick<User, "firstName" | "email">): string {
   if (user.firstName) return user.firstName;
@@ -96,7 +105,14 @@ function computeStreak(dateSet: Set<string>): number {
   return streak;
 }
 
-const DEFAULT_SETTINGS = { shareGlow: true, shareWeightProgress: true, shareStreak: true };
+const DEFAULT_SETTINGS = {
+  shareGlow: true,
+  shareWeightProgress: true,
+  shareStreak: true,
+  sharePoints: false,
+  shareNumbers: false,
+  sharePhotos: false,
+};
 
 async function getSettingsFor(userId: string) {
   const [row] = await db
@@ -264,23 +280,54 @@ router.get("/friends/journeys", async (_req, res): Promise<void> => {
     return;
   }
 
-  const [friends, settingsRows, checkins, goals, weights] = await Promise.all([
-    db.select().from(usersTable).where(inArray(usersTable.id, friendIds)),
-    db.select().from(shareSettingsTable).where(inArray(shareSettingsTable.userId, friendIds)),
-    db
-      .select()
-      .from(glowCheckinsTable)
-      .where(inArray(glowCheckinsTable.userId, friendIds))
-      .orderBy(desc(glowCheckinsTable.date)),
-    db.select().from(goalsTable).where(inArray(goalsTable.userId, friendIds)),
-    db
-      .select()
-      .from(weightEntriesTable)
-      .where(inArray(weightEntriesTable.userId, friendIds))
-      .orderBy(desc(weightEntriesTable.date)),
-  ]);
+  const [friends, settingsRows, checkins, goals, weights, points, sharedPhotoRows] =
+    await Promise.all([
+      db.select().from(usersTable).where(inArray(usersTable.id, friendIds)),
+      db.select().from(shareSettingsTable).where(inArray(shareSettingsTable.userId, friendIds)),
+      db
+        .select()
+        .from(glowCheckinsTable)
+        .where(inArray(glowCheckinsTable.userId, friendIds))
+        .orderBy(desc(glowCheckinsTable.date)),
+      db.select().from(goalsTable).where(inArray(goalsTable.userId, friendIds)),
+      db
+        .select()
+        .from(weightEntriesTable)
+        .where(inArray(weightEntriesTable.userId, friendIds))
+        .orderBy(desc(weightEntriesTable.date)),
+      db
+        .select({
+          userId: rewardEventsTable.userId,
+          balance: sum(rewardEventsTable.points),
+          earned: sql<string>`sum(case when ${rewardEventsTable.points} > 0 then ${rewardEventsTable.points} else 0 end)`,
+        })
+        .from(rewardEventsTable)
+        .where(inArray(rewardEventsTable.userId, friendIds))
+        .groupBy(rewardEventsTable.userId),
+      db
+        .select()
+        .from(progressPhotosTable)
+        .where(
+          and(
+            inArray(progressPhotosTable.userId, friendIds),
+            eq(progressPhotosTable.sharedWithFriends, true),
+          ),
+        )
+        .orderBy(desc(progressPhotosTable.takenOn), desc(progressPhotosTable.id)),
+    ]);
 
   const settingsOf = new Map(settingsRows.map((s) => [s.userId, s]));
+  const pointsOf = new Map(
+    points.map((p) => [p.userId, { balance: Number(p.balance ?? 0), earned: Number(p.earned ?? 0) }]),
+  );
+  const sharedPhotosOf = new Map<string, ProgressPhoto[]>();
+  for (const photo of sharedPhotoRows) {
+    const list = sharedPhotosOf.get(photo.userId) ?? [];
+    if (list.length < 4) {
+      list.push(photo);
+      sharedPhotosOf.set(photo.userId, list);
+    }
+  }
   const checkinsOf = new Map<string, GlowCheckin[]>();
   for (const c of checkins) {
     const list = checkinsOf.get(c.userId) ?? [];
@@ -330,6 +377,31 @@ router.get("/friends/journeys", async (_req, res): Promise<void> => {
       }
     }
 
+    let pointsBalance: number | null = null;
+    let tier: string | null = null;
+    if (settings.sharePoints) {
+      const p = pointsOf.get(friend.id) ?? { balance: 0, earned: 0 };
+      pointsBalance = p.balance;
+      tier = getTierInfo(p.earned).name;
+    }
+
+    let poundsLost: number | null = null;
+    if (settings.shareNumbers) {
+      const goal = goalOf.get(friend.id);
+      const current = latestWeightOf.get(friend.id);
+      if (goal?.startWeightLbs != null && current != null) {
+        poundsLost = Math.round((goal.startWeightLbs - current) * 10) / 10;
+      }
+    }
+
+    const sharedPhotos = settings.sharePhotos
+      ? (sharedPhotosOf.get(friend.id) ?? []).map((p) => ({
+          id: p.id,
+          takenOn: p.takenOn,
+          category: p.category,
+        }))
+      : [];
+
     return {
       userId: friend.id,
       name: displayName(friend),
@@ -338,12 +410,88 @@ router.get("/friends/journeys", async (_req, res): Promise<void> => {
       checkinsLast7Days,
       weightProgressPct,
       lastActiveDate,
+      pointsBalance,
+      tier,
+      poundsLost,
+      sharedPhotos,
     };
   });
 
   journeys.sort((a, b) => a.name.localeCompare(b.name));
   res.json(GetFriendJourneysResponse.parse({ journeys }));
 });
+
+router.get(
+  "/friends/:friendId/photos/:photoId/image",
+  rateLimitFriendPhotos,
+  async (req, res): Promise<void> => {
+    const userId = userIdOf(res);
+    const friendIdParam = req.params.friendId;
+    const friendId = typeof friendIdParam === "string" ? friendIdParam : "";
+    const photoId = Number(req.params.photoId);
+    if (!friendId || !Number.isInteger(photoId)) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+
+    // All checks run fresh per request so unsharing/unfollowing takes effect
+    // immediately. Every failure mode returns an identical 404.
+    const [photo] = await db
+      .select()
+      .from(progressPhotosTable)
+      .where(
+        and(
+          eq(progressPhotosTable.id, photoId),
+          eq(progressPhotosTable.userId, friendId),
+          eq(progressPhotosTable.sharedWithFriends, true),
+        ),
+      );
+    if (!photo) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+    const [follow] = await db
+      .select()
+      .from(followsTable)
+      .where(
+        and(
+          eq(followsTable.followerUserId, userId),
+          eq(followsTable.followeeUserId, friendId),
+          eq(followsTable.status, "accepted"),
+        ),
+      );
+    if (!follow) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+    const settings = await getSettingsFor(friendId);
+    if (!settings.sharePhotos) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+
+    try {
+      const objectFile = await objectStorageService.getObjectEntityFile(photo.objectPath);
+      // Short cache so a revoked share doesn't linger in browser cache.
+      const response = await objectStorageService.downloadObject(objectFile, 300);
+      res.status(response.status);
+      response.headers.forEach((value, key) => res.setHeader(key, value));
+      if (response.body) {
+        const nodeStream = Readable.fromWeb(response.body as ReadableStream<Uint8Array>);
+        nodeStream.pipe(res);
+      } else {
+        res.end();
+      }
+    } catch (error) {
+      if (error instanceof ObjectNotFoundError) {
+        res.status(404).json({ error: "Not found" });
+        return;
+      }
+      req.log.error({ err: error }, "Failed to stream friend photo");
+      res.status(404).json({ error: "Not found" });
+    }
+  },
+);
 
 router.get("/social/settings", async (_req, res): Promise<void> => {
   const userId = userIdOf(res);
@@ -353,6 +501,9 @@ router.get("/social/settings", async (_req, res): Promise<void> => {
       shareGlow: settings.shareGlow,
       shareWeightProgress: settings.shareWeightProgress,
       shareStreak: settings.shareStreak,
+      sharePoints: settings.sharePoints,
+      shareNumbers: settings.shareNumbers,
+      sharePhotos: settings.sharePhotos,
     }),
   );
 });
@@ -374,6 +525,9 @@ router.put("/social/settings", async (req, res): Promise<void> => {
       shareGlow: saved.shareGlow,
       shareWeightProgress: saved.shareWeightProgress,
       shareStreak: saved.shareStreak,
+      sharePoints: saved.sharePoints,
+      shareNumbers: saved.shareNumbers,
+      sharePhotos: saved.sharePhotos,
     }),
   );
 });

@@ -1,8 +1,10 @@
+import { useAuth } from "@clerk/expo";
 import { Feather } from "@expo/vector-icons";
 import { useQueryClient } from "@tanstack/react-query";
 import * as Clipboard from "expo-clipboard";
 import * as Contacts from "expo-contacts";
-import React, { useState } from "react";
+import { Image } from "expo-image";
+import React, { useEffect, useState } from "react";
 import { Linking, Modal, Platform, Pressable, Share, Switch, Text, View } from "react-native";
 import { Alert } from "@/lib/alert";
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
@@ -36,7 +38,7 @@ import {
   StackScreen,
 } from "@/components/ui";
 import { useColors } from "@/hooks/useColors";
-import { timeAgo, webUrl } from "@/lib/luxe";
+import { apiUrl, fmtDate, timeAgo, webUrl } from "@/lib/luxe";
 
 const CHEER_EMOJIS = ["👏", "💪", "🎉", "❤️", "🔥", "🌟"];
 
@@ -385,11 +387,37 @@ export default function FriendsScreen() {
 
 function JourneyCard({ journey, onCheer }: { journey: FriendJourney; onCheer: () => void }) {
   const c = useColors();
+  const { getToken } = useAuth();
+  const [token, setToken] = useState<string | null>(null);
+  const [viewPhoto, setViewPhoto] = useState<{ id: number; takenOn: string } | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    getToken()
+      .then((t) => {
+        if (active) setToken(t);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [getToken]);
+
+  const sharedPhotos = journey.sharedPhotos ?? [];
+
+  const friendImageSource = (photoId: number) => {
+    const uri = apiUrl(`/friends/${journey.userId}/photos/${photoId}/image`);
+    return token ? { uri, headers: { Authorization: `Bearer ${token}` } } : { uri };
+  };
+
   const nothingShared =
     journey.streakDays == null &&
     journey.glowScoreToday == null &&
     journey.checkinsLast7Days == null &&
-    journey.weightProgressPct == null;
+    journey.weightProgressPct == null &&
+    journey.pointsBalance == null &&
+    journey.poundsLost == null &&
+    sharedPhotos.length === 0;
 
   return (
     <Card style={{ gap: 10 }}>
@@ -423,6 +451,15 @@ function JourneyCard({ journey, onCheer }: { journey: FriendJourney; onCheer: ()
             {journey.checkinsLast7Days != null ? (
               <Badge icon="check" text={`${journey.checkinsLast7Days}/7 check-ins`} />
             ) : null}
+            {journey.pointsBalance != null ? (
+              <Badge
+                icon="award"
+                text={`${journey.pointsBalance} pts${journey.tier ? ` · ${journey.tier}` : ""}`}
+              />
+            ) : null}
+            {journey.poundsLost != null && journey.poundsLost > 0 ? (
+              <Badge icon="trending-down" text={`${journey.poundsLost} lbs lost`} />
+            ) : null}
           </View>
           {journey.weightProgressPct != null ? (
             <View style={{ gap: 4 }}>
@@ -446,8 +483,61 @@ function JourneyCard({ journey, onCheer }: { journey: FriendJourney; onCheer: ()
               </View>
             </View>
           ) : null}
+          {sharedPhotos.length > 0 ? (
+            <View style={{ gap: 6 }}>
+              <Text style={{ fontFamily: "Inter_400Regular", fontSize: 12, color: c.mutedForeground }}>
+                Progress photos
+              </Text>
+              <View style={{ flexDirection: "row", gap: 8 }}>
+                {sharedPhotos.map((p) => (
+                  <Pressable
+                    key={p.id}
+                    onPress={() => setViewPhoto({ id: p.id, takenOn: p.takenOn })}
+                  >
+                    <Image
+                      source={friendImageSource(p.id)}
+                      style={{ width: 64, height: 64, borderRadius: 10, backgroundColor: c.secondary }}
+                      contentFit="cover"
+                    />
+                  </Pressable>
+                ))}
+              </View>
+            </View>
+          ) : null}
         </>
       )}
+      <Modal
+        visible={viewPhoto !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setViewPhoto(null)}
+      >
+        <Pressable
+          style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.9)", justifyContent: "center", padding: 20 }}
+          onPress={() => setViewPhoto(null)}
+        >
+          {viewPhoto ? (
+            <>
+              <Image
+                source={friendImageSource(viewPhoto.id)}
+                style={{ width: "100%", aspectRatio: 3 / 4, borderRadius: c.radius }}
+                contentFit="contain"
+              />
+              <Text
+                style={{
+                  color: c.overlayForeground,
+                  fontFamily: "Inter_500Medium",
+                  fontSize: 14,
+                  textAlign: "center",
+                  marginTop: 12,
+                }}
+              >
+                {journey.name} · {fmtDate(viewPhoto.takenOn)}
+              </Text>
+            </>
+          ) : null}
+        </Pressable>
+      </Modal>
     </Card>
   );
 }
@@ -533,23 +623,41 @@ function SharingSettingsCard() {
 
   if (!settings) return null;
 
-  const toggle = (key: "shareGlow" | "shareWeightProgress" | "shareStreak", value: boolean) => {
+  const toggle = (
+    key:
+      | "shareGlow"
+      | "shareWeightProgress"
+      | "shareStreak"
+      | "sharePoints"
+      | "shareNumbers"
+      | "sharePhotos",
+    value: boolean,
+  ) => {
     update.mutate({ data: { ...settings, [key]: value } });
   };
 
   const Row = ({
     label,
+    hint,
     value,
     onChange,
   }: {
     label: string;
+    hint?: string;
     value: boolean;
     onChange: (v: boolean) => void;
   }) => (
     <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-      <Text style={{ fontFamily: "Inter_400Regular", fontSize: 14, color: c.foreground, flex: 1, paddingRight: 12 }}>
-        {label}
-      </Text>
+      <View style={{ flex: 1, paddingRight: 12 }}>
+        <Text style={{ fontFamily: "Inter_400Regular", fontSize: 14, color: c.foreground }}>
+          {label}
+        </Text>
+        {hint ? (
+          <Text style={{ fontFamily: "Inter_400Regular", fontSize: 11, color: c.mutedForeground, marginTop: 2 }}>
+            {hint}
+          </Text>
+        ) : null}
+      </View>
       <Switch
         value={value}
         onValueChange={onChange}
@@ -564,8 +672,8 @@ function SharingSettingsCard() {
       <SectionTitle>What your followers can see</SectionTitle>
       <Card style={{ gap: 16 }}>
         <Text style={{ fontFamily: "Inter_400Regular", fontSize: 13, color: c.mutedForeground }}>
-          Only friends you've approved can see any of this. Your actual weight, meals, and check-in
-          details are never shared — only the summaries you allow below.
+          Only friends you've approved can see any of this — the med spa never sees it. Real
+          numbers, points, and photos stay private unless you switch them on below.
         </Text>
         <Row label="Check-in streak" value={settings.shareStreak} onChange={(v) => toggle("shareStreak", v)} />
         <Row
@@ -577,6 +685,22 @@ function SharingSettingsCard() {
           label="Weight progress (% toward goal only)"
           value={settings.shareWeightProgress}
           onChange={(v) => toggle("shareWeightProgress", v)}
+        />
+        <Row
+          label="Reward points & tier"
+          value={settings.sharePoints}
+          onChange={(v) => toggle("sharePoints", v)}
+        />
+        <Row
+          label="Pounds lost (the real number)"
+          value={settings.shareNumbers}
+          onChange={(v) => toggle("shareNumbers", v)}
+        />
+        <Row
+          label="Progress photos"
+          hint='Only photos you individually mark "Share" in Progress Photos'
+          value={settings.sharePhotos}
+          onChange={(v) => toggle("sharePhotos", v)}
         />
       </Card>
     </>

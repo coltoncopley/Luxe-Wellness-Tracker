@@ -49,9 +49,16 @@ import {
   Shield,
   PartyPopper,
   UserMinus,
+  Trophy,
 } from "lucide-react";
 import { toast } from "sonner";
-import { formatDistanceToNow } from "date-fns";
+import { formatDistanceToNow, format } from "date-fns";
+
+const API_BASE = import.meta.env.BASE_URL;
+
+function friendPhotoUrl(friendId: string, photoId: number): string {
+  return `${API_BASE}api/friends/${friendId}/photos/${photoId}/image`;
+}
 
 const CHEER_EMOJIS = ["👏", "💪", "🎉", "❤️", "🔥", "🌟"];
 
@@ -187,11 +194,16 @@ function CheerDialog({
 }
 
 function JourneyCard({ journey, onCheer }: { journey: FriendJourney; onCheer: () => void }) {
+  const [viewPhoto, setViewPhoto] = useState<{ id: number; takenOn: string } | null>(null);
+  const sharedPhotos = journey.sharedPhotos ?? [];
   const nothingShared =
     journey.streakDays == null &&
     journey.glowScoreToday == null &&
     journey.checkinsLast7Days == null &&
-    journey.weightProgressPct == null;
+    journey.weightProgressPct == null &&
+    journey.pointsBalance == null &&
+    journey.poundsLost == null &&
+    sharedPhotos.length === 0;
   return (
     <Card>
       <CardHeader className="pb-2">
@@ -230,6 +242,17 @@ function JourneyCard({ journey, onCheer }: { journey: FriendJourney; onCheer: ()
                   <Check className="h-3.5 w-3.5 text-emerald-600" /> {journey.checkinsLast7Days}/7 check-ins
                 </Badge>
               )}
+              {journey.pointsBalance != null && (
+                <Badge variant="secondary" className="gap-1">
+                  <Trophy className="h-3.5 w-3.5 text-primary" /> {journey.pointsBalance} pts
+                  {journey.tier ? ` · ${journey.tier}` : ""}
+                </Badge>
+              )}
+              {journey.poundsLost != null && journey.poundsLost > 0 && (
+                <Badge variant="secondary" className="gap-1">
+                  <TrendingDown className="h-3.5 w-3.5 text-emerald-600" /> {journey.poundsLost} lbs lost
+                </Badge>
+              )}
             </div>
             {journey.weightProgressPct != null && (
               <div className="space-y-1">
@@ -242,9 +265,50 @@ function JourneyCard({ journey, onCheer }: { journey: FriendJourney; onCheer: ()
                 <Progress value={journey.weightProgressPct} />
               </div>
             )}
+            {sharedPhotos.length > 0 && (
+              <div className="space-y-1.5">
+                <div className="text-xs text-muted-foreground">Progress photos</div>
+                <div className="grid grid-cols-4 gap-2">
+                  {sharedPhotos.map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      className="block rounded-lg overflow-hidden"
+                      onClick={() => setViewPhoto({ id: p.id, takenOn: p.takenOn })}
+                    >
+                      <img
+                        src={friendPhotoUrl(journey.userId, p.id)}
+                        alt={`${journey.name}'s progress photo ${p.takenOn}`}
+                        loading="lazy"
+                        className="w-full aspect-square object-cover"
+                      />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </>
         )}
       </CardContent>
+      <Dialog open={viewPhoto !== null} onOpenChange={(open) => !open && setViewPhoto(null)}>
+        <DialogContent className="max-w-2xl">
+          {viewPhoto && (
+            <>
+              <DialogHeader>
+                <DialogTitle>{journey.name}'s progress photo</DialogTitle>
+                <DialogDescription>
+                  {format(new Date(`${viewPhoto.takenOn}T00:00:00`), "MMMM d, yyyy")}
+                </DialogDescription>
+              </DialogHeader>
+              <img
+                src={friendPhotoUrl(journey.userId, viewPhoto.id)}
+                alt={`${journey.name}'s progress photo`}
+                className="w-full rounded-lg"
+              />
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }
@@ -264,7 +328,16 @@ function SharingSettingsCard() {
 
   if (!settings) return null;
 
-  const toggle = (key: "shareGlow" | "shareWeightProgress" | "shareStreak", value: boolean) => {
+  const toggle = (
+    key:
+      | "shareGlow"
+      | "shareWeightProgress"
+      | "shareStreak"
+      | "sharePoints"
+      | "shareNumbers"
+      | "sharePhotos",
+    value: boolean,
+  ) => {
     update.mutate({ data: { ...settings, [key]: value } });
   };
 
@@ -275,8 +348,8 @@ function SharingSettingsCard() {
           <Shield className="h-5 w-5 text-primary" /> What your followers can see
         </CardTitle>
         <CardDescription>
-          Only friends you've approved can see any of this. Your actual weight, meals, and
-          check-in details are never shared — only the summaries you allow below.
+          Only friends you've approved can see any of this — the med spa never sees it. Real
+          numbers, points, and photos stay private unless you switch them on below.
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -308,6 +381,41 @@ function SharingSettingsCard() {
             id="share-weight"
             checked={settings.shareWeightProgress}
             onCheckedChange={(v) => toggle("shareWeightProgress", v)}
+          />
+        </div>
+        <div className="flex items-center justify-between">
+          <Label htmlFor="share-points" className="font-normal">
+            Reward points &amp; tier
+          </Label>
+          <Switch
+            id="share-points"
+            checked={settings.sharePoints}
+            onCheckedChange={(v) => toggle("sharePoints", v)}
+          />
+        </div>
+        <div className="flex items-center justify-between">
+          <Label htmlFor="share-numbers" className="font-normal">
+            Pounds lost (the real number)
+          </Label>
+          <Switch
+            id="share-numbers"
+            checked={settings.shareNumbers}
+            onCheckedChange={(v) => toggle("shareNumbers", v)}
+          />
+        </div>
+        <div className="flex items-center justify-between">
+          <div className="pr-4">
+            <Label htmlFor="share-photos" className="font-normal">
+              Progress photos
+            </Label>
+            <p className="text-xs text-muted-foreground">
+              Only photos you individually mark "Share" on your Photos page
+            </p>
+          </div>
+          <Switch
+            id="share-photos"
+            checked={settings.sharePhotos}
+            onCheckedChange={(v) => toggle("sharePhotos", v)}
           />
         </div>
       </CardContent>

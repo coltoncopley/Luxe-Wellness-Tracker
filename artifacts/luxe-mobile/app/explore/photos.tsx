@@ -12,6 +12,7 @@ import {
   useDeleteProgressPhoto,
   useListProgressPhotos,
   useRequestUploadUrl,
+  useSetProgressPhotoShared,
 } from "@workspace/api-client-react";
 import type { ProgressPhoto } from "@workspace/api-client-react";
 
@@ -41,6 +42,7 @@ export default function PhotosScreen() {
   const requestUrl = useRequestUploadUrl();
   const createPhoto = useCreateProgressPhoto();
   const deletePhoto = useDeleteProgressPhoto();
+  const setShared = useSetProgressPhotoShared();
 
   const [category, setCategory] = useState<Category>("weight");
   const [takenOn, setTakenOn] = useState(todayStr());
@@ -152,6 +154,24 @@ export default function PhotosScreen() {
     });
   }
 
+  function handleToggleShare(p: ProgressPhoto) {
+    setShared.mutate(
+      { id: p.id, data: { shared: !p.sharedWithFriends } },
+      {
+        onSuccess: () => {
+          void invalidate();
+          if (!p.sharedWithFriends) {
+            Alert.alert(
+              "Shared with friends",
+              'Approved friends can see this photo once "Progress photos" sharing is on in Friends.',
+            );
+          }
+        },
+        onError: () => Alert.alert("Couldn't update sharing", "Please try again."),
+      },
+    );
+  }
+
   const all = photos.data ?? [];
   const filtered = all.filter((p) => filter === "all" || p.category === filter);
   const comparePhotos = [...all.filter((p) => compareIds.includes(p.id))].sort((a, b) =>
@@ -175,7 +195,8 @@ export default function PhotosScreen() {
       <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 8 }}>
         <Feather name="lock" size={13} color={c.mutedForeground} />
         <Text style={{ fontFamily: "Inter_400Regular", fontSize: 12, color: c.mutedForeground, flex: 1 }}>
-          Only you can see these photos — never LUXE staff.
+          Only you can see these photos — never LUXE staff. You can share individual photos with
+          approved friends if you choose.
         </Text>
       </View>
 
@@ -288,6 +309,13 @@ export default function PhotosScreen() {
                   >
                     {label(p)}
                   </Text>
+                  <Pressable hitSlop={8} onPress={() => handleToggleShare(p)} style={{ marginRight: 10 }}>
+                    <Feather
+                      name="share-2"
+                      size={16}
+                      color={p.sharedWithFriends ? c.accent : c.mutedForeground}
+                    />
+                  </Pressable>
                   <Pressable hitSlop={8} onPress={() => toggleCompare(p.id)}>
                     <Feather
                       name={selected ? "check-square" : "square"}
@@ -327,7 +355,15 @@ export default function PhotosScreen() {
               >
                 {label(viewed)}
               </Text>
-              <View style={{ flexDirection: "row", gap: 12, marginTop: 18 }}>
+              <View style={{ marginTop: 18 }}>
+                <LuxeButton
+                  label={viewed.sharedWithFriends ? "Shared with friends — make private" : "Share with friends"}
+                  icon="share-2"
+                  variant="outline"
+                  onPress={() => handleToggleShare(viewed)}
+                />
+              </View>
+              <View style={{ flexDirection: "row", gap: 12, marginTop: 12 }}>
                 <View style={{ flex: 1 }}>
                   <LuxeButton
                     label="Delete"

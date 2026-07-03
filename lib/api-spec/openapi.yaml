@@ -681,6 +681,36 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/OpenaiError"
+  /photos/{id}/share:
+    patch:
+      operationId: setProgressPhotoShared
+      tags: [photos]
+      summary: Toggle whether one of your progress photos is visible to approved friends
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetPhotoSharedInput"
+      responses:
+        "200":
+          description: Updated photo
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProgressPhoto"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenaiError"
   /skin-scan:
     get:
       operationId: getSkinScanHistory
@@ -1262,6 +1292,36 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/FriendJourneysResponse"
+  /friends/{friendId}/photos/{photoId}/image:
+    get:
+      operationId: getFriendPhotoImage
+      tags: [social]
+      summary: Stream a friend's shared progress photo (accepted follow + their opt-in required)
+      parameters:
+        - name: friendId
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: photoId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Image bytes
+          content:
+            image/*:
+              schema:
+                type: string
+                format: binary
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenaiError"
   /social/settings:
     get:
       operationId: getSharingSettings
@@ -3789,8 +3849,11 @@ components:
           $ref: "#/components/schemas/UploadUrlRequest"
     ProgressPhoto:
       type: object
-      required: [id, takenOn, category, objectPath, createdAt]
+      required: [id, takenOn, category, objectPath, sharedWithFriends, createdAt]
       properties:
+        sharedWithFriends:
+          type: boolean
+          description: Whether this photo is visible to approved friends (requires the master sharePhotos toggle too)
         id:
           type: integer
         takenOn:
@@ -4036,6 +4099,19 @@ components:
         checkinsLast7Days: { type: ["integer", "null"] }
         weightProgressPct: { type: ["number", "null"] }
         lastActiveDate: { type: ["string", "null"] }
+        pointsBalance: { type: ["integer", "null"] }
+        tier: { type: ["string", "null"] }
+        poundsLost: { type: ["number", "null"] }
+        sharedPhotos:
+          type: array
+          items: { $ref: "#/components/schemas/FriendSharedPhoto" }
+    FriendSharedPhoto:
+      type: object
+      required: [id, takenOn, category]
+      properties:
+        id: { type: integer }
+        takenOn: { type: string, description: "Date the photo was taken (YYYY-MM-DD)" }
+        category: { type: string }
     FriendJourneysResponse:
       type: object
       required: [journeys]
@@ -4045,11 +4121,19 @@ components:
           items: { $ref: "#/components/schemas/FriendJourney" }
     SharingSettings:
       type: object
-      required: [shareGlow, shareWeightProgress, shareStreak]
+      required: [shareGlow, shareWeightProgress, shareStreak, sharePoints, shareNumbers, sharePhotos]
       properties:
         shareGlow: { type: boolean }
         shareWeightProgress: { type: boolean }
         shareStreak: { type: boolean }
+        sharePoints: { type: boolean }
+        shareNumbers: { type: boolean }
+        sharePhotos: { type: boolean }
+    SetPhotoSharedInput:
+      type: object
+      required: [shared]
+      properties:
+        shared: { type: boolean }
     SendCheerInput:
       type: object
       required: [toUserId, emoji]

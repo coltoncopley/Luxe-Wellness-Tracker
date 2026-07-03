@@ -27,6 +27,9 @@ export const shareSettingsTable = pgTable("share_settings", {
   shareGlow: boolean("share_glow").notNull().default(true),
   shareWeightProgress: boolean("share_weight_progress").notNull().default(true),
   shareStreak: boolean("share_streak").notNull().default(true),
+  sharePoints: boolean("share_points").notNull().default(false),
+  shareNumbers: boolean("share_numbers").notNull().default(false),
+  sharePhotos: boolean("share_photos").notNull().default(false),
 });
 
 export type ShareSettings = typeof shareSettingsTable.$inferSelect;

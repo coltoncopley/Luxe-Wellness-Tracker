@@ -4,6 +4,7 @@ import {
   getListProgressPhotosQueryKey,
   useCreateProgressPhoto,
   useDeleteProgressPhoto,
+  useSetProgressPhotoShared,
   useRequestUploadUrl,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -19,7 +20,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Camera, Trash2, Images, Lock, Columns2, X } from "lucide-react";
+import { Camera, Trash2, Images, Lock, Columns2, X, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
 
@@ -60,6 +61,7 @@ export default function Photos() {
   const requestUrl = useRequestUploadUrl();
   const createPhoto = useCreateProgressPhoto();
   const deletePhoto = useDeleteProgressPhoto();
+  const setShared = useSetProgressPhotoShared();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [category, setCategory] = useState<Category>("weight");
@@ -111,6 +113,20 @@ export default function Photos() {
       toast.success("Photo deleted");
     } catch {
       toast.error("Couldn't delete the photo.");
+    }
+  }
+
+  async function handleToggleShare(id: number, shared: boolean) {
+    try {
+      await setShared.mutateAsync({ id, data: { shared } });
+      await queryClient.invalidateQueries({ queryKey: getListProgressPhotosQueryKey() });
+      toast.success(
+        shared
+          ? "Approved friends can see this photo once photo sharing is on in Friends"
+          : "This photo is private again",
+      );
+    } catch {
+      toast.error("Couldn't update sharing for that photo.");
     }
   }
 
@@ -266,6 +282,20 @@ export default function Photos() {
                   </div>
                 </div>
                 <div className="absolute top-2 right-2 flex gap-1.5">
+                  <Button
+                    size="sm"
+                    variant={p.sharedWithFriends ? "default" : "secondary"}
+                    className="h-7 rounded-full px-2.5 text-xs"
+                    title={
+                      p.sharedWithFriends
+                        ? "Shared with approved friends — click to make private"
+                        : "Private — click to share with approved friends"
+                    }
+                    onClick={() => void handleToggleShare(p.id, !p.sharedWithFriends)}
+                  >
+                    <Share2 className="h-3 w-3 mr-1" />
+                    {p.sharedWithFriends ? "Shared" : "Share"}
+                  </Button>
                   <Button
                     size="sm"
                     variant={selected ? "default" : "secondary"}

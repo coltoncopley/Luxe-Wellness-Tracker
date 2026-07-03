@@ -8,6 +8,8 @@
 import type { ProgressPhotoCategory } from './progressPhotoCategory';
 
 export interface ProgressPhoto {
+  /** Whether this photo is visible to approved friends (requires the master sharePhotos toggle too) */
+  sharedWithFriends: boolean;
   id: number;
   /** Date the photo was taken (YYYY-MM-DD) */
   takenOn: string;

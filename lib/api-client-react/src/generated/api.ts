@@ -127,6 +127,7 @@ import type {
   Service,
   ServiceInput,
   ServiceUpdate,
+  SetPhotoSharedInput,
   SharingSettings,
   SkinScanHistory,
   SkinScanResult,
@@ -3161,6 +3162,77 @@ export const useDeleteProgressPhoto = <TError = ErrorType<OpenaiError>,
       return useMutation(getDeleteProgressPhotoMutationOptions(options));
     }
 
+export const getSetProgressPhotoSharedUrl = (id: number,) => {
+
+
+
+
+  return `/api/photos/${id}/share`
+}
+
+/**
+ * @summary Toggle whether one of your progress photos is visible to approved friends
+ */
+export const setProgressPhotoShared = async (id: number,
+    setPhotoSharedInput: SetPhotoSharedInput, options?: RequestInit): Promise<ProgressPhoto> => {
+
+  return customFetch<ProgressPhoto>(getSetProgressPhotoSharedUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(setPhotoSharedInput)
+  }
+);}
+
+
+
+
+export const getSetProgressPhotoSharedMutationOptions = <TError = ErrorType<OpenaiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setProgressPhotoShared>>, TError,{id: number;data: BodyType<SetPhotoSharedInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setProgressPhotoShared>>, TError,{id: number;data: BodyType<SetPhotoSharedInput>}, TContext> => {
+
+const mutationKey = ['setProgressPhotoShared'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setProgressPhotoShared>>, {id: number;data: BodyType<SetPhotoSharedInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  setProgressPhotoShared(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetProgressPhotoSharedMutationResult = NonNullable<Awaited<ReturnType<typeof setProgressPhotoShared>>>
+    export type SetProgressPhotoSharedMutationBody = BodyType<SetPhotoSharedInput>
+    export type SetProgressPhotoSharedMutationError = ErrorType<OpenaiError>
+
+    /**
+ * @summary Toggle whether one of your progress photos is visible to approved friends
+ */
+export const useSetProgressPhotoShared = <TError = ErrorType<OpenaiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setProgressPhotoShared>>, TError,{id: number;data: BodyType<SetPhotoSharedInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setProgressPhotoShared>>,
+        TError,
+        {id: number;data: BodyType<SetPhotoSharedInput>},
+        TContext
+      > => {
+      return useMutation(getSetProgressPhotoSharedMutationOptions(options));
+    }
+
 export const getGetSkinScanHistoryUrl = () => {
 
 
@@ -5259,6 +5331,88 @@ export function useGetFriendJourneys<TData = Awaited<ReturnType<typeof getFriend
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetFriendJourneysQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetFriendPhotoImageUrl = (friendId: string,
+    photoId: number,) => {
+
+
+
+
+  return `/api/friends/${friendId}/photos/${photoId}/image`
+}
+
+/**
+ * @summary Stream a friend's shared progress photo (accepted follow + their opt-in required)
+ */
+export const getFriendPhotoImage = async (friendId: string,
+    photoId: number, options?: RequestInit): Promise<Blob> => {
+
+  return customFetch<Blob>(getGetFriendPhotoImageUrl(friendId,photoId),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetFriendPhotoImageQueryKey = (friendId: string,
+    photoId: number,) => {
+    return [
+    `/api/friends/${friendId}/photos/${photoId}/image`
+    ] as const;
+    }
+
+
+export const getGetFriendPhotoImageQueryOptions = <TData = Awaited<ReturnType<typeof getFriendPhotoImage>>, TError = ErrorType<OpenaiError>>(friendId: string,
+    photoId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFriendPhotoImage>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetFriendPhotoImageQueryKey(friendId,photoId);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getFriendPhotoImage>>> = ({ signal }) => getFriendPhotoImage(friendId,photoId, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: friendId !== null && friendId !== undefined && photoId !== null && photoId !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getFriendPhotoImage>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetFriendPhotoImageQueryResult = NonNullable<Awaited<ReturnType<typeof getFriendPhotoImage>>>
+export type GetFriendPhotoImageQueryError = ErrorType<OpenaiError>
+
+
+/**
+ * @summary Stream a friend's shared progress photo (accepted follow + their opt-in required)
+ */
+
+export function useGetFriendPhotoImage<TData = Awaited<ReturnType<typeof getFriendPhotoImage>>, TError = ErrorType<OpenaiError>>(
+ friendId: string,
+    photoId: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getFriendPhotoImage>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetFriendPhotoImageQueryOptions(friendId,photoId,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

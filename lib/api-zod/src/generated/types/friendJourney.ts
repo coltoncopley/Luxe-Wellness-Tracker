@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { FriendSharedPhoto } from './friendSharedPhoto';
 
 export interface FriendJourney {
   userId: string;
@@ -19,4 +20,11 @@ export interface FriendJourney {
   weightProgressPct?: number | null;
   /** @nullable */
   lastActiveDate?: string | null;
+  /** @nullable */
+  pointsBalance?: number | null;
+  /** @nullable */
+  tier?: string | null;
+  /** @nullable */
+  poundsLost?: number | null;
+  sharedPhotos?: FriendSharedPhoto[];
 }

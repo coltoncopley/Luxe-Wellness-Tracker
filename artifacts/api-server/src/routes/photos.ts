@@ -1,7 +1,7 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { and, desc, eq } from "drizzle-orm";
 import { db, progressPhotosTable } from "@workspace/db";
-import { CreateProgressPhotoBody } from "@workspace/api-zod";
+import { CreateProgressPhotoBody, SetProgressPhotoSharedBody } from "@workspace/api-zod";
 import { ObjectStorageService } from "../lib/objectStorage";
 import { POINTS, awardOncePerDay } from "../lib/rewards";
 
@@ -23,6 +23,7 @@ function toPhotoResponse(row: typeof progressPhotosTable.$inferSelect) {
     category: row.category,
     note: row.note,
     objectPath: row.objectPath,
+    sharedWithFriends: row.sharedWithFriends,
     createdAt: row.createdAt.toISOString(),
   };
 }
@@ -88,6 +89,26 @@ router.post("/photos", async (req: Request, res: Response) => {
   );
 
   res.status(201).json(toPhotoResponse(row!));
+});
+
+router.patch("/photos/:id/share", async (req: Request, res: Response) => {
+  const userId = res.locals.userId as string;
+  const id = Number(req.params.id);
+  const parsed = SetProgressPhotoSharedBody.safeParse(req.body);
+  if (!Number.isInteger(id) || !parsed.success) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+  const [updated] = await db
+    .update(progressPhotosTable)
+    .set({ sharedWithFriends: parsed.data.shared })
+    .where(and(eq(progressPhotosTable.id, id), eq(progressPhotosTable.userId, userId)))
+    .returning();
+  if (!updated) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+  res.json(toPhotoResponse(updated));
 });
 
 router.delete("/photos/:id", async (req: Request, res: Response) => {
