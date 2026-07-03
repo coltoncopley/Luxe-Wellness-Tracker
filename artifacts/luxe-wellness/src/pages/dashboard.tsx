@@ -2,6 +2,7 @@ import {
   useGetDashboardSummary,
   useGetDailyTip,
   useGetBriefing,
+  useListAnnouncements,
 } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -15,6 +16,7 @@ import {
   CheckCircle2,
   Circle,
   ChevronRight,
+  Megaphone,
 } from "lucide-react";
 import { Link } from "wouter";
 
@@ -58,6 +60,8 @@ export default function Dashboard() {
   const { data: summary, isLoading: summaryLoading } = useGetDashboardSummary();
   const { data: briefing, isLoading: briefingLoading } = useGetBriefing();
   const { data: dailyTip } = useGetDailyTip();
+  const { data: announcementsData } = useListAnnouncements();
+  const announcements = announcementsData?.announcements ?? [];
 
   if (summaryLoading || briefingLoading)
     return (
@@ -112,6 +116,33 @@ export default function Dashboard() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Spa announcements */}
+      {announcements.length > 0 && (
+        <Card className="border-accent/40 bg-accent/5 shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-sans font-medium text-primary flex items-center gap-2">
+              <Megaphone className="h-4 w-4" />
+              What's new at LUXE
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {announcements.slice(0, 3).map((a) => (
+              <div key={a.id} data-testid={`announcement-${a.id}`}>
+                <div className="flex items-baseline justify-between gap-3">
+                  <h3 className="font-serif text-lg">{a.title}</h3>
+                  <span className="text-xs text-muted-foreground shrink-0">
+                    {new Date(a.createdAt).toLocaleDateString()}
+                  </span>
+                </div>
+                <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
+                  {a.body}
+                </p>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Today's to-dos */}

@@ -38,6 +38,14 @@ import {
   useAdminGetAccessCode,
   getAdminGetAccessCodeQueryKey,
   useAdminUpdateAccessCode,
+  useAdminListAnnouncements,
+  getAdminListAnnouncementsQueryKey,
+  getListAnnouncementsQueryKey,
+  useAdminCreateAnnouncement,
+  useAdminUpdateAnnouncement,
+  useAdminDeleteAnnouncement,
+  useAdminGetMetrics,
+  type Announcement,
   type AdminStaffMember,
   type CompAccess,
   type RedemptionDetail,
@@ -81,6 +89,8 @@ import {
   ShieldCheck,
   Eye,
   EyeOff,
+  Bell,
+  BarChart3,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -1420,6 +1430,248 @@ function CommunityModerationTab() {
   );
 }
 
+/* ---------- Announcements tab ---------- */
+
+function AnnouncementsTab() {
+  const queryClient = useQueryClient();
+  const { data, isLoading } = useAdminListAnnouncements();
+  const createAnnouncement = useAdminCreateAnnouncement();
+  const updateAnnouncement = useAdminUpdateAnnouncement();
+  const deleteAnnouncement = useAdminDeleteAnnouncement();
+
+  const [title, setTitle] = useState("");
+  const [body, setBody] = useState("");
+
+  function invalidate() {
+    void queryClient.invalidateQueries({ queryKey: getAdminListAnnouncementsQueryKey() });
+    void queryClient.invalidateQueries({ queryKey: getListAnnouncementsQueryKey() });
+  }
+
+  function handlePost(e: React.FormEvent) {
+    e.preventDefault();
+    if (title.trim().length < 3 || body.trim().length < 10) {
+      toast.error("Title needs at least 3 characters and the message at least 10");
+      return;
+    }
+    createAnnouncement.mutate(
+      { data: { title: title.trim(), body: body.trim() } },
+      {
+        onSuccess: () => {
+          toast.success("Announcement posted — patients will see it on their home page");
+          setTitle("");
+          setBody("");
+          invalidate();
+        },
+        onError: () => toast.error("Couldn't post the announcement"),
+      },
+    );
+  }
+
+  function toggleActive(a: Announcement, active: boolean) {
+    updateAnnouncement.mutate(
+      { id: a.id, data: { active } },
+      {
+        onSuccess: () => {
+          toast.success(active ? "Announcement is live" : "Announcement hidden");
+          invalidate();
+        },
+        onError: () => toast.error("Couldn't update the announcement"),
+      },
+    );
+  }
+
+  function handleDelete(a: Announcement) {
+    if (!window.confirm(`Delete "${a.title}"? This can't be undone.`)) return;
+    deleteAnnouncement.mutate(
+      { id: a.id },
+      {
+        onSuccess: () => {
+          toast.success("Announcement deleted");
+          invalidate();
+        },
+        onError: () => toast.error("Couldn't delete the announcement"),
+      },
+    );
+  }
+
+  const announcements = data?.announcements ?? [];
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Post an update</CardTitle>
+          <CardDescription>
+            Patients see the 3 most recent live announcements on their home page — specials, new
+            services, events, hours.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handlePost} className="space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="announcement-title">Title</Label>
+              <Input
+                id="announcement-title"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                maxLength={100}
+                placeholder="September special: 20% off HydraFacials"
+                data-testid="input-announcement-title"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="announcement-body">Message</Label>
+              <Textarea
+                id="announcement-body"
+                value={body}
+                onChange={(e) => setBody(e.target.value)}
+                maxLength={1000}
+                rows={3}
+                placeholder="Book this month and enjoy 20% off any HydraFacial treatment…"
+                data-testid="input-announcement-body"
+              />
+            </div>
+            <Button
+              type="submit"
+              disabled={createAnnouncement.isPending}
+              data-testid="button-post-announcement"
+            >
+              <Plus className="h-4 w-4 mr-1" /> Post announcement
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      {isLoading ? (
+        <p className="text-muted-foreground text-sm">Loading…</p>
+      ) : announcements.length === 0 ? (
+        <p className="text-muted-foreground text-sm">No announcements yet.</p>
+      ) : (
+        <div className="space-y-3">
+          {announcements.map((a) => (
+            <Card key={a.id} className={a.active ? "" : "opacity-60"}>
+              <CardContent className="p-4 flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="font-medium">{a.title}</h3>
+                    {!a.active && <Badge variant="secondary">Hidden</Badge>}
+                  </div>
+                  <p className="text-sm text-muted-foreground mt-1 whitespace-pre-line">{a.body}</p>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    {format(new Date(a.createdAt), "MMM d, yyyy")}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Switch
+                    checked={a.active}
+                    onCheckedChange={(checked) => toggleActive(a, checked)}
+                    aria-label={a.active ? "Hide announcement" : "Show announcement"}
+                  />
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => handleDelete(a)}
+                    aria-label="Delete announcement"
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ---------- Insights tab (admin only) ---------- */
+
+function MetricCard({ label, value, hint }: { label: string; value: number; hint?: string }) {
+  return (
+    <Card>
+      <CardContent className="p-4">
+        <p className="text-sm text-muted-foreground">{label}</p>
+        <p className="text-3xl font-serif mt-1">{value}</p>
+        {hint && <p className="text-xs text-muted-foreground mt-1">{hint}</p>}
+      </CardContent>
+    </Card>
+  );
+}
+
+function InsightsTab() {
+  const { data: metrics, isLoading } = useAdminGetMetrics();
+
+  if (isLoading) return <p className="text-muted-foreground text-sm">Loading…</p>;
+  if (!metrics) return <p className="text-muted-foreground text-sm">Couldn't load metrics.</p>;
+
+  return (
+    <div className="space-y-6">
+      <p className="text-sm text-muted-foreground">
+        Business totals only — individual patient health data is never included here.
+      </p>
+
+      <div>
+        <h3 className="text-lg mb-3">Membership</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <MetricCard label="Paying members" value={metrics.membership.activeMembers} />
+          <MetricCard label="On free trial" value={metrics.membership.trialing} />
+          <MetricCard label="Payment issues" value={metrics.membership.pastDue} />
+          <MetricCard label="Free access (comps)" value={metrics.membership.activeComps} />
+        </div>
+      </div>
+
+      <div>
+        <h3 className="text-lg mb-3">Patients</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <MetricCard label="Total sign-ups" value={metrics.patients.totalPatients} />
+          <MetricCard label="New in last 30 days" value={metrics.patients.newLast30Days} />
+          <MetricCard
+            label="Active in last 7 days"
+            value={metrics.engagement.activeUsersLast7Days}
+            hint="Patients earning points this week"
+          />
+          <MetricCard label="Community posts" value={metrics.engagement.communityPosts} />
+        </div>
+      </div>
+
+      <div>
+        <h3 className="text-lg mb-3">Rewards</h3>
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <MetricCard label="Points earned" value={metrics.rewards.pointsEarned} />
+          <MetricCard label="Points redeemed" value={metrics.rewards.pointsRedeemed} />
+          <MetricCard label="Rewards claimed" value={metrics.rewards.redemptionsTotal} />
+          <MetricCard label="Redeemed in office" value={metrics.rewards.redemptionsUsed} />
+        </div>
+      </div>
+
+      {metrics.rewards.topRewards.length > 0 && (
+        <div>
+          <h3 className="text-lg mb-3">Most popular rewards</h3>
+          <Card>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Reward</TableHead>
+                  <TableHead className="text-right">Times claimed</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {metrics.rewards.topRewards.map((r) => (
+                  <TableRow key={r.title}>
+                    <TableCell>{r.title}</TableCell>
+                    <TableCell className="text-right">{r.count}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </Card>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ---------- Admin tab (admin only) ---------- */
 
 function roleBadge(role: AdminStaffMember["role"]) {
@@ -1690,6 +1942,14 @@ export default function StaffVerify() {
           <TabsTrigger value="community">
             <Megaphone className="h-4 w-4 mr-1" /> Community
           </TabsTrigger>
+          <TabsTrigger value="announcements">
+            <Bell className="h-4 w-4 mr-1" /> Announcements
+          </TabsTrigger>
+          {isAdmin && (
+            <TabsTrigger value="insights">
+              <BarChart3 className="h-4 w-4 mr-1" /> Insights
+            </TabsTrigger>
+          )}
           {isAdmin && (
             <TabsTrigger value="admin">
               <ShieldCheck className="h-4 w-4 mr-1" /> Admin
@@ -1717,6 +1977,14 @@ export default function StaffVerify() {
         <TabsContent value="community" className="mt-6">
           <CommunityModerationTab />
         </TabsContent>
+        <TabsContent value="announcements" className="mt-6">
+          <AnnouncementsTab />
+        </TabsContent>
+        {isAdmin && (
+          <TabsContent value="insights" className="mt-6">
+            <InsightsTab />
+          </TabsContent>
+        )}
         {isAdmin && (
           <TabsContent value="admin" className="mt-6">
             <AdminTab myUserId={me?.id ?? ""} />

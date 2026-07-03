@@ -10,6 +10,8 @@ import {
   menuItemsTable,
   communityPostsTable,
   communityHeartsTable,
+  announcementsTable,
+  rewardEventsTable,
 } from "@workspace/db";
 import {
   AdminCreateServiceBody,
@@ -37,6 +39,12 @@ import {
   AdminGetAccessCodeResponse,
   AdminUpdateAccessCodeBody,
   AdminUpdateAccessCodeResponse,
+  AdminListAnnouncementsResponse,
+  AdminCreateAnnouncementBody,
+  AdminCreateAnnouncementResponse,
+  AdminUpdateAnnouncementBody,
+  AdminUpdateAnnouncementResponse,
+  AdminGetMetricsResponse,
 } from "@workspace/api-zod";
 import { clearSubscriptionCache } from "../middlewares/subscription";
 import { requireAdmin, isStaffRole } from "../middlewares/auth";
@@ -407,6 +415,79 @@ router.post("/admin/community/posts/:id/moderate", async (req, res): Promise<voi
   res.status(204).end();
 });
 
+// ---- Announcements (staff can post spa updates) ----
+
+function toAnnouncement(row: {
+  id: number;
+  title: string;
+  body: string;
+  active: boolean;
+  createdAt: Date;
+}) {
+  return { ...row, createdAt: row.createdAt.toISOString() };
+}
+
+router.get("/admin/announcements", async (_req, res): Promise<void> => {
+  const rows = await db
+    .select()
+    .from(announcementsTable)
+    .orderBy(desc(announcementsTable.createdAt));
+  res.json(AdminListAnnouncementsResponse.parse({ announcements: rows.map(toAnnouncement) }));
+});
+
+router.post("/admin/announcements", async (req, res): Promise<void> => {
+  const body = AdminCreateAnnouncementBody.safeParse(req.body);
+  if (!body.success) {
+    res.status(400).json({ error: "Title must be 3-100 characters and body 10-1000 characters" });
+    return;
+  }
+  const [row] = await db
+    .insert(announcementsTable)
+    .values({ title: body.data.title.trim(), body: body.data.body.trim() })
+    .returning();
+  res.status(201).json(AdminCreateAnnouncementResponse.parse(toAnnouncement(row!)));
+});
+
+router.patch("/admin/announcements/:id", async (req, res): Promise<void> => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) {
+    res.status(400).json({ error: "Invalid id" });
+    return;
+  }
+  const body = AdminUpdateAnnouncementBody.safeParse(req.body);
+  if (!body.success) {
+    res.status(400).json({ error: "Invalid input" });
+    return;
+  }
+  const [row] = await db
+    .update(announcementsTable)
+    .set({ active: body.data.active })
+    .where(eq(announcementsTable.id, id))
+    .returning();
+  if (!row) {
+    res.status(404).json({ error: "Announcement not found" });
+    return;
+  }
+  res.json(AdminUpdateAnnouncementResponse.parse(toAnnouncement(row)));
+});
+
+router.delete("/admin/announcements/:id", async (req, res): Promise<void> => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) {
+    res.status(400).json({ error: "Invalid id" });
+    return;
+  }
+  const [row] = await db
+    .delete(announcementsTable)
+    .where(eq(announcementsTable.id, id))
+    .returning({ id: announcementsTable.id });
+  if (!row) {
+    res.status(404).json({ error: "Announcement not found" });
+    return;
+  }
+  res.status(204).end();
+});
+
 // ---- Admin-only routes (requireAdmin on top of the staff gate) ----
 
 function toStaffMember(user: {
@@ -499,6 +580,104 @@ router.put("/admin/access-code", requireAdmin, async (req, res): Promise<void> =
     .values({ key: "staff_access_code", value: code })
     .onConflictDoUpdate({ target: appSettingsTable.key, set: { value: code } });
   res.json(AdminUpdateAccessCodeResponse.parse({ code }));
+});
+
+// Aggregate business metrics — counts and totals only, never individual patient data.
+router.get("/admin/metrics", requireAdmin, async (_req, res): Promise<void> => {
+  const now = new Date();
+  const thirtyDaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+  const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+  const [
+    subCounts,
+    compCount,
+    patientCounts,
+    activeUsers,
+    postCount,
+    pointTotals,
+    redemptionCounts,
+    topRewards,
+  ] = await Promise.all([
+    db
+      .execute(
+        sql`SELECT status, count(*)::int AS count FROM stripe.subscriptions WHERE status IN ('active', 'trialing', 'past_due') GROUP BY status`,
+      )
+      .catch(() => ({ rows: [] as Array<Record<string, unknown>> })),
+    db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(usersTable)
+      .where(
+        sql`${usersTable.compLifetime} = true OR ${usersTable.compUntil} > ${now.toISOString()}`,
+      ),
+    db
+      .select({
+        total: sql<number>`count(*)::int`,
+        recent: sql<number>`count(*) FILTER (WHERE ${usersTable.createdAt} > ${thirtyDaysAgo.toISOString()})::int`,
+      })
+      .from(usersTable)
+      .where(eq(usersTable.role, "patient")),
+    db
+      .select({ count: sql<number>`count(DISTINCT ${rewardEventsTable.userId})::int` })
+      .from(rewardEventsTable)
+      .where(
+        sql`${rewardEventsTable.createdAt} > ${sevenDaysAgo.toISOString()} AND ${rewardEventsTable.points} > 0`,
+      ),
+    db.select({ count: sql<number>`count(*)::int` }).from(communityPostsTable),
+    db
+      .select({
+        earned: sql<number>`COALESCE(SUM(${rewardEventsTable.points}) FILTER (WHERE ${rewardEventsTable.points} > 0), 0)::int`,
+        redeemed: sql<number>`COALESCE(-SUM(${rewardEventsTable.points}) FILTER (WHERE ${rewardEventsTable.points} < 0), 0)::int`,
+      })
+      .from(rewardEventsTable),
+    db
+      .select({
+        total: sql<number>`count(*)::int`,
+        used: sql<number>`count(*) FILTER (WHERE ${redemptionsTable.usedAt} IS NOT NULL)::int`,
+      })
+      .from(redemptionsTable),
+    db
+      .select({
+        title: redemptionsTable.title,
+        count: sql<number>`count(*)::int`,
+      })
+      .from(redemptionsTable)
+      .groupBy(redemptionsTable.title)
+      .orderBy(sql`count(*) DESC`)
+      .limit(5),
+  ]);
+
+  const statusMap = new Map(
+    (subCounts.rows as Array<Record<string, unknown>>).map((r) => [
+      String(r["status"]),
+      Number(r["count"]),
+    ]),
+  );
+
+  res.json(
+    AdminGetMetricsResponse.parse({
+      membership: {
+        activeMembers: statusMap.get("active") ?? 0,
+        trialing: statusMap.get("trialing") ?? 0,
+        pastDue: statusMap.get("past_due") ?? 0,
+        activeComps: Number(compCount[0]?.count ?? 0),
+      },
+      patients: {
+        totalPatients: Number(patientCounts[0]?.total ?? 0),
+        newLast30Days: Number(patientCounts[0]?.recent ?? 0),
+      },
+      engagement: {
+        activeUsersLast7Days: Number(activeUsers[0]?.count ?? 0),
+        communityPosts: Number(postCount[0]?.count ?? 0),
+      },
+      rewards: {
+        pointsEarned: Number(pointTotals[0]?.earned ?? 0),
+        pointsRedeemed: Number(pointTotals[0]?.redeemed ?? 0),
+        redemptionsTotal: Number(redemptionCounts[0]?.total ?? 0),
+        redemptionsUsed: Number(redemptionCounts[0]?.used ?? 0),
+        topRewards: topRewards.map((r) => ({ title: r.title, count: Number(r.count) })),
+      },
+    }),
+  );
 });
 
 export default router;

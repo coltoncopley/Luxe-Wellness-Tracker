@@ -1746,6 +1746,120 @@ export const AdminUpdateAccessCodeResponse = zod.object({
 
 
 /**
+ * @summary Latest active spa announcements
+ */
+export const ListAnnouncementsResponse = zod.object({
+  "announcements": zod.array(zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "body": zod.string(),
+  "active": zod.boolean(),
+  "createdAt": zod.string().describe('ISO timestamp')
+}))
+})
+
+
+/**
+ * @summary All announcements (staff)
+ */
+export const AdminListAnnouncementsResponse = zod.object({
+  "announcements": zod.array(zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "body": zod.string(),
+  "active": zod.boolean(),
+  "createdAt": zod.string().describe('ISO timestamp')
+}))
+})
+
+
+/**
+ * @summary Post a new announcement (staff)
+ */
+export const adminCreateAnnouncementBodyTitleMin = 3;
+export const adminCreateAnnouncementBodyTitleMax = 100;
+
+export const adminCreateAnnouncementBodyBodyMin = 10;
+export const adminCreateAnnouncementBodyBodyMax = 1000;
+
+
+
+export const AdminCreateAnnouncementBody = zod.object({
+  "title": zod.string().min(adminCreateAnnouncementBodyTitleMin).max(adminCreateAnnouncementBodyTitleMax),
+  "body": zod.string().min(adminCreateAnnouncementBodyBodyMin).max(adminCreateAnnouncementBodyBodyMax)
+})
+
+export const AdminCreateAnnouncementResponse = zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "body": zod.string(),
+  "active": zod.boolean(),
+  "createdAt": zod.string().describe('ISO timestamp')
+})
+
+
+/**
+ * @summary Show or hide an announcement (staff)
+ */
+export const AdminUpdateAnnouncementParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const AdminUpdateAnnouncementBody = zod.object({
+  "active": zod.boolean()
+})
+
+export const AdminUpdateAnnouncementResponse = zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "body": zod.string(),
+  "active": zod.boolean(),
+  "createdAt": zod.string().describe('ISO timestamp')
+})
+
+
+/**
+ * @summary Delete an announcement (staff)
+ */
+export const AdminDeleteAnnouncementParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const AdminDeleteAnnouncementResponse = zod.void()
+
+
+/**
+ * @summary Aggregate business metrics (admin only, no individual patient data)
+ */
+export const AdminGetMetricsResponse = zod.object({
+  "membership": zod.object({
+  "activeMembers": zod.number().describe('Paying members (active subscriptions)'),
+  "trialing": zod.number(),
+  "pastDue": zod.number(),
+  "activeComps": zod.number()
+}),
+  "patients": zod.object({
+  "totalPatients": zod.number(),
+  "newLast30Days": zod.number()
+}),
+  "engagement": zod.object({
+  "activeUsersLast7Days": zod.number().describe('Distinct users with any point-earning activity in the last 7 days'),
+  "communityPosts": zod.number()
+}),
+  "rewards": zod.object({
+  "pointsEarned": zod.number(),
+  "pointsRedeemed": zod.number(),
+  "redemptionsTotal": zod.number(),
+  "redemptionsUsed": zod.number(),
+  "topRewards": zod.array(zod.object({
+  "title": zod.string(),
+  "count": zod.number()
+}))
+})
+})
+
+
+/**
  * @summary List all conversations
  */
 export const ListOpenaiConversationsResponseItem = zod.object({

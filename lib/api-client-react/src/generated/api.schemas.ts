@@ -124,6 +124,71 @@ export interface UpdateAccessCodeInput {
   code: string;
 }
 
+export interface Announcement {
+  id: number;
+  title: string;
+  body: string;
+  active: boolean;
+  /** ISO timestamp */
+  createdAt: string;
+}
+
+export interface CreateAnnouncementInput {
+  /**
+     * @minLength 3
+     * @maxLength 100
+     */
+  title: string;
+  /**
+     * @minLength 10
+     * @maxLength 1000
+     */
+  body: string;
+}
+
+export interface UpdateAnnouncementInput {
+  active: boolean;
+}
+
+export type AdminMetricsMembership = {
+  /** Paying members (active subscriptions) */
+  activeMembers: number;
+  trialing: number;
+  pastDue: number;
+  activeComps: number;
+};
+
+export type AdminMetricsPatients = {
+  totalPatients: number;
+  newLast30Days: number;
+};
+
+export type AdminMetricsEngagement = {
+  /** Distinct users with any point-earning activity in the last 7 days */
+  activeUsersLast7Days: number;
+  communityPosts: number;
+};
+
+export type AdminMetricsRewardsTopRewardsItem = {
+  title: string;
+  count: number;
+};
+
+export type AdminMetricsRewards = {
+  pointsEarned: number;
+  pointsRedeemed: number;
+  redemptionsTotal: number;
+  redemptionsUsed: number;
+  topRewards: AdminMetricsRewardsTopRewardsItem[];
+};
+
+export interface AdminMetrics {
+  membership: AdminMetricsMembership;
+  patients: AdminMetricsPatients;
+  engagement: AdminMetricsEngagement;
+  rewards: AdminMetricsRewards;
+}
+
 export interface CheckoutSession {
   /** Stripe-hosted URL to redirect the user to */
   url: string;
@@ -1226,5 +1291,13 @@ export type ToggleCommunityHeart200 = {
 
 export type AdminListCommunityPosts200 = {
   posts: AdminCommunityPost[];
+};
+
+export type ListAnnouncements200 = {
+  announcements: Announcement[];
+};
+
+export type AdminListAnnouncements200 = {
+  announcements: Announcement[];
 };
 

@@ -1693,6 +1693,112 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/AccessCodeSetting"
+  /announcements:
+    get:
+      operationId: listAnnouncements
+      tags: [announcements]
+      summary: Latest active spa announcements
+      responses:
+        "200":
+          description: Active announcements, newest first
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [announcements]
+                properties:
+                  announcements:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Announcement"
+  /admin/announcements:
+    get:
+      operationId: adminListAnnouncements
+      tags: [admin]
+      summary: All announcements (staff)
+      responses:
+        "200":
+          description: All announcements, newest first
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [announcements]
+                properties:
+                  announcements:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Announcement"
+    post:
+      operationId: adminCreateAnnouncement
+      tags: [admin]
+      summary: Post a new announcement (staff)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAnnouncementInput"
+      responses:
+        "201":
+          description: Created announcement
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Announcement"
+  /admin/announcements/{id}:
+    patch:
+      operationId: adminUpdateAnnouncement
+      tags: [admin]
+      summary: Show or hide an announcement (staff)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateAnnouncementInput"
+      responses:
+        "200":
+          description: Updated announcement
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Announcement"
+        "404":
+          description: Announcement not found
+    delete:
+      operationId: adminDeleteAnnouncement
+      tags: [admin]
+      summary: Delete an announcement (staff)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Announcement not found
+  /admin/metrics:
+    get:
+      operationId: adminGetMetrics
+      tags: [admin]
+      summary: Aggregate business metrics (admin only, no individual patient data)
+      responses:
+        "200":
+          description: Business metrics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminMetrics"
   /openai/conversations:
     get:
       operationId: listOpenaiConversations
@@ -1898,6 +2004,95 @@ components:
           maxLength: 20
           pattern: "^[A-Za-z0-9]+$"
           description: New staff access code (4-20 letters/numbers)
+    Announcement:
+      type: object
+      required: [id, title, body, active, createdAt]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        body:
+          type: string
+        active:
+          type: boolean
+        createdAt:
+          type: string
+          description: ISO timestamp
+    CreateAnnouncementInput:
+      type: object
+      required: [title, body]
+      properties:
+        title:
+          type: string
+          minLength: 3
+          maxLength: 100
+        body:
+          type: string
+          minLength: 10
+          maxLength: 1000
+    UpdateAnnouncementInput:
+      type: object
+      required: [active]
+      properties:
+        active:
+          type: boolean
+    AdminMetrics:
+      type: object
+      required: [membership, patients, engagement, rewards]
+      properties:
+        membership:
+          type: object
+          required: [activeMembers, trialing, pastDue, activeComps]
+          properties:
+            activeMembers:
+              type: integer
+              description: Paying members (active subscriptions)
+            trialing:
+              type: integer
+            pastDue:
+              type: integer
+            activeComps:
+              type: integer
+        patients:
+          type: object
+          required: [totalPatients, newLast30Days]
+          properties:
+            totalPatients:
+              type: integer
+            newLast30Days:
+              type: integer
+        engagement:
+          type: object
+          required: [activeUsersLast7Days, communityPosts]
+          properties:
+            activeUsersLast7Days:
+              type: integer
+              description: Distinct users with any point-earning activity in the last 7 days
+            communityPosts:
+              type: integer
+        rewards:
+          type: object
+          required: [pointsEarned, pointsRedeemed, redemptionsTotal, redemptionsUsed, topRewards]
+          properties:
+            pointsEarned:
+              type: integer
+            pointsRedeemed:
+              type: integer
+            redemptionsTotal:
+              type: integer
+            redemptionsUsed:
+              type: integer
+            topRewards:
+              type: array
+              items:
+                type: object
+                required: [title, count]
+                properties:
+                  title:
+                    type: string
+                  count:
+                    type: integer
     CheckoutSession:
       type: object
       required: [url]
