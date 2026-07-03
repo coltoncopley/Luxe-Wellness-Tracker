@@ -45,6 +45,7 @@ import type {
   FoodLogInput,
   FriendJourneysResponse,
   GetDailySummaryParams,
+  GetMindSummary200,
   GetPassport200,
   GlowCheckin,
   GlowCheckinInput,
@@ -64,6 +65,7 @@ import type {
   MeasurementInput,
   MenuItem,
   MenuItemInput,
+  MindCheckin,
   MissionsResponse,
   OpenaiConversation,
   OpenaiConversationInput,
@@ -99,6 +101,7 @@ import type {
   UpdatePassportProfileInput,
   UploadUrlRequest,
   UploadUrlResponse,
+  UpsertMindCheckinInput,
   WeightEntry,
   WeightEntryInput,
   WeightProgress,
@@ -3695,6 +3698,153 @@ export const useDeletePassportEntry = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getDeletePassportEntryMutationOptions(options));
+    }
+
+export const getGetMindSummaryUrl = () => {
+
+
+
+
+  return `/api/mind/summary`
+}
+
+/**
+ * @summary Today's mental wellness check-in, streak, and 14-day trend
+ */
+export const getMindSummary = async ( options?: RequestInit): Promise<GetMindSummary200> => {
+
+  return customFetch<GetMindSummary200>(getGetMindSummaryUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMindSummaryQueryKey = () => {
+    return [
+    `/api/mind/summary`
+    ] as const;
+    }
+
+
+export const getGetMindSummaryQueryOptions = <TData = Awaited<ReturnType<typeof getMindSummary>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMindSummary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMindSummaryQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMindSummary>>> = ({ signal }) => getMindSummary({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMindSummary>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMindSummaryQueryResult = NonNullable<Awaited<ReturnType<typeof getMindSummary>>>
+export type GetMindSummaryQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Today's mental wellness check-in, streak, and 14-day trend
+ */
+
+export function useGetMindSummary<TData = Awaited<ReturnType<typeof getMindSummary>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMindSummary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMindSummaryQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpsertMindCheckinUrl = () => {
+
+
+
+
+  return `/api/mind/checkin`
+}
+
+/**
+ * @summary Save today's mental wellness check-in (one per day, updates allowed)
+ */
+export const upsertMindCheckin = async (upsertMindCheckinInput: UpsertMindCheckinInput, options?: RequestInit): Promise<MindCheckin> => {
+
+  return customFetch<MindCheckin>(getUpsertMindCheckinUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(upsertMindCheckinInput)
+  }
+);}
+
+
+
+
+export const getUpsertMindCheckinMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof upsertMindCheckin>>, TError,{data: BodyType<UpsertMindCheckinInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof upsertMindCheckin>>, TError,{data: BodyType<UpsertMindCheckinInput>}, TContext> => {
+
+const mutationKey = ['upsertMindCheckin'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof upsertMindCheckin>>, {data: BodyType<UpsertMindCheckinInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  upsertMindCheckin(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpsertMindCheckinMutationResult = NonNullable<Awaited<ReturnType<typeof upsertMindCheckin>>>
+    export type UpsertMindCheckinMutationBody = BodyType<UpsertMindCheckinInput>
+    export type UpsertMindCheckinMutationError = ErrorType<void>
+
+    /**
+ * @summary Save today's mental wellness check-in (one per day, updates allowed)
+ */
+export const useUpsertMindCheckin = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof upsertMindCheckin>>, TError,{data: BodyType<UpsertMindCheckinInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof upsertMindCheckin>>,
+        TError,
+        {data: BodyType<UpsertMindCheckinInput>},
+        TContext
+      > => {
+      return useMutation(getUpsertMindCheckinMutationOptions(options));
     }
 
 export const getGetRewardsSummaryUrl = () => {

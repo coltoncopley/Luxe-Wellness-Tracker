@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { User, Calendar, Activity, Utensils, MapPin, Menu, X, Sparkles, Sun, Gift, BadgeCheck, LogOut, HeartPulse, Users, Images, ScanFace, FlaskConical, BookHeart } from "lucide-react";
+import { User, Calendar, Activity, Utensils, MapPin, Menu, X, Sparkles, Sun, Gift, BadgeCheck, LogOut, HeartPulse, Users, Images, ScanFace, FlaskConical, BookHeart, HeartHandshake } from "lucide-react";
 import { useState } from "react";
 import { Show, useClerk, useUser } from "@clerk/react";
 import {
@@ -77,13 +77,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { href: "/food", label: "Food Log", icon: Utensils },
     { href: "/restaurants", label: "Restaurants", icon: MapPin },
     { href: "/glow", label: "Glow Score", icon: Sun },
+    ...(isStaff ? [] : [{ href: "/mind", label: "Mind", icon: HeartHandshake }]),
     { href: "/skin", label: "Skin Scan", icon: ScanFace },
     { href: "/ingredients", label: "Ingredient Scanner", icon: FlaskConical },
     { href: "/passport", label: "Beauty Passport", icon: BookHeart },
     { href: "/bhrt", label: "Hormone Replacement", icon: HeartPulse },
     { href: "/rewards", label: "Rewards", icon: Gift },
     { href: "/photos", label: "Progress Photos", icon: Images },
-    { href: "/friends", label: "Friends", icon: Users },
+    ...(isStaff ? [] : [{ href: "/friends", label: "Friends", icon: Users }]),
     { href: "/luxe-ai", label: "Luxe AI", icon: Sparkles },
     ...(isStaff ? [{ href: "/staff", label: "Staff Portal", icon: BadgeCheck }] : []),
   ];

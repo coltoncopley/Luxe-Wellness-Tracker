@@ -529,6 +529,69 @@ export interface Mission {
   rewardPoints: number;
 }
 
+export interface MindCheckin {
+  /** YYYY-MM-DD */
+  date: string;
+  /**
+     * @minimum 1
+     * @maximum 5
+     */
+  mood: number;
+  /**
+     * @minimum 1
+     * @maximum 5
+     */
+  energy: number;
+  /**
+     * Higher = more stressed
+     * @minimum 1
+     * @maximum 5
+     */
+  stress: number;
+  /**
+     * Higher = more anxious
+     * @minimum 1
+     * @maximum 5
+     */
+  anxiety: number;
+  gratitude?: string | null;
+  journal?: string | null;
+  /** Calm Score 0-100 computed server-side */
+  score: number;
+}
+
+export interface UpsertMindCheckinInput {
+  /**
+     * Defaults to today
+     * @pattern ^\d{4}-\d{2}-\d{2}$
+     */
+  date?: string;
+  /**
+     * @minimum 1
+     * @maximum 5
+     */
+  mood: number;
+  /**
+     * @minimum 1
+     * @maximum 5
+     */
+  energy: number;
+  /**
+     * @minimum 1
+     * @maximum 5
+     */
+  stress: number;
+  /**
+     * @minimum 1
+     * @maximum 5
+     */
+  anxiety: number;
+  /** @maxLength 1000 */
+  gratitude?: string | null;
+  /** @maxLength 4000 */
+  journal?: string | null;
+}
+
 export type PassportEntryEntryType = typeof PassportEntryEntryType[keyof typeof PassportEntryEntryType];
 
 
@@ -1028,5 +1091,16 @@ export type ListIngredientScans200 = {
 export type GetPassport200 = {
   profile: PassportProfile;
   entries: PassportEntry[];
+};
+
+export type GetMindSummary200HistoryItem = {
+  date: string;
+  score: number;
+};
+
+export type GetMindSummary200 = {
+  today: MindCheckin | null;
+  streakDays: number;
+  history: GetMindSummary200HistoryItem[];
 };
 

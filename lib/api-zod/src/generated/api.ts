@@ -916,6 +916,88 @@ export const DeletePassportEntryResponse = zod.void()
 
 
 /**
+ * @summary Today's mental wellness check-in, streak, and 14-day trend
+ */
+export const getMindSummaryResponseTodayOneMoodMax = 5;
+
+export const getMindSummaryResponseTodayOneEnergyMax = 5;
+
+export const getMindSummaryResponseTodayOneStressMax = 5;
+
+export const getMindSummaryResponseTodayOneAnxietyMax = 5;
+
+
+
+export const GetMindSummaryResponse = zod.object({
+  "today": zod.union([zod.object({
+  "date": zod.string().describe('YYYY-MM-DD'),
+  "mood": zod.number().min(1).max(getMindSummaryResponseTodayOneMoodMax),
+  "energy": zod.number().min(1).max(getMindSummaryResponseTodayOneEnergyMax),
+  "stress": zod.number().min(1).max(getMindSummaryResponseTodayOneStressMax).describe('Higher = more stressed'),
+  "anxiety": zod.number().min(1).max(getMindSummaryResponseTodayOneAnxietyMax).describe('Higher = more anxious'),
+  "gratitude": zod.string().nullish(),
+  "journal": zod.string().nullish(),
+  "score": zod.number().describe('Calm Score 0-100 computed server-side')
+}),zod.null()]),
+  "streakDays": zod.number(),
+  "history": zod.array(zod.object({
+  "date": zod.string(),
+  "score": zod.number()
+}))
+})
+
+
+/**
+ * @summary Save today's mental wellness check-in (one per day, updates allowed)
+ */
+export const upsertMindCheckinBodyDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const upsertMindCheckinBodyMoodMax = 5;
+
+export const upsertMindCheckinBodyEnergyMax = 5;
+
+export const upsertMindCheckinBodyStressMax = 5;
+
+export const upsertMindCheckinBodyAnxietyMax = 5;
+
+export const upsertMindCheckinBodyGratitudeMax = 1000;
+
+export const upsertMindCheckinBodyJournalMax = 4000;
+
+
+
+export const UpsertMindCheckinBody = zod.object({
+  "date": zod.string().regex(upsertMindCheckinBodyDateRegExp).optional().describe('Defaults to today'),
+  "mood": zod.number().min(1).max(upsertMindCheckinBodyMoodMax),
+  "energy": zod.number().min(1).max(upsertMindCheckinBodyEnergyMax),
+  "stress": zod.number().min(1).max(upsertMindCheckinBodyStressMax),
+  "anxiety": zod.number().min(1).max(upsertMindCheckinBodyAnxietyMax),
+  "gratitude": zod.string().max(upsertMindCheckinBodyGratitudeMax).nullish(),
+  "journal": zod.string().max(upsertMindCheckinBodyJournalMax).nullish()
+})
+
+export const upsertMindCheckinResponseMoodMax = 5;
+
+export const upsertMindCheckinResponseEnergyMax = 5;
+
+export const upsertMindCheckinResponseStressMax = 5;
+
+export const upsertMindCheckinResponseAnxietyMax = 5;
+
+
+
+export const UpsertMindCheckinResponse = zod.object({
+  "date": zod.string().describe('YYYY-MM-DD'),
+  "mood": zod.number().min(1).max(upsertMindCheckinResponseMoodMax),
+  "energy": zod.number().min(1).max(upsertMindCheckinResponseEnergyMax),
+  "stress": zod.number().min(1).max(upsertMindCheckinResponseStressMax).describe('Higher = more stressed'),
+  "anxiety": zod.number().min(1).max(upsertMindCheckinResponseAnxietyMax).describe('Higher = more anxious'),
+  "gratitude": zod.string().nullish(),
+  "journal": zod.string().nullish(),
+  "score": zod.number().describe('Calm Score 0-100 computed server-side')
+})
+
+
+/**
  * @summary Points balance, earning history, and reward catalog
  */
 export const GetRewardsSummaryResponse = zod.object({
