@@ -67,6 +67,39 @@ const AMOUNT_PLACEHOLDERS: Partial<Record<PassportEntryEntryType, string>> = {
   weight_loss: "e.g. 0.5 mg weekly",
 };
 
+/** Common treatments patients can pick instead of typing — pre-fills type, name, and amount hint. */
+const PRESET_TREATMENTS: {
+  label: string;
+  entryType: PassportEntryEntryType;
+  title: string;
+  amountPlaceholder: string;
+}[] = [
+  { label: "Botox — forehead lines", entryType: "botox", title: "Botox — forehead lines", amountPlaceholder: "e.g. 20 units" },
+  { label: "Botox — frown lines (11s)", entryType: "botox", title: "Botox — frown lines (11s)", amountPlaceholder: "e.g. 20 units" },
+  { label: "Botox — crow's feet", entryType: "botox", title: "Botox — crow's feet", amountPlaceholder: "e.g. 12 units" },
+  { label: "Botox — full upper face", entryType: "botox", title: "Botox — full upper face", amountPlaceholder: "e.g. 50 units" },
+  { label: "Lip flip", entryType: "botox", title: "Lip flip", amountPlaceholder: "e.g. 4 units" },
+  { label: "Lip filler", entryType: "filler", title: "Lip filler", amountPlaceholder: "e.g. 1 syringe (1.0 mL)" },
+  { label: "Cheek filler", entryType: "filler", title: "Cheek filler", amountPlaceholder: "e.g. 2 syringes" },
+  { label: "Chin filler", entryType: "filler", title: "Chin filler", amountPlaceholder: "e.g. 1 syringe" },
+  { label: "Jawline filler", entryType: "filler", title: "Jawline filler", amountPlaceholder: "e.g. 2 syringes" },
+  { label: "Under-eye filler (tear trough)", entryType: "filler", title: "Under-eye filler (tear trough)", amountPlaceholder: "e.g. 1 syringe" },
+  { label: "Smile line filler (nasolabial)", entryType: "filler", title: "Smile line filler (nasolabial)", amountPlaceholder: "e.g. 1 syringe" },
+  { label: "Lip filler dissolve", entryType: "filler", title: "Filler dissolve (hyaluronidase)", amountPlaceholder: "e.g. 1 vial" },
+  { label: "Chemical peel", entryType: "peel", title: "Chemical peel", amountPlaceholder: "e.g. medium depth" },
+  { label: "Microneedling", entryType: "microneedling", title: "Microneedling", amountPlaceholder: "e.g. full face, 1 pass" },
+  { label: "Microneedling with PRP", entryType: "microneedling", title: "Microneedling with PRP", amountPlaceholder: "e.g. full face" },
+  { label: "Signature facial", entryType: "facial", title: "Signature facial", amountPlaceholder: "" },
+  { label: "Hydrating facial", entryType: "facial", title: "Hydrating facial", amountPlaceholder: "" },
+  { label: "Laser hair removal", entryType: "laser", title: "Laser hair removal", amountPlaceholder: "e.g. session 3 of 6" },
+  { label: "Laser skin resurfacing", entryType: "laser", title: "Laser skin resurfacing", amountPlaceholder: "e.g. settings / passes" },
+  { label: "IV therapy drip", entryType: "iv_therapy", title: "IV therapy drip", amountPlaceholder: "e.g. Myers' cocktail" },
+  { label: "Weight-loss injection (GLP-1)", entryType: "weight_loss", title: "Weight-loss injection (GLP-1)", amountPlaceholder: "e.g. 0.5 mg weekly" },
+  { label: "Vitamin B12 shot", entryType: "iv_therapy", title: "Vitamin B12 shot", amountPlaceholder: "e.g. 1 mL" },
+];
+
+const CUSTOM_PRESET = "__custom__";
+
 /** Typical touch-up intervals in days, used only to pre-fill a suggestion the patient can change. */
 const SUGGESTED_REMINDER_DAYS: Partial<Record<PassportEntryEntryType, { days: number; label: string }>> = {
   botox: { days: 105, label: "~3.5 months" },
@@ -121,6 +154,7 @@ export default function Passport() {
 
   const [addOpen, setAddOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
+  const [preset, setPreset] = useState("");
   const [profileOpen, setProfileOpen] = useState(false);
   const [profileForm, setProfileForm] = useState({ allergies: "", skinType: "", skincareRoutine: "" });
 
@@ -159,6 +193,7 @@ export default function Passport() {
           invalidate();
           setAddOpen(false);
           setForm(emptyForm);
+          setPreset("");
           toast.success("Added to your Beauty Passport");
         },
         onError: () => toast.error("Couldn't save. Please try again."),
@@ -250,7 +285,13 @@ export default function Passport() {
                 Botox units, filler, laser settings — anything, from any provider.
               </div>
             </div>
-            <Dialog open={addOpen} onOpenChange={setAddOpen}>
+            <Dialog
+              open={addOpen}
+              onOpenChange={(open) => {
+                setAddOpen(open);
+                if (!open) setPreset("");
+              }}
+            >
               <DialogTrigger asChild>
                 <Button className="rounded-full shrink-0">
                   <Plus className="h-4 w-4 mr-1.5" /> Add record
@@ -261,6 +302,42 @@ export default function Passport() {
                   <DialogTitle>Add a treatment record</DialogTitle>
                 </DialogHeader>
                 <div className="space-y-3">
+                  <div className="space-y-1.5">
+                    <Label>Choose a treatment</Label>
+                    <Select
+                      value={preset}
+                      onValueChange={(v) => {
+                        setPreset(v);
+                        if (v === CUSTOM_PRESET) {
+                          setForm((f) => ({ ...f, title: "" }));
+                          return;
+                        }
+                        const p = PRESET_TREATMENTS.find((pt) => pt.label === v);
+                        if (!p) return;
+                        setForm((f) => ({
+                          ...f,
+                          entryType: p.entryType,
+                          title: p.title,
+                          reminderOn: suggestReminderDate(p.entryType, f.performedOn),
+                        }));
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Pick a common treatment or enter your own" />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-[300px]">
+                        {PRESET_TREATMENTS.map((p) => (
+                          <SelectItem key={p.label} value={p.label}>
+                            {p.label}
+                          </SelectItem>
+                        ))}
+                        <SelectItem value={CUSTOM_PRESET}>Other — I'll type it in</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <p className="text-xs text-muted-foreground">
+                      Picking one fills in the details below — you can still change anything.
+                    </p>
+                  </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1.5">
                       <Label>Type *</Label>
@@ -268,6 +345,10 @@ export default function Passport() {
                         value={form.entryType}
                         onValueChange={(v) => {
                           const t = v as PassportEntryEntryType;
+                          setPreset((p) => {
+                            const pt = PRESET_TREATMENTS.find((x) => x.label === p);
+                            return pt && pt.entryType !== t ? "" : p;
+                          });
                           setForm((f) => ({
                             ...f,
                             entryType: t,
@@ -319,7 +400,14 @@ export default function Passport() {
                       <Label>Amount / settings</Label>
                       <Input
                         placeholder={
-                          (form.entryType && AMOUNT_PLACEHOLDERS[form.entryType]) || "e.g. 24 units"
+                          (() => {
+                            const pt = PRESET_TREATMENTS.find((x) => x.label === preset);
+                            return pt && pt.entryType === form.entryType
+                              ? pt.amountPlaceholder
+                              : "";
+                          })() ||
+                          (form.entryType && AMOUNT_PLACEHOLDERS[form.entryType]) ||
+                          "e.g. 24 units"
                         }
                         value={form.amount}
                         onChange={(e) => set("amount", e.target.value)}
