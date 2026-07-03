@@ -14,7 +14,7 @@ const BOOKING_URL = "https://hklqy.myaestheticrecord.com/online-booking";
 async function seedSettingsAndRewards() {
   await db
     .insert(appSettingsTable)
-    .values({ key: "staff_access_code", value: "52K33Z" })
+    .values({ key: "staff_access_code", value: "LW45680" })
     .onConflictDoNothing();
 
   await db
