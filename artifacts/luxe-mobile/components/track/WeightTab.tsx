@@ -1,7 +1,8 @@
 import { Feather } from "@expo/vector-icons";
 import { useQueryClient } from "@tanstack/react-query";
 import React, { useState } from "react";
-import { Alert, Pressable, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
+import { Alert } from "@/lib/alert";
 
 import {
   getGetGoalQueryKey,

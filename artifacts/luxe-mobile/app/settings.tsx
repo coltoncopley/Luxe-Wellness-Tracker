@@ -4,7 +4,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
 import React, { useState } from "react";
-import { Alert, Platform, Pressable, ScrollView, Switch, Text, View } from "react-native";
+import { Platform, Pressable, ScrollView, Switch, Text, View } from "react-native";
+import { Alert } from "@/lib/alert";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import {

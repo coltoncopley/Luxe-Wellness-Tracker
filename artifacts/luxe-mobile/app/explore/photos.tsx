@@ -3,7 +3,8 @@ import { Feather } from "@expo/vector-icons";
 import { useQueryClient } from "@tanstack/react-query";
 import { Image } from "expo-image";
 import React, { useEffect, useState } from "react";
-import { Alert, Modal, Platform, Pressable, Text, View } from "react-native";
+import { Modal, Platform, Pressable, Text, View } from "react-native";
+import { Alert } from "@/lib/alert";
 
 import {
   getListProgressPhotosQueryKey,

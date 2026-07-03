@@ -28,7 +28,14 @@
         }
       ],
       "expo-font",
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "LUXE uses your camera to take progress photos, skin scan selfies, and photos of product labels.",
+          "photosPermission": "LUXE uses your photo library so you can add progress photos and scan product labels."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

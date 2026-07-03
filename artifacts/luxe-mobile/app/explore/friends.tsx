@@ -1,7 +1,8 @@
 import { Feather } from "@expo/vector-icons";
 import { useQueryClient } from "@tanstack/react-query";
 import React, { useState } from "react";
-import { Alert, Modal, Pressable, Switch, Text, View } from "react-native";
+import { Modal, Pressable, Switch, Text, View } from "react-native";
+import { Alert } from "@/lib/alert";
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 

@@ -2,7 +2,8 @@ import { Feather } from "@expo/vector-icons";
 import { useQueryClient } from "@tanstack/react-query";
 import * as WebBrowser from "expo-web-browser";
 import React, { useState } from "react";
-import { Alert, Platform, Pressable, Text, View } from "react-native";
+import { Platform, Pressable, Text, View } from "react-native";
+import { Alert } from "@/lib/alert";
 
 import {
   getListIngredientScansQueryKey,

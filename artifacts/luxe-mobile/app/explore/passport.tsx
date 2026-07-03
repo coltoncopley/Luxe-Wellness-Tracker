@@ -2,7 +2,6 @@ import { Feather } from "@expo/vector-icons";
 import { useQueryClient } from "@tanstack/react-query";
 import React, { useState } from "react";
 import {
-  Alert,
   Modal,
   Platform,
   Pressable,
@@ -12,6 +11,8 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+
+import { Alert } from "@/lib/alert";
 
 import {
   getGetPassportQueryKey,
