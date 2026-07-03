@@ -11,3 +11,5 @@ description: Required protections for endpoints that accept guessable codes, and
 **Why:** Architect review blocked the referral feature (code brute force) and the friends feature (staff access to patient aggregates + name leakage on code guess + cheer spam) until these were added. The app's hard constraint: staff must NEVER see patient health data — even derived aggregates — so patient-data routes get `requirePatient` (403 for staff), not just `requireAuth`.
 
 **How to apply:** When adding any new code-accepting or patient-data endpoint, add the rate limiter and staff exclusion up front, before requesting review.
+
+**Presigned-upload registration rule:** Any endpoint that accepts a client-supplied storage object path (registering an upload into a DB row + setting its ACL) must bind ownership server-side, or review will block it as an ownership-takeover vector. Pattern used here: issue presigned upload paths as `uploads/<userId>/<uuid>`, then on registration reject any path not matching `/objects/uploads/<currentUserId>/<strict-uuid>`. Never trust a raw objectPath from the client when setting ACL owner.

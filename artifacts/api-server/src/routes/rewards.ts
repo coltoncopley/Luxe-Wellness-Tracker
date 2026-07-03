@@ -8,7 +8,7 @@ import {
   RedeemRewardResponse,
   LookupRedemptionResponse,
 } from "@workspace/api-zod";
-import { getActiveCatalog, getBalance, redeemPoints } from "../lib/rewards";
+import { getActiveCatalog, getBalance, getTierInfo, getTotalEarned, redeemPoints } from "../lib/rewards";
 import { requireStaff, userIdOf } from "../middlewares/auth";
 
 const router: IRouter = Router();
@@ -31,9 +31,8 @@ router.get("/rewards/summary", async (_req, res): Promise<void> => {
     .limit(50);
 
   const balance = await getBalance(userId);
-  const totalEarned = (
-    await db.select().from(rewardEventsTable).where(eq(rewardEventsTable.userId, userId))
-  ).reduce((acc, e) => (e.points > 0 ? acc + e.points : acc), 0);
+  const totalEarned = await getTotalEarned(userId);
+  const tier = getTierInfo(totalEarned);
 
   const catalog = (await getActiveCatalog()).map((item) => ({
     id: String(item.id),
@@ -48,6 +47,7 @@ router.get("/rewards/summary", async (_req, res): Promise<void> => {
       totalEarned,
       history: events,
       catalog,
+      tier,
     }),
   );
 });

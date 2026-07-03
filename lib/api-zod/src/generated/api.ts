@@ -616,6 +616,105 @@ export const AnalyzeMealPhotoResponse = zod.object({
 
 
 /**
+ * @summary This week's missions with progress (auto-awards completed ones)
+ */
+export const ListMissionsResponse = zod.object({
+  "weekStart": zod.string().describe('Monday of the current week (YYYY-MM-DD)'),
+  "weekEnd": zod.string().describe('Sunday of the current week (YYYY-MM-DD)'),
+  "missions": zod.array(zod.object({
+  "key": zod.string(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "target": zod.number().describe('How many times the action is needed this week'),
+  "progress": zod.number().describe('Progress so far this week (capped at target)'),
+  "completed": zod.boolean(),
+  "rewardPoints": zod.number().describe('Bonus points awarded on completion')
+})),
+  "completedCount": zod.number()
+})
+
+
+/**
+ * @summary Request a presigned URL for file upload
+ */
+
+
+
+
+
+export const RequestUploadUrlBody = zod.object({
+  "name": zod.string().min(1),
+  "size": zod.number().min(1),
+  "contentType": zod.string().min(1)
+})
+
+
+
+
+
+
+export const RequestUploadUrlResponse = zod.object({
+  "uploadURL": zod.string().url(),
+  "objectPath": zod.string(),
+  "metadata": zod.object({
+  "name": zod.string().min(1),
+  "size": zod.number().min(1),
+  "contentType": zod.string().min(1)
+}).optional()
+})
+
+
+/**
+ * @summary List the requesting user's progress photos (newest first)
+ */
+export const ListProgressPhotosResponseItem = zod.object({
+  "id": zod.number(),
+  "takenOn": zod.string().describe('Date the photo was taken (YYYY-MM-DD)'),
+  "category": zod.enum(['weight', 'skin']),
+  "note": zod.string().nullish(),
+  "objectPath": zod.string().describe('Path to fetch the image via \/api\/storage{objectPath}'),
+  "createdAt": zod.string()
+})
+export const ListProgressPhotosResponse = zod.array(ListProgressPhotosResponseItem)
+
+
+/**
+ * @summary Save an uploaded progress photo to the journal
+ */
+
+export const createProgressPhotoBodyTakenOnRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const createProgressPhotoBodyNoteMax = 500;
+
+
+
+export const CreateProgressPhotoBody = zod.object({
+  "objectPath": zod.string().min(1),
+  "takenOn": zod.string().regex(createProgressPhotoBodyTakenOnRegExp),
+  "category": zod.enum(['weight', 'skin']),
+  "note": zod.string().max(createProgressPhotoBodyNoteMax).optional()
+})
+
+export const CreateProgressPhotoResponse = zod.object({
+  "id": zod.number(),
+  "takenOn": zod.string().describe('Date the photo was taken (YYYY-MM-DD)'),
+  "category": zod.enum(['weight', 'skin']),
+  "note": zod.string().nullish(),
+  "objectPath": zod.string().describe('Path to fetch the image via \/api\/storage{objectPath}'),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Delete a progress photo
+ */
+export const DeleteProgressPhotoParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DeleteProgressPhotoResponse = zod.void()
+
+
+/**
  * @summary Points balance, earning history, and reward catalog
  */
 export const GetRewardsSummaryResponse = zod.object({
@@ -634,7 +733,13 @@ export const GetRewardsSummaryResponse = zod.object({
   "title": zod.string(),
   "description": zod.string(),
   "points": zod.number()
-}))
+})),
+  "tier": zod.object({
+  "name": zod.enum(['Bronze', 'Silver', 'Gold', 'Platinum']).describe('Current status tier based on lifetime points earned'),
+  "minPoints": zod.number().describe('Points threshold of the current tier'),
+  "nextName": zod.string().nullable().describe('Next tier name (null at top tier)'),
+  "nextMinPoints": zod.number().nullable().describe('Lifetime points needed to reach the next tier (null at top tier)')
+})
 })
 
 

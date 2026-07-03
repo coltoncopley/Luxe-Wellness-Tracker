@@ -14,9 +14,47 @@ export const POINTS = {
   streakBonus: 50,
   referralReferrer: 100,
   referralFriend: 50,
+  progressPhoto: 10,
 } as const;
 
 export const FOOD_LOG_DAILY_CAP = 3;
+
+export const TIERS = [
+  { name: "Bronze", minPoints: 0 },
+  { name: "Silver", minPoints: 500 },
+  { name: "Gold", minPoints: 1500 },
+  { name: "Platinum", minPoints: 3500 },
+] as const;
+
+export function getTierInfo(totalEarned: number): {
+  name: string;
+  minPoints: number;
+  nextName: string | null;
+  nextMinPoints: number | null;
+} {
+  let idx = 0;
+  for (let i = TIERS.length - 1; i >= 0; i--) {
+    if (totalEarned >= TIERS[i]!.minPoints) {
+      idx = i;
+      break;
+    }
+  }
+  const next = TIERS[idx + 1] ?? null;
+  return {
+    name: TIERS[idx]!.name,
+    minPoints: TIERS[idx]!.minPoints,
+    nextName: next ? next.name : null,
+    nextMinPoints: next ? next.minPoints : null,
+  };
+}
+
+export async function getTotalEarned(userId: string): Promise<number> {
+  const [row] = await db
+    .select({ total: sum(rewardEventsTable.points) })
+    .from(rewardEventsTable)
+    .where(and(eq(rewardEventsTable.userId, userId), sql`${rewardEventsTable.points} > 0`));
+  return Number(row?.total ?? 0);
+}
 
 export async function getActiveCatalog(): Promise<RewardItem[]> {
   return db

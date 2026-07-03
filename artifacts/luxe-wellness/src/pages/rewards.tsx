@@ -4,6 +4,7 @@ import {
   useRedeemReward,
   getGetRewardsSummaryQueryKey,
   useGetReferralSummary,
+  useListMissions,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { QRCodeSVG } from "qrcode.react";
@@ -28,6 +29,9 @@ import {
   Copy,
   QrCode,
   Users,
+  Trophy,
+  Target,
+  CheckCircle2,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -39,6 +43,63 @@ const EARN_RULES = [
   { icon: Flame, label: "Every 7-day Glow streak", points: "+50" },
   { icon: Users, label: "Invite a friend who joins", points: "+100" },
 ];
+
+const TIER_STYLES: Record<string, string> = {
+  Bronze: "bg-amber-100 text-amber-900",
+  Silver: "bg-slate-200 text-slate-800",
+  Gold: "bg-yellow-100 text-yellow-800",
+  Platinum: "bg-violet-100 text-violet-900",
+};
+
+function MissionsCard() {
+  const { data } = useListMissions();
+  if (!data) return null;
+
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="flex items-center gap-2 text-lg">
+          <Target className="h-5 w-5 text-primary" /> This week&apos;s missions
+        </CardTitle>
+        <CardDescription>
+          {format(new Date(`${data.weekStart}T00:00:00`), "MMM d")} –{" "}
+          {format(new Date(`${data.weekEnd}T00:00:00`), "MMM d")} ·{" "}
+          {data.completedCount}/{data.missions.length} complete — finish them all for bonus
+          points
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {data.missions.map((m) => (
+          <div
+            key={m.key}
+            className={`rounded-xl border px-4 py-3 space-y-2 ${
+              m.completed ? "border-primary/50 bg-primary/5" : "border-border"
+            }`}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                {m.completed ? (
+                  <CheckCircle2 className="h-4 w-4 text-primary" />
+                ) : (
+                  <Target className="h-4 w-4 text-muted-foreground" />
+                )}
+                <span className="text-sm font-medium">{m.title}</span>
+              </div>
+              <span className="text-sm font-semibold text-primary">+{m.rewardPoints}</span>
+            </div>
+            <p className="text-xs text-muted-foreground">{m.description}</p>
+            <div className="flex items-center gap-2">
+              <Progress value={(m.progress / m.target) * 100} className="h-1.5 flex-1" />
+              <span className="text-xs text-muted-foreground whitespace-nowrap">
+                {m.progress}/{m.target}
+              </span>
+            </div>
+          </div>
+        ))}
+      </CardContent>
+    </Card>
+  );
+}
 
 function InviteFriendsCard() {
   const { data: referral } = useGetReferralSummary();
@@ -181,6 +242,34 @@ export default function Rewards() {
             <div className="text-xs mt-3 opacity-75">
               {summary?.totalEarned ?? 0} earned all-time
             </div>
+            {summary?.tier && (
+              <div className="mt-4 flex flex-col items-center gap-2 w-full">
+                <span
+                  className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-semibold ${
+                    TIER_STYLES[summary.tier.name] ?? "bg-white/20"
+                  }`}
+                >
+                  <Trophy className="h-3 w-3" /> {summary.tier.name} member
+                </span>
+                {summary.tier.nextName && summary.tier.nextMinPoints !== null && (
+                  <div className="w-full px-2">
+                    <Progress
+                      value={Math.min(
+                        100,
+                        ((summary.totalEarned - summary.tier.minPoints) /
+                          (summary.tier.nextMinPoints - summary.tier.minPoints)) *
+                          100,
+                      )}
+                      className="h-1.5 bg-white/20"
+                    />
+                    <div className="text-[11px] mt-1 text-center opacity-75">
+                      {summary.tier.nextMinPoints - summary.totalEarned} pts to{" "}
+                      {summary.tier.nextName}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -206,6 +295,8 @@ export default function Rewards() {
           </CardContent>
         </Card>
       </div>
+
+      <MissionsCard />
 
       <InviteFriendsCard />
 

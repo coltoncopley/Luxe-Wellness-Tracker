@@ -31,6 +31,7 @@ import type {
   ClaimReferralInput,
   ClaimReferralResult,
   CompAccess,
+  CreateProgressPhotoInput,
   DailySummary,
   DashboardSummary,
   FollowActionResult,
@@ -57,12 +58,14 @@ import type {
   MeasurementInput,
   MenuItem,
   MenuItemInput,
+  MissionsResponse,
   OpenaiConversation,
   OpenaiConversationInput,
   OpenaiConversationWithMessages,
   OpenaiError,
   OpenaiMessage,
   OpenaiMessageInput,
+  ProgressPhoto,
   RedeemRewardInput,
   RedemptionDetail,
   RedemptionResult,
@@ -83,6 +86,8 @@ import type {
   SharingSettings,
   StaffAccessInput,
   StaffMember,
+  UploadUrlRequest,
+  UploadUrlResponse,
   WeightEntry,
   WeightEntryInput,
   WeightProgress,
@@ -2664,6 +2669,370 @@ export const useAnalyzeMealPhoto = <TError = ErrorType<OpenaiError>,
         TContext
       > => {
       return useMutation(getAnalyzeMealPhotoMutationOptions(options));
+    }
+
+export const getListMissionsUrl = () => {
+
+
+
+
+  return `/api/missions`
+}
+
+/**
+ * @summary This week's missions with progress (auto-awards completed ones)
+ */
+export const listMissions = async ( options?: RequestInit): Promise<MissionsResponse> => {
+
+  return customFetch<MissionsResponse>(getListMissionsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListMissionsQueryKey = () => {
+    return [
+    `/api/missions`
+    ] as const;
+    }
+
+
+export const getListMissionsQueryOptions = <TData = Awaited<ReturnType<typeof listMissions>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMissions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListMissionsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMissions>>> = ({ signal }) => listMissions({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listMissions>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListMissionsQueryResult = NonNullable<Awaited<ReturnType<typeof listMissions>>>
+export type ListMissionsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary This week's missions with progress (auto-awards completed ones)
+ */
+
+export function useListMissions<TData = Awaited<ReturnType<typeof listMissions>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMissions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListMissionsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getRequestUploadUrlUrl = () => {
+
+
+
+
+  return `/api/storage/uploads/request-url`
+}
+
+/**
+ * @summary Request a presigned URL for file upload
+ */
+export const requestUploadUrl = async (uploadUrlRequest: UploadUrlRequest, options?: RequestInit): Promise<UploadUrlResponse> => {
+
+  return customFetch<UploadUrlResponse>(getRequestUploadUrlUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(uploadUrlRequest)
+  }
+);}
+
+
+
+
+export const getRequestUploadUrlMutationOptions = <TError = ErrorType<OpenaiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestUploadUrl>>, TError,{data: BodyType<UploadUrlRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof requestUploadUrl>>, TError,{data: BodyType<UploadUrlRequest>}, TContext> => {
+
+const mutationKey = ['requestUploadUrl'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof requestUploadUrl>>, {data: BodyType<UploadUrlRequest>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  requestUploadUrl(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RequestUploadUrlMutationResult = NonNullable<Awaited<ReturnType<typeof requestUploadUrl>>>
+    export type RequestUploadUrlMutationBody = BodyType<UploadUrlRequest>
+    export type RequestUploadUrlMutationError = ErrorType<OpenaiError>
+
+    /**
+ * @summary Request a presigned URL for file upload
+ */
+export const useRequestUploadUrl = <TError = ErrorType<OpenaiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof requestUploadUrl>>, TError,{data: BodyType<UploadUrlRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof requestUploadUrl>>,
+        TError,
+        {data: BodyType<UploadUrlRequest>},
+        TContext
+      > => {
+      return useMutation(getRequestUploadUrlMutationOptions(options));
+    }
+
+export const getListProgressPhotosUrl = () => {
+
+
+
+
+  return `/api/photos`
+}
+
+/**
+ * @summary List the requesting user's progress photos (newest first)
+ */
+export const listProgressPhotos = async ( options?: RequestInit): Promise<ProgressPhoto[]> => {
+
+  return customFetch<ProgressPhoto[]>(getListProgressPhotosUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListProgressPhotosQueryKey = () => {
+    return [
+    `/api/photos`
+    ] as const;
+    }
+
+
+export const getListProgressPhotosQueryOptions = <TData = Awaited<ReturnType<typeof listProgressPhotos>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listProgressPhotos>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListProgressPhotosQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listProgressPhotos>>> = ({ signal }) => listProgressPhotos({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listProgressPhotos>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListProgressPhotosQueryResult = NonNullable<Awaited<ReturnType<typeof listProgressPhotos>>>
+export type ListProgressPhotosQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List the requesting user's progress photos (newest first)
+ */
+
+export function useListProgressPhotos<TData = Awaited<ReturnType<typeof listProgressPhotos>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listProgressPhotos>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListProgressPhotosQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateProgressPhotoUrl = () => {
+
+
+
+
+  return `/api/photos`
+}
+
+/**
+ * @summary Save an uploaded progress photo to the journal
+ */
+export const createProgressPhoto = async (createProgressPhotoInput: CreateProgressPhotoInput, options?: RequestInit): Promise<ProgressPhoto> => {
+
+  return customFetch<ProgressPhoto>(getCreateProgressPhotoUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(createProgressPhotoInput)
+  }
+);}
+
+
+
+
+export const getCreateProgressPhotoMutationOptions = <TError = ErrorType<OpenaiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createProgressPhoto>>, TError,{data: BodyType<CreateProgressPhotoInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createProgressPhoto>>, TError,{data: BodyType<CreateProgressPhotoInput>}, TContext> => {
+
+const mutationKey = ['createProgressPhoto'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createProgressPhoto>>, {data: BodyType<CreateProgressPhotoInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createProgressPhoto(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateProgressPhotoMutationResult = NonNullable<Awaited<ReturnType<typeof createProgressPhoto>>>
+    export type CreateProgressPhotoMutationBody = BodyType<CreateProgressPhotoInput>
+    export type CreateProgressPhotoMutationError = ErrorType<OpenaiError>
+
+    /**
+ * @summary Save an uploaded progress photo to the journal
+ */
+export const useCreateProgressPhoto = <TError = ErrorType<OpenaiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createProgressPhoto>>, TError,{data: BodyType<CreateProgressPhotoInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createProgressPhoto>>,
+        TError,
+        {data: BodyType<CreateProgressPhotoInput>},
+        TContext
+      > => {
+      return useMutation(getCreateProgressPhotoMutationOptions(options));
+    }
+
+export const getDeleteProgressPhotoUrl = (id: number,) => {
+
+
+
+
+  return `/api/photos/${id}`
+}
+
+/**
+ * @summary Delete a progress photo
+ */
+export const deleteProgressPhoto = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteProgressPhotoUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteProgressPhotoMutationOptions = <TError = ErrorType<OpenaiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteProgressPhoto>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteProgressPhoto>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteProgressPhoto'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteProgressPhoto>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteProgressPhoto(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteProgressPhotoMutationResult = NonNullable<Awaited<ReturnType<typeof deleteProgressPhoto>>>
+
+    export type DeleteProgressPhotoMutationError = ErrorType<OpenaiError>
+
+    /**
+ * @summary Delete a progress photo
+ */
+export const useDeleteProgressPhoto = <TError = ErrorType<OpenaiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteProgressPhoto>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteProgressPhoto>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteProgressPhotoMutationOptions(options));
     }
 
 export const getGetRewardsSummaryUrl = () => {

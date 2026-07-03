@@ -60,7 +60,7 @@ A patient companion app for LUXE Wellness and Aesthetics (physician-owned med sp
 ## Product
 
 - Home (V2): "Good morning, {name}" + Wellness Score (0-100: glow habits 40, meals logged 10, within calorie target 10, weigh-in 15, glow-streak consistency 25) + AI morning briefing (gpt-5.4, cached in-memory per user/day with in-flight dedup, null on failure) + today's to-do checklist + yesterday recap + stat cards + daily tip. GET /api/briefing, patient-private, privacy disclaimer in UI.
-- V2 roadmap (user picked phased build, 2026-07): Phase 1 Home+Briefing DONE → Phase 2 data-aware Luxe AI DONE → next: missions/streaks/reward tiers → weekly AI skin scan. Wearables/community deferred (need native app / bigger lift).
+- V2 roadmap (user picked phased build, 2026-07): Phase 1 Home+Briefing DONE → Phase 2 data-aware Luxe AI DONE → Phase 3 missions/tiers + progress photo journal DONE → next: weekly AI skin scan. Wearables/community deferred (need native app / bigger lift).
 - Book: browse services and team, deep-link out to Aesthetic Record, track appointments manually
 - Weight: daily weigh-ins, body-area measurements, goal setting, progress chart
 - Food: meal logging with macros, daily summary, restaurant menu search
@@ -70,6 +70,8 @@ A patient companion app for LUXE Wellness and Aesthetics (physician-owned med sp
 - Glow Score: daily habit check-in (water, sleep, stress, activity, protein, skincare) → one 0-100 score, streak tracking, 14-day trend chart
 - Meal Scanner: photograph a meal on /food → AI estimates calories/macros → one-tap log
 - Rewards: earn points for healthy habits, redeem for LUXE treatment perks on /rewards
+- Weekly missions + tiers (on /rewards): GET /api/missions computes 4 Monday-week missions from existing data (glow check-ins 3/wk +40, meals 5/wk +30, weigh-ins 2/wk +25, cheers 2/wk +15) and auto-awards on fetch via dedupe_key `mission:<key>:<weekStart>`; membership tiers from lifetime points earned (Bronze 0 / Silver 500 / Gold 1500 / Platinum 3500) returned in RewardsSummary.tier (lib/rewards.ts TIERS/getTierInfo). Rewards page shows tier badge + progress-to-next-tier and a missions card.
+- Progress Photos (/photos): private before/after journal (categories: weight|skin, date + optional note), client downscales to ≤1280px JPEG, uploads via App Storage presigned URL flow (object-storage skill templates in api-server lib/objectStorage.ts, lib/objectAcl.ts, routes/storage.ts). SECURITY: presigned upload paths are user-bound (`uploads/<userId>/<uuid>`), POST /api/photos rejects any objectPath not matching `/objects/uploads/<currentUserId>/<uuid>` (prevents ACL ownership takeover — architect-flagged, keep this check), ACL owner=user + private, GET /api/storage/objects/* requires auth + ACL READ check. Table progress_photos in lib/db/src/schema/photos.ts. +10 pts/day (dedupe `photo:<date>`). All photo + storage routes premium-gated; photos 100% patient-private. Gallery with filter tabs, 2-photo side-by-side compare, delete.
 - Friends (/friends): opt-in follow-by-invite-code with approval; see friends' journey highlights (streak, glow, % to goal) per their sharing toggles; send emoji cheers with optional notes
 - Staff Verify (/staff): front desk enters a patient's LUXE code, sees the reward + status, marks it used (one-time use)
 - Legal/support pages: /privacy, /terms, /support (linked from sidebar + mobile menu footer); App Store submission kit in exports/app-store/, marketing screenshots in screenshots/appstore/ (captured with temporary demo data, since removed)

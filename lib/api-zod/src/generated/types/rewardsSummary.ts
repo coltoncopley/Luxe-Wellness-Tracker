@@ -7,10 +7,12 @@
  */
 import type { RewardCatalogItem } from './rewardCatalogItem';
 import type { RewardEvent } from './rewardEvent';
+import type { TierInfo } from './tierInfo';
 
 export interface RewardsSummary {
   balance: number;
   totalEarned: number;
   history: RewardEvent[];
   catalog: RewardCatalogItem[];
+  tier: TierInfo;
 }

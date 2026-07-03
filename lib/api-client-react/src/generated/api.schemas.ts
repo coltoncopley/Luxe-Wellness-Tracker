@@ -478,11 +478,116 @@ export interface RewardCatalogItem {
   points: number;
 }
 
+/**
+ * Current status tier based on lifetime points earned
+ */
+export type TierInfoName = typeof TierInfoName[keyof typeof TierInfoName];
+
+
+export const TierInfoName = {
+  Bronze: 'Bronze',
+  Silver: 'Silver',
+  Gold: 'Gold',
+  Platinum: 'Platinum',
+} as const;
+
+export interface TierInfo {
+  /** Current status tier based on lifetime points earned */
+  name: TierInfoName;
+  /** Points threshold of the current tier */
+  minPoints: number;
+  /**
+     * Next tier name (null at top tier)
+     * @nullable
+     */
+  nextName: string | null;
+  /**
+     * Lifetime points needed to reach the next tier (null at top tier)
+     * @nullable
+     */
+  nextMinPoints: number | null;
+}
+
 export interface RewardsSummary {
   balance: number;
   totalEarned: number;
   history: RewardEvent[];
   catalog: RewardCatalogItem[];
+  tier: TierInfo;
+}
+
+export interface Mission {
+  key: string;
+  title: string;
+  description: string;
+  /** How many times the action is needed this week */
+  target: number;
+  /** Progress so far this week (capped at target) */
+  progress: number;
+  completed: boolean;
+  /** Bonus points awarded on completion */
+  rewardPoints: number;
+}
+
+export interface UploadUrlRequest {
+  /** @minLength 1 */
+  name: string;
+  /** @minimum 1 */
+  size: number;
+  /** @minLength 1 */
+  contentType: string;
+}
+
+export interface UploadUrlResponse {
+  uploadURL: string;
+  objectPath: string;
+  metadata?: UploadUrlRequest;
+}
+
+export type ProgressPhotoCategory = typeof ProgressPhotoCategory[keyof typeof ProgressPhotoCategory];
+
+
+export const ProgressPhotoCategory = {
+  weight: 'weight',
+  skin: 'skin',
+} as const;
+
+export interface ProgressPhoto {
+  id: number;
+  /** Date the photo was taken (YYYY-MM-DD) */
+  takenOn: string;
+  category: ProgressPhotoCategory;
+  note?: string | null;
+  /** Path to fetch the image via /api/storage{objectPath} */
+  objectPath: string;
+  createdAt: string;
+}
+
+export type CreateProgressPhotoInputCategory = typeof CreateProgressPhotoInputCategory[keyof typeof CreateProgressPhotoInputCategory];
+
+
+export const CreateProgressPhotoInputCategory = {
+  weight: 'weight',
+  skin: 'skin',
+} as const;
+
+export interface CreateProgressPhotoInput {
+  /** @minLength 1 */
+  objectPath: string;
+  /** @pattern ^\d{4}-\d{2}-\d{2}$ */
+  takenOn: string;
+  category: CreateProgressPhotoInputCategory;
+  /** @maxLength 500 */
+  note?: string;
+}
+
+export interface MissionsResponse {
+  /** Monday of the current week (YYYY-MM-DD) */
+  weekStart: string;
+  /** Sunday of the current week (YYYY-MM-DD) */
+  weekEnd: string;
+  missions: Mission[];
+  completedCount: number;
 }
 
 export interface RedeemRewardInput {
