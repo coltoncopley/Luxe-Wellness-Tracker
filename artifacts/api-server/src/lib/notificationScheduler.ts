@@ -1,5 +1,5 @@
 import cron from "node-cron";
-import { and, eq, gte, or, sql } from "drizzle-orm";
+import { and, eq, gte, lte, or, sql, inArray, isNotNull } from "drizzle-orm";
 import {
   db,
   notificationPrefsTable,
@@ -7,6 +7,7 @@ import {
   foodLogsTable,
   weightEntriesTable,
   rewardEventsTable,
+  passportEntriesTable,
 } from "@workspace/db";
 import { notifyUser } from "./notifications";
 import { logger } from "./logger";
@@ -32,12 +33,13 @@ function daysAgoET(days: number): string {
 
 /** Users who opted into a topic with at least one channel on. */
 async function optedInUsers(
-  topic: "habitReminders" | "streakAlerts" | "weeklySummary",
+  topic: "habitReminders" | "streakAlerts" | "weeklySummary" | "treatmentReminders",
 ): Promise<string[]> {
   const column = {
     habitReminders: notificationPrefsTable.habitReminders,
     streakAlerts: notificationPrefsTable.streakAlerts,
     weeklySummary: notificationPrefsTable.weeklySummary,
+    treatmentReminders: notificationPrefsTable.treatmentReminders,
   }[topic];
   const rows = await db
     .select({ userId: notificationPrefsTable.userId })
@@ -175,6 +177,41 @@ async function runWeeklySummaries(): Promise<void> {
   }
 }
 
+async function runTreatmentReminders(): Promise<void> {
+  const today = todayET();
+  // Catch up to 3 days of missed runs (server downtime), but nothing older.
+  const windowStart = daysAgoET(3);
+  const users = await optedInUsers("treatmentReminders");
+  if (users.length === 0) return;
+  const due = await db
+    .select()
+    .from(passportEntriesTable)
+    .where(
+      and(
+        inArray(passportEntriesTable.userId, users),
+        isNotNull(passportEntriesTable.reminderOn),
+        gte(passportEntriesTable.reminderOn, windowStart),
+        lte(passportEntriesTable.reminderOn, today),
+      ),
+    );
+  for (const entry of due) {
+    try {
+      await notifyUser(
+        entry.userId,
+        "treatmentReminders",
+        {
+          title: "Time for a touch-up? ✨",
+          body: `Your "${entry.title}" was on ${entry.performedOn} — you asked to be reminded around now. Book when you're ready!`,
+          url: "/passport",
+        },
+        `passport_reminder:${entry.id}:${entry.reminderOn}`,
+      );
+    } catch (err) {
+      logger.warn({ err, userId: entry.userId, entryId: entry.id }, "Treatment reminder failed");
+    }
+  }
+}
+
 export function startNotificationScheduler(): void {
   // Daily habit reminder — 10:00 AM Eastern
   cron.schedule("0 10 * * *", () => void runHabitReminders(), { timezone: TIMEZONE });
@@ -182,5 +219,9 @@ export function startNotificationScheduler(): void {
   cron.schedule("0 19 * * *", () => void runStreakAlerts(), { timezone: TIMEZONE });
   // Weekly summary — Sunday 5:00 PM Eastern
   cron.schedule("0 17 * * 0", () => void runWeeklySummaries(), { timezone: TIMEZONE });
-  logger.info("Notification scheduler started (habit 10:00, streak 19:00, weekly Sun 17:00 ET)");
+  // Treatment touch-up reminders — 11:00 AM Eastern
+  cron.schedule("0 11 * * *", () => void runTreatmentReminders(), { timezone: TIMEZONE });
+  logger.info(
+    "Notification scheduler started (habit 10:00, touch-up 11:00, streak 19:00, weekly Sun 17:00 ET)",
+  );
 }

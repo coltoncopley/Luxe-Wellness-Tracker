@@ -32,6 +32,7 @@ async function prefsPayload(userId: string) {
     habitReminders: prefs.habitReminders,
     streakAlerts: prefs.streakAlerts,
     weeklySummary: prefs.weeklySummary,
+    treatmentReminders: prefs.treatmentReminders,
   };
 }
 
@@ -71,6 +72,8 @@ router.put("/notifications/prefs", async (req, res): Promise<void> => {
   if (update.habitReminders !== undefined) values.habitReminders = update.habitReminders;
   if (update.streakAlerts !== undefined) values.streakAlerts = update.streakAlerts;
   if (update.weeklySummary !== undefined) values.weeklySummary = update.weeklySummary;
+  if (update.treatmentReminders !== undefined)
+    values.treatmentReminders = update.treatmentReminders;
   await db
     .update(notificationPrefsTable)
     .set(values)

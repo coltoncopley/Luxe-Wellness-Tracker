@@ -133,3 +133,25 @@
     @apply font-serif tracking-tight;
   }
 }
+
+/* Beauty Passport printable summary */
+.print-only {
+  display: none;
+}
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .print-only {
+    display: block !important;
+    visibility: visible !important;
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    background: #fff;
+  }
+  .print-only * {
+    visibility: visible !important;
+  }
+}

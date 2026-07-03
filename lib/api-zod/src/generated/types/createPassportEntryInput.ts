@@ -26,4 +26,6 @@ export interface CreatePassportEntryInput {
   provider?: string | null;
   /** @maxLength 2000 */
   notes?: string | null;
+  /** @pattern ^\d{4}-\d{2}-\d{2}$ */
+  reminderOn?: string | null;
 }

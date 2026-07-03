@@ -120,6 +120,7 @@ import type {
   UpdateAnnouncementInput,
   UpdateNotificationPrefsInput,
   UpdatePassportProfileInput,
+  UpdatePassportReminderInput,
   UpdateStaffRoleInput,
   UploadUrlRequest,
   UploadUrlResponse,
@@ -3720,6 +3721,77 @@ export const useDeletePassportEntry = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getDeletePassportEntryMutationOptions(options));
+    }
+
+export const getUpdatePassportReminderUrl = (id: number,) => {
+
+
+
+
+  return `/api/passport/entries/${id}/reminder`
+}
+
+/**
+ * @summary Set or clear the touch-up reminder date for a treatment record
+ */
+export const updatePassportReminder = async (id: number,
+    updatePassportReminderInput: UpdatePassportReminderInput, options?: RequestInit): Promise<PassportEntry> => {
+
+  return customFetch<PassportEntry>(getUpdatePassportReminderUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(updatePassportReminderInput)
+  }
+);}
+
+
+
+
+export const getUpdatePassportReminderMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePassportReminder>>, TError,{id: number;data: BodyType<UpdatePassportReminderInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updatePassportReminder>>, TError,{id: number;data: BodyType<UpdatePassportReminderInput>}, TContext> => {
+
+const mutationKey = ['updatePassportReminder'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updatePassportReminder>>, {id: number;data: BodyType<UpdatePassportReminderInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updatePassportReminder(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdatePassportReminderMutationResult = NonNullable<Awaited<ReturnType<typeof updatePassportReminder>>>
+    export type UpdatePassportReminderMutationBody = BodyType<UpdatePassportReminderInput>
+    export type UpdatePassportReminderMutationError = ErrorType<void>
+
+    /**
+ * @summary Set or clear the touch-up reminder date for a treatment record
+ */
+export const useUpdatePassportReminder = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePassportReminder>>, TError,{id: number;data: BodyType<UpdatePassportReminderInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updatePassportReminder>>,
+        TError,
+        {id: number;data: BodyType<UpdatePassportReminderInput>},
+        TContext
+      > => {
+      return useMutation(getUpdatePassportReminderMutationOptions(options));
     }
 
 export const getGetMindSummaryUrl = () => {

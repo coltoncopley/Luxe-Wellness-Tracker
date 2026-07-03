@@ -22,6 +22,7 @@ export const notificationPrefsTable = pgTable(
     habitReminders: boolean("habit_reminders").notNull().default(true),
     streakAlerts: boolean("streak_alerts").notNull().default(true),
     weeklySummary: boolean("weekly_summary").notNull().default(true),
+    treatmentReminders: boolean("treatment_reminders").notNull().default(true),
     updatedAt: timestamp("updated_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

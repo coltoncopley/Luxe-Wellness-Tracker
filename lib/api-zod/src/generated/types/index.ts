@@ -142,6 +142,7 @@ export * from './updateAccessCodeInput';
 export * from './updateAnnouncementInput';
 export * from './updateNotificationPrefsInput';
 export * from './updatePassportProfileInput';
+export * from './updatePassportReminderInput';
 export * from './updateStaffRoleInput';
 export * from './updateStaffRoleInputRole';
 export * from './uploadUrlRequest';

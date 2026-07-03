@@ -8,6 +8,9 @@ import {
   UpdatePassportProfileBody,
   UpdatePassportProfileResponse,
   DeletePassportEntryParams,
+  UpdatePassportReminderParams,
+  UpdatePassportReminderBody,
+  UpdatePassportReminderResponse,
 } from "@workspace/api-zod";
 
 const router: IRouter = Router();
@@ -23,6 +26,7 @@ function entryToResponse(row: typeof passportEntriesTable.$inferSelect) {
     area: row.area,
     provider: row.provider,
     notes: row.notes,
+    reminderOn: row.reminderOn,
   };
 }
 
@@ -89,9 +93,36 @@ router.post("/passport/entries", async (req: Request, res: Response) => {
       area: body.data.area ?? null,
       provider: body.data.provider ?? null,
       notes: body.data.notes ?? null,
+      reminderOn: body.data.reminderOn ?? null,
     })
     .returning();
   res.status(201).json(CreatePassportEntryResponse.parse(entryToResponse(row!)));
+});
+
+router.put("/passport/entries/:id/reminder", async (req: Request, res: Response) => {
+  const userId = res.locals.userId as string;
+  const params = UpdatePassportReminderParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+  const body = UpdatePassportReminderBody.safeParse(req.body);
+  if (!body.success) {
+    res.status(400).json({ error: "Invalid input" });
+    return;
+  }
+  const [row] = await db
+    .update(passportEntriesTable)
+    .set({ reminderOn: body.data.reminderOn })
+    .where(
+      and(eq(passportEntriesTable.id, params.data.id), eq(passportEntriesTable.userId, userId)),
+    )
+    .returning();
+  if (!row) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+  res.json(UpdatePassportReminderResponse.parse(entryToResponse(row)));
 });
 
 router.delete("/passport/entries/:id", async (req: Request, res: Response) => {

@@ -839,6 +839,34 @@ paths:
           description: Deleted
         "404":
           description: Not found
+  /passport/entries/{id}/reminder:
+    put:
+      operationId: updatePassportReminder
+      tags: [passport]
+      summary: Set or clear the touch-up reminder date for a treatment record
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePassportReminderInput"
+      responses:
+        "200":
+          description: Updated entry
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PassportEntry"
+        "400":
+          description: Invalid input
+        "404":
+          description: Not found
   /mind/summary:
     get:
       operationId: getMindSummary
@@ -2142,6 +2170,7 @@ components:
           habitReminders,
           streakAlerts,
           weeklySummary,
+          treatmentReminders,
         ]
       properties:
         pushEnabled:
@@ -2164,6 +2193,8 @@ components:
           type: boolean
         weeklySummary:
           type: boolean
+        treatmentReminders:
+          type: boolean
     UpdateNotificationPrefsInput:
       type: object
       properties:
@@ -2182,6 +2213,8 @@ components:
         streakAlerts:
           type: boolean
         weeklySummary:
+          type: boolean
+        treatmentReminders:
           type: boolean
     UnsubscribePushInput:
       type: object
@@ -2953,7 +2986,7 @@ components:
           type: integer
     PassportEntry:
       type: object
-      required: [id, entryType, performedOn, title]
+      required: [id, entryType, performedOn, title, reminderOn]
       properties:
         id:
           type: integer
@@ -2985,6 +3018,10 @@ components:
         notes:
           type: string
           nullable: true
+        reminderOn:
+          type: string
+          nullable: true
+          description: Date to send a touch-up reminder (YYYY-MM-DD), null = no reminder
     CreatePassportEntryInput:
       type: object
       required: [entryType, performedOn, title]
@@ -3019,6 +3056,19 @@ components:
           type: string
           maxLength: 2000
           nullable: true
+        reminderOn:
+          type: string
+          pattern: '^\d{4}-\d{2}-\d{2}$'
+          nullable: true
+    UpdatePassportReminderInput:
+      type: object
+      required: [reminderOn]
+      properties:
+        reminderOn:
+          type: string
+          pattern: '^\d{4}-\d{2}-\d{2}$'
+          nullable: true
+          description: Date to send a touch-up reminder, or null to clear it
     PassportProfile:
       type: object
       required: [allergies, skinType, skincareRoutine]

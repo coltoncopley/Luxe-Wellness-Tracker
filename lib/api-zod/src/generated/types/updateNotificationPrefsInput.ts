@@ -15,4 +15,5 @@ export interface UpdateNotificationPrefsInput {
   habitReminders?: boolean;
   streakAlerts?: boolean;
   weeklySummary?: boolean;
+  treatmentReminders?: boolean;
 }

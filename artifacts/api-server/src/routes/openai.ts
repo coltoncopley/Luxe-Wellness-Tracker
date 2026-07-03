@@ -12,6 +12,8 @@ import {
   foodLogsTable,
   glowCheckinsTable,
   appointmentsTable,
+  passportEntriesTable,
+  passportProfilesTable,
 } from "@workspace/db";
 import {
   CreateOpenaiConversationBody,
@@ -39,7 +41,7 @@ async function buildUserContext(userId: string): Promise<string> {
   weekAgo.setDate(weekAgo.getDate() - 6);
   const weekAgoStr = dateString(weekAgo);
 
-  const [[user], [goal], weights, recentFood, recentGlow, upcoming] = await Promise.all([
+  const [[user], [goal], weights, recentFood, recentGlow, upcoming, [passportProfile], passportEntries] = await Promise.all([
     db.select().from(usersTable).where(eq(usersTable.id, userId)),
     db.select().from(goalsTable).where(eq(goalsTable.userId, userId)),
     db
@@ -80,6 +82,17 @@ async function buildUserContext(userId: string): Promise<string> {
       )
       .orderBy(asc(appointmentsTable.date))
       .limit(1),
+    db
+      .select()
+      .from(passportProfilesTable)
+      .where(eq(passportProfilesTable.userId, userId))
+      .limit(1),
+    db
+      .select()
+      .from(passportEntriesTable)
+      .where(eq(passportEntriesTable.userId, userId))
+      .orderBy(desc(passportEntriesTable.performedOn), desc(passportEntriesTable.id))
+      .limit(10),
   ]);
 
   const lines: string[] = [];
@@ -132,6 +145,26 @@ async function buildUserContext(userId: string): Promise<string> {
   const nextAppt = upcoming[0];
   if (nextAppt) {
     lines.push(`Next appointment: ${nextAppt.serviceName} on ${nextAppt.date} ${nextAppt.time ?? ""}`);
+  }
+
+  // Free-text passport fields go into the prompt: flatten whitespace and strip
+  // angle brackets so text can't break out of the <patient_data> block.
+  const clean = (s: string) => s.replace(/[<>]/g, " ").replace(/\s+/g, " ").trim();
+
+  if (passportProfile?.allergies)
+    lines.push(`Allergies (self-reported): ${clean(passportProfile.allergies)}`);
+  if (passportProfile?.skinType)
+    lines.push(`Skin type (self-reported): ${clean(passportProfile.skinType)}`);
+  if (passportProfile?.skincareRoutine)
+    lines.push(`Skincare routine (self-reported): ${clean(passportProfile.skincareRoutine)}`);
+  if (passportEntries.length > 0) {
+    const entryLines = passportEntries.map(
+      (e) =>
+        `${e.performedOn}: ${clean(e.title)} [${e.entryType}]` +
+        (e.product ? `, product ${clean(e.product)}` : "") +
+        (e.area ? `, area ${clean(e.area)}` : ""),
+    );
+    lines.push(`Beauty Passport — recent treatment history (newest first): ${entryLines.join("; ")}`);
   }
 
   if (lines.length === 0) return "";

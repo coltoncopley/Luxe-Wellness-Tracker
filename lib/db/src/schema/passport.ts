@@ -14,6 +14,7 @@ export const passportEntriesTable = pgTable("passport_entries", {
   area: text("area"),
   provider: text("provider"),
   notes: text("notes"),
+  reminderOn: date("reminder_on", { mode: "string" }),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

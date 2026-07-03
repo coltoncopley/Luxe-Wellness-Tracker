@@ -15,7 +15,8 @@ export type NotificationTopic =
   | "announcements"
   | "habitReminders"
   | "streakAlerts"
-  | "weeklySummary";
+  | "weeklySummary"
+  | "treatmentReminders";
 
 export interface NotificationMessage {
   title: string;

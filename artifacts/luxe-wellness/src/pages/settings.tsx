@@ -176,7 +176,7 @@ export default function Settings() {
   const effectiveEmail = prefs.emailOverride ?? prefs.accountEmail ?? "";
 
   const topics: Array<{
-    key: "announcements" | "habitReminders" | "streakAlerts" | "weeklySummary";
+    key: "announcements" | "habitReminders" | "streakAlerts" | "weeklySummary" | "treatmentReminders";
     label: string;
     description: string;
   }> = [
@@ -199,6 +199,11 @@ export default function Settings() {
       key: "weeklySummary",
       label: "Weekly progress summary",
       description: "Your week in review, every Sunday evening",
+    },
+    {
+      key: "treatmentReminders",
+      label: "Touch-up reminders",
+      description: "A heads-up when a treatment in your Beauty Passport is due for a touch-up",
     },
   ];
 

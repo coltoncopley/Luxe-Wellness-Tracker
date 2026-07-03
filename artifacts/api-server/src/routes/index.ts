@@ -52,7 +52,7 @@ router.use(requireAuth, requireActiveSubscription, missionsRouter);
 router.use(requireAuth, requireActiveSubscription, photosRouter);
 router.use(requireAuth, requireActiveSubscription, skinRouter);
 router.use(requireAuth, requireActiveSubscription, ingredientsRouter);
-router.use(requireAuth, requireActiveSubscription, passportRouter);
+router.use(requireAuth, requireActiveSubscription, requirePatient, passportRouter);
 router.use(requireAuth, requireActiveSubscription, requirePatient, mindRouter);
 router.use(requireAuth, requireActiveSubscription, storageRouter);
 router.use(requireAuth, requireActiveSubscription, referralsRouter);

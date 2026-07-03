@@ -834,7 +834,8 @@ export const GetPassportResponse = zod.object({
   "amount": zod.string().nullish().describe('Units\/volume\/settings, e.g. \"24 units\", \"1.0 mL\", \"70mJ 3-pass\"'),
   "area": zod.string().nullish().describe('Treatment area, e.g. \"lips\", \"full face\"'),
   "provider": zod.string().nullish().describe('Where\/who performed it'),
-  "notes": zod.string().nullish()
+  "notes": zod.string().nullish(),
+  "reminderOn": zod.string().nullable().describe('Date to send a touch-up reminder (YYYY-MM-DD), null = no reminder')
 }))
 })
 
@@ -879,6 +880,7 @@ export const createPassportEntryBodyProviderMax = 200;
 
 export const createPassportEntryBodyNotesMax = 2000;
 
+export const createPassportEntryBodyReminderOnRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
 
 
 export const CreatePassportEntryBody = zod.object({
@@ -889,7 +891,8 @@ export const CreatePassportEntryBody = zod.object({
   "amount": zod.string().max(createPassportEntryBodyAmountMax).nullish(),
   "area": zod.string().max(createPassportEntryBodyAreaMax).nullish(),
   "provider": zod.string().max(createPassportEntryBodyProviderMax).nullish(),
-  "notes": zod.string().max(createPassportEntryBodyNotesMax).nullish()
+  "notes": zod.string().max(createPassportEntryBodyNotesMax).nullish(),
+  "reminderOn": zod.string().regex(createPassportEntryBodyReminderOnRegExp).nullish()
 })
 
 export const CreatePassportEntryResponse = zod.object({
@@ -901,7 +904,8 @@ export const CreatePassportEntryResponse = zod.object({
   "amount": zod.string().nullish().describe('Units\/volume\/settings, e.g. \"24 units\", \"1.0 mL\", \"70mJ 3-pass\"'),
   "area": zod.string().nullish().describe('Treatment area, e.g. \"lips\", \"full face\"'),
   "provider": zod.string().nullish().describe('Where\/who performed it'),
-  "notes": zod.string().nullish()
+  "notes": zod.string().nullish(),
+  "reminderOn": zod.string().nullable().describe('Date to send a touch-up reminder (YYYY-MM-DD), null = no reminder')
 })
 
 
@@ -913,6 +917,34 @@ export const DeletePassportEntryParams = zod.object({
 })
 
 export const DeletePassportEntryResponse = zod.void()
+
+
+/**
+ * @summary Set or clear the touch-up reminder date for a treatment record
+ */
+export const UpdatePassportReminderParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const updatePassportReminderBodyReminderOnRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+
+
+export const UpdatePassportReminderBody = zod.object({
+  "reminderOn": zod.string().regex(updatePassportReminderBodyReminderOnRegExp).nullable().describe('Date to send a touch-up reminder, or null to clear it')
+})
+
+export const UpdatePassportReminderResponse = zod.object({
+  "id": zod.number(),
+  "entryType": zod.enum(['botox', 'filler', 'laser', 'microneedling', 'peel', 'facial', 'iv_therapy', 'weight_loss', 'skincare', 'other']),
+  "performedOn": zod.string().describe('Date the treatment was performed (YYYY-MM-DD)'),
+  "title": zod.string().describe('Short name, e.g. \"Botox — forehead & crow\'s feet\"'),
+  "product": zod.string().nullish().describe('Product\/brand used, e.g. \"Juvederm Ultra\"'),
+  "amount": zod.string().nullish().describe('Units\/volume\/settings, e.g. \"24 units\", \"1.0 mL\", \"70mJ 3-pass\"'),
+  "area": zod.string().nullish().describe('Treatment area, e.g. \"lips\", \"full face\"'),
+  "provider": zod.string().nullish().describe('Where\/who performed it'),
+  "notes": zod.string().nullish(),
+  "reminderOn": zod.string().nullable().describe('Date to send a touch-up reminder (YYYY-MM-DD), null = no reminder')
+})
 
 
 /**
@@ -1870,7 +1902,8 @@ export const GetNotificationPrefsResponse = zod.object({
   "announcements": zod.boolean(),
   "habitReminders": zod.boolean(),
   "streakAlerts": zod.boolean(),
-  "weeklySummary": zod.boolean()
+  "weeklySummary": zod.boolean(),
+  "treatmentReminders": zod.boolean()
 })
 
 
@@ -1888,7 +1921,8 @@ export const UpdateNotificationPrefsBody = zod.object({
   "announcements": zod.boolean().optional(),
   "habitReminders": zod.boolean().optional(),
   "streakAlerts": zod.boolean().optional(),
-  "weeklySummary": zod.boolean().optional()
+  "weeklySummary": zod.boolean().optional(),
+  "treatmentReminders": zod.boolean().optional()
 })
 
 export const UpdateNotificationPrefsResponse = zod.object({
@@ -1899,7 +1933,8 @@ export const UpdateNotificationPrefsResponse = zod.object({
   "announcements": zod.boolean(),
   "habitReminders": zod.boolean(),
   "streakAlerts": zod.boolean(),
-  "weeklySummary": zod.boolean()
+  "weeklySummary": zod.boolean(),
+  "treatmentReminders": zod.boolean()
 })
 
 

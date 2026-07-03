@@ -5,6 +5,7 @@ import {
   useCreatePassportEntry,
   useUpdatePassportProfile,
   useDeletePassportEntry,
+  useUpdatePassportReminder,
 } from "@workspace/api-client-react";
 import type { PassportEntry, PassportEntryEntryType } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
@@ -29,9 +30,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { BookHeart, Plus, Lock, Pencil, Trash2, Syringe, Zap, Droplets, Sparkles, Scale, FlaskConical, Sun, CircleDot } from "lucide-react";
+import { BookHeart, Plus, Lock, Pencil, Trash2, Syringe, Zap, Droplets, Sparkles, Scale, FlaskConical, Sun, CircleDot, Bell, BellRing, Printer } from "lucide-react";
 import { toast } from "sonner";
-import { format } from "date-fns";
+import { format, addDays } from "date-fns";
 
 const ENTRY_TYPES: { value: PassportEntryEntryType; label: string }[] = [
   { value: "botox", label: "Botox / Neurotoxin" },
@@ -66,6 +67,28 @@ const AMOUNT_PLACEHOLDERS: Partial<Record<PassportEntryEntryType, string>> = {
   weight_loss: "e.g. 0.5 mg weekly",
 };
 
+/** Typical touch-up intervals in days, used only to pre-fill a suggestion the patient can change. */
+const SUGGESTED_REMINDER_DAYS: Partial<Record<PassportEntryEntryType, { days: number; label: string }>> = {
+  botox: { days: 105, label: "~3.5 months" },
+  filler: { days: 270, label: "~9 months" },
+  laser: { days: 42, label: "~6 weeks" },
+  microneedling: { days: 42, label: "~6 weeks" },
+  peel: { days: 42, label: "~6 weeks" },
+  facial: { days: 30, label: "~1 month" },
+  iv_therapy: { days: 30, label: "~1 month" },
+};
+
+function suggestReminderDate(entryType: PassportEntryEntryType | "", performedOn: string): string {
+  if (!entryType || !performedOn) return "";
+  const suggestion = SUGGESTED_REMINDER_DAYS[entryType as PassportEntryEntryType];
+  if (!suggestion) return "";
+  const base = new Date(`${performedOn}T00:00:00`);
+  if (isNaN(base.getTime())) return "";
+  const suggested = addDays(base, suggestion.days);
+  const tomorrow = addDays(new Date(), 1);
+  return format(suggested > tomorrow ? suggested : tomorrow, "yyyy-MM-dd");
+}
+
 function TypeBadge({ type }: { type: string }) {
   const meta = TYPE_META[type] ?? TYPE_META.other!;
   const Icon = meta.icon;
@@ -85,6 +108,7 @@ const emptyForm = {
   area: "",
   provider: "",
   notes: "",
+  reminderOn: "",
 };
 
 export default function Passport() {
@@ -93,6 +117,7 @@ export default function Passport() {
   const createEntry = useCreatePassportEntry();
   const updateProfile = useUpdatePassportProfile();
   const deleteEntry = useDeletePassportEntry();
+  const updateReminder = useUpdatePassportReminder();
 
   const [addOpen, setAddOpen] = useState(false);
   const [form, setForm] = useState(emptyForm);
@@ -126,6 +151,7 @@ export default function Passport() {
           area: form.area.trim() || null,
           provider: form.provider.trim() || null,
           notes: form.notes.trim() || null,
+          reminderOn: form.reminderOn || null,
         },
       },
       {
@@ -154,6 +180,27 @@ export default function Passport() {
     );
   }
 
+  function handleToggleReminder(entry: PassportEntry) {
+    const newDate = entry.reminderOn
+      ? null
+      : suggestReminderDate(entry.entryType, entry.performedOn) ||
+        format(addDays(new Date(), 30), "yyyy-MM-dd");
+    updateReminder.mutate(
+      { id: entry.id, data: { reminderOn: newDate } },
+      {
+        onSuccess: () => {
+          invalidate();
+          toast.success(
+            newDate
+              ? `Reminder set for ${format(new Date(`${newDate}T00:00:00`), "MMM d, yyyy")}`
+              : "Reminder removed",
+          );
+        },
+        onError: () => toast.error("Couldn't update the reminder. Please try again."),
+      },
+    );
+  }
+
   function handleDelete(id: number) {
     deleteEntry.mutate(
       { id },
@@ -171,9 +218,19 @@ export default function Passport() {
   return (
     <div className="space-y-8 pb-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div>
-        <h1 className="text-4xl mb-2 text-primary flex items-center gap-3">
-          <BookHeart className="h-8 w-8" /> Beauty Passport
-        </h1>
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <h1 className="text-4xl mb-2 text-primary flex items-center gap-3">
+            <BookHeart className="h-8 w-8" /> Beauty Passport
+          </h1>
+          <Button
+            variant="outline"
+            className="rounded-full"
+            onClick={() => window.print()}
+            disabled={isLoading}
+          >
+            <Printer className="h-4 w-4 mr-1.5" /> Print summary
+          </Button>
+        </div>
         <p className="text-muted-foreground text-lg">
           Your lifetime record of every treatment — units, products, settings, and results. Yours to
           keep, wherever you go.
@@ -209,7 +266,14 @@ export default function Passport() {
                       <Label>Type *</Label>
                       <Select
                         value={form.entryType}
-                        onValueChange={(v) => set("entryType", v as PassportEntryEntryType)}
+                        onValueChange={(v) => {
+                          const t = v as PassportEntryEntryType;
+                          setForm((f) => ({
+                            ...f,
+                            entryType: t,
+                            reminderOn: suggestReminderDate(t, f.performedOn),
+                          }));
+                        }}
                       >
                         <SelectTrigger>
                           <SelectValue placeholder="Select" />
@@ -292,6 +356,34 @@ export default function Passport() {
                       maxLength={2000}
                       rows={3}
                     />
+                  </div>
+                  <div className="space-y-1.5 rounded-lg border p-3 bg-muted/30">
+                    <Label className="flex items-center gap-1.5">
+                      <BellRing className="h-3.5 w-3.5 text-primary" /> Touch-up reminder
+                    </Label>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="date"
+                        value={form.reminderOn}
+                        onChange={(e) => set("reminderOn", e.target.value)}
+                        className="max-w-[180px]"
+                      />
+                      {form.reminderOn && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => set("reminderOn", "")}
+                        >
+                          No reminder
+                        </Button>
+                      )}
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      {form.entryType && SUGGESTED_REMINDER_DAYS[form.entryType]
+                        ? `Typical touch-up for ${TYPE_META[form.entryType]?.label ?? "this"}: ${SUGGESTED_REMINDER_DAYS[form.entryType]!.label} — we pre-filled a date you can change or clear.`
+                        : "Optional — we'll send you a private nudge when it's time to rebook."}
+                    </p>
                   </div>
                 </div>
                 <DialogFooter>
@@ -439,21 +531,112 @@ export default function Passport() {
                       {entry.notes && (
                         <p className="text-sm text-muted-foreground mt-1.5">{entry.notes}</p>
                       )}
+                      {entry.reminderOn && (
+                        <Badge variant="outline" className="mt-2 bg-primary/5 text-primary border-primary/30">
+                          <BellRing className="h-3 w-3 mr-1" /> Touch-up reminder{" "}
+                          {format(new Date(`${entry.reminderOn}T00:00:00`), "MMM d, yyyy")}
+                        </Badge>
+                      )}
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-muted-foreground hover:text-destructive shrink-0"
-                      onClick={() => handleDelete(entry.id)}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <div className="flex items-center shrink-0">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className={entry.reminderOn ? "text-primary" : "text-muted-foreground"}
+                        title={entry.reminderOn ? "Remove touch-up reminder" : "Set a touch-up reminder"}
+                        disabled={updateReminder.isPending}
+                        onClick={() => handleToggleReminder(entry)}
+                      >
+                        {entry.reminderOn ? <BellRing className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-muted-foreground hover:text-destructive"
+                        onClick={() => handleDelete(entry.id)}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
             ))}
           </div>
         )}
+      </div>
+
+      <div className="print-only" id="passport-print">
+        <div style={{ fontFamily: "Georgia, serif", color: "#111", padding: "8px 0" }}>
+          <h1 style={{ fontSize: "22px", marginBottom: "2px" }}>Beauty Passport — Treatment Summary</h1>
+          <p style={{ fontSize: "12px", color: "#555", marginBottom: "16px" }}>
+            Self-reported record, generated from the LUXE Wellness &amp; Aesthetics app on{" "}
+            {format(new Date(), "MMMM d, yyyy")}
+          </p>
+
+          <h2 style={{ fontSize: "15px", borderBottom: "1px solid #999", paddingBottom: "3px", marginBottom: "6px" }}>
+            About my skin
+          </h2>
+          <table style={{ fontSize: "12px", marginBottom: "16px", borderCollapse: "collapse" }}>
+            <tbody>
+              <tr>
+                <td style={{ fontWeight: 600, paddingRight: "12px", verticalAlign: "top" }}>Allergies &amp; sensitivities</td>
+                <td>{profile?.allergies || "None listed"}</td>
+              </tr>
+              <tr>
+                <td style={{ fontWeight: 600, paddingRight: "12px", verticalAlign: "top" }}>Skin type</td>
+                <td>{profile?.skinType || "Not specified"}</td>
+              </tr>
+              <tr>
+                <td style={{ fontWeight: 600, paddingRight: "12px", verticalAlign: "top" }}>Skincare routine</td>
+                <td>{profile?.skincareRoutine || "Not specified"}</td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h2 style={{ fontSize: "15px", borderBottom: "1px solid #999", paddingBottom: "3px", marginBottom: "6px" }}>
+            Treatment history ({entries.length} record{entries.length === 1 ? "" : "s"})
+          </h2>
+          {entries.length === 0 ? (
+            <p style={{ fontSize: "12px" }}>No treatments recorded yet.</p>
+          ) : (
+            <table style={{ fontSize: "11px", width: "100%", borderCollapse: "collapse" }}>
+              <thead>
+                <tr style={{ textAlign: "left", borderBottom: "1px solid #999" }}>
+                  <th style={{ padding: "4px 8px 4px 0" }}>Date</th>
+                  <th style={{ padding: "4px 8px 4px 0" }}>Treatment</th>
+                  <th style={{ padding: "4px 8px 4px 0" }}>Product</th>
+                  <th style={{ padding: "4px 8px 4px 0" }}>Amount / settings</th>
+                  <th style={{ padding: "4px 8px 4px 0" }}>Area</th>
+                  <th style={{ padding: "4px 0" }}>Provider</th>
+                </tr>
+              </thead>
+              <tbody>
+                {entries.map((entry: PassportEntry) => (
+                  <tr key={entry.id} style={{ borderBottom: "1px solid #ddd", verticalAlign: "top" }}>
+                    <td style={{ padding: "4px 8px 4px 0", whiteSpace: "nowrap" }}>{entry.performedOn}</td>
+                    <td style={{ padding: "4px 8px 4px 0" }}>
+                      {entry.title}
+                      <span style={{ color: "#777" }}> ({TYPE_META[entry.entryType]?.label ?? entry.entryType})</span>
+                      {entry.notes && (
+                        <div style={{ color: "#555", fontSize: "10px", marginTop: "2px" }}>{entry.notes}</div>
+                      )}
+                    </td>
+                    <td style={{ padding: "4px 8px 4px 0" }}>{entry.product ?? "—"}</td>
+                    <td style={{ padding: "4px 8px 4px 0" }}>{entry.amount ?? "—"}</td>
+                    <td style={{ padding: "4px 8px 4px 0" }}>{entry.area ?? "—"}</td>
+                    <td style={{ padding: "4px 0" }}>{entry.provider ?? "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+
+          <p style={{ fontSize: "10px", color: "#777", marginTop: "16px" }}>
+            This is a personal, self-reported record kept by the patient. It is not a medical chart
+            and has not been verified by LUXE Wellness &amp; Aesthetics or any provider.
+          </p>
+        </div>
       </div>
     </div>
   );

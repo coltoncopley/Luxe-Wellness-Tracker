@@ -17,4 +17,5 @@ export interface NotificationPrefs {
   habitReminders: boolean;
   streakAlerts: boolean;
   weeklySummary: boolean;
+  treatmentReminders: boolean;
 }

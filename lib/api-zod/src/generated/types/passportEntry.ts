@@ -23,4 +23,6 @@ export interface PassportEntry {
   /** Where/who performed it */
   provider?: string | null;
   notes?: string | null;
+  /** Date to send a touch-up reminder (YYYY-MM-DD), null = no reminder */
+  reminderOn: string | null;
 }

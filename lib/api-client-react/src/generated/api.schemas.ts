@@ -161,6 +161,7 @@ export interface NotificationPrefs {
   habitReminders: boolean;
   streakAlerts: boolean;
   weeklySummary: boolean;
+  treatmentReminders: boolean;
 }
 
 export interface UpdateNotificationPrefsInput {
@@ -172,6 +173,7 @@ export interface UpdateNotificationPrefsInput {
   habitReminders?: boolean;
   streakAlerts?: boolean;
   weeklySummary?: boolean;
+  treatmentReminders?: boolean;
 }
 
 export interface UnsubscribePushInput {
@@ -841,6 +843,8 @@ export interface PassportEntry {
   /** Where/who performed it */
   provider?: string | null;
   notes?: string | null;
+  /** Date to send a touch-up reminder (YYYY-MM-DD), null = no reminder */
+  reminderOn: string | null;
 }
 
 export type CreatePassportEntryInputEntryType = typeof CreatePassportEntryInputEntryType[keyof typeof CreatePassportEntryInputEntryType];
@@ -878,6 +882,16 @@ export interface CreatePassportEntryInput {
   provider?: string | null;
   /** @maxLength 2000 */
   notes?: string | null;
+  /** @pattern ^\d{4}-\d{2}-\d{2}$ */
+  reminderOn?: string | null;
+}
+
+export interface UpdatePassportReminderInput {
+  /**
+     * Date to send a touch-up reminder, or null to clear it
+     * @pattern ^\d{4}-\d{2}-\d{2}$
+     */
+  reminderOn: string | null;
 }
 
 export interface PassportProfile {
