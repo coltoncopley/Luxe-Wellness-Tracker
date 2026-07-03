@@ -1,6 +1,6 @@
 # LUXE Wellness & Aesthetics Patient App
 
-Patient companion app for LUXE Wellness and Aesthetics (physician-owned med spa in South Point, OH, run by Dr. Copley). Daily-engagement wellness platform: service browsing with external booking, GLP-1 weight tracking, food/restaurant tracking, AI chat, habit scores, rewards, and social features — all behind a $4.99/mo membership.
+Patient companion app for LUXE Wellness and Aesthetics (physician-owned med spa in South Point, OH, run by Dr. Copley — he/him, male pronouns in all copy and AI prompts). Daily-engagement wellness platform: service browsing with external booking, GLP-1 weight tracking, food/restaurant tracking, AI chat, habit scores, rewards, and social features — all behind a $4.99/mo membership.
 
 ## Non-negotiable rules
 
