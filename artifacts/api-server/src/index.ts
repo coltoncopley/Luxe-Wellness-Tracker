@@ -33,6 +33,10 @@ try {
   logger.error({ err }, "Failed to initialize Stripe");
 }
 
+import("./lib/notificationScheduler")
+  .then(({ startNotificationScheduler }) => startNotificationScheduler())
+  .catch((err: unknown) => logger.error({ err }, "Failed to start notification scheduler"));
+
 const rawPort = process.env["PORT"];
 
 if (!rawPort) {

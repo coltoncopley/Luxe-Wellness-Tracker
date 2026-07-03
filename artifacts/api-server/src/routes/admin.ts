@@ -47,6 +47,7 @@ import {
   AdminGetMetricsResponse,
 } from "@workspace/api-zod";
 import { clearSubscriptionCache } from "../middlewares/subscription";
+import { fanOutAnnouncement } from "../lib/notifications";
 import { requireAdmin, isStaffRole } from "../middlewares/auth";
 import { appSettingsTable } from "@workspace/db";
 
@@ -445,6 +446,7 @@ router.post("/admin/announcements", async (req, res): Promise<void> => {
     .insert(announcementsTable)
     .values({ title: body.data.title.trim(), body: body.data.body.trim() })
     .returning();
+  fanOutAnnouncement(row!.id, row!.title);
   res.status(201).json(AdminCreateAnnouncementResponse.parse(toAnnouncement(row!)));
 });
 

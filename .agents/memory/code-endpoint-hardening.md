@@ -12,4 +12,6 @@ description: Required protections for endpoints that accept guessable codes, and
 
 **How to apply:** When adding any new code-accepting or patient-data endpoint, add the rate limiter and staff exclusion up front, before requesting review.
 
+**Push subscription registration rule:** A push-subscribe endpoint that upserts by endpoint must NOT transfer an endpoint owned by a different user (review blocks it as ownership takeover). Return 409 on foreign endpoint; the client handles 409 by unsubscribing the browser subscription and creating a fresh one (new endpoint) for the shared-device case. Also make send-dedupe ledgers unique on `(user_id, dedupe_key)`, not `dedupe_key` alone.
+
 **Presigned-upload registration rule:** Any endpoint that accepts a client-supplied storage object path (registering an upload into a DB row + setting its ACL) must bind ownership server-side, or review will block it as an ownership-takeover vector. Pattern used here: issue presigned upload paths as `uploads/<userId>/<uuid>`, then on registration reject any path not matching `/objects/uploads/<currentUserId>/<strict-uuid>`. Never trust a raw objectPath from the client when setting ACL owner.

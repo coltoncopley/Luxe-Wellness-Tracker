@@ -150,6 +150,48 @@ export interface UpdateAnnouncementInput {
   active: boolean;
 }
 
+export interface NotificationPrefs {
+  pushEnabled: boolean;
+  emailEnabled: boolean;
+  /** Alternate email for notifications; null uses the account email */
+  emailOverride: string | null;
+  /** The account email on file (read-only) */
+  accountEmail: string | null;
+  announcements: boolean;
+  habitReminders: boolean;
+  streakAlerts: boolean;
+  weeklySummary: boolean;
+}
+
+export interface UpdateNotificationPrefsInput {
+  pushEnabled?: boolean;
+  emailEnabled?: boolean;
+  /** @maxLength 255 */
+  emailOverride?: string | null;
+  announcements?: boolean;
+  habitReminders?: boolean;
+  streakAlerts?: boolean;
+  weeklySummary?: boolean;
+}
+
+export interface UnsubscribePushInput {
+  /** @maxLength 2000 */
+  endpoint: string;
+}
+
+export type PushSubscriptionInputKeys = {
+  /** @maxLength 500 */
+  p256dh: string;
+  /** @maxLength 500 */
+  auth: string;
+};
+
+export interface PushSubscriptionInput {
+  /** @maxLength 2000 */
+  endpoint: string;
+  keys: PushSubscriptionInputKeys;
+}
+
 export type AdminMetricsMembership = {
   /** Paying members (active subscriptions) */
   activeMembers: number;
@@ -1299,5 +1341,14 @@ export type ListAnnouncements200 = {
 
 export type AdminListAnnouncements200 = {
   announcements: Announcement[];
+};
+
+export type GetVapidPublicKey200 = {
+  publicKey: string;
+};
+
+export type SendTestNotification200 = {
+  push: boolean;
+  email: boolean;
 };
 

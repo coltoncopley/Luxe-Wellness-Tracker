@@ -20,6 +20,7 @@ import storageRouter from "./storage";
 import referralsRouter from "./referrals";
 import socialRouter from "./social";
 import announcementsRouter from "./announcements";
+import notificationsRouter from "./notifications";
 import meRouter from "./me";
 import adminRouter from "./admin";
 import billingRouter from "./billing";
@@ -37,6 +38,7 @@ router.use(wellnessRouter);
 router.use(requireAuth, meRouter);
 router.use(requireAuth, billingRouter);
 router.use(requireAuth, announcementsRouter);
+router.use(requireAuth, notificationsRouter);
 
 // Premium patient features: require an active (or trialing) membership
 router.use(requireAuth, requireActiveSubscription, appointmentsRouter);

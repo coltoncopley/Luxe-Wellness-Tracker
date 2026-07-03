@@ -1860,6 +1860,103 @@ export const AdminGetMetricsResponse = zod.object({
 
 
 /**
+ * @summary Current user's notification preferences (auto-created with defaults)
+ */
+export const GetNotificationPrefsResponse = zod.object({
+  "pushEnabled": zod.boolean(),
+  "emailEnabled": zod.boolean(),
+  "emailOverride": zod.string().nullable().describe('Alternate email for notifications; null uses the account email'),
+  "accountEmail": zod.string().nullable().describe('The account email on file (read-only)'),
+  "announcements": zod.boolean(),
+  "habitReminders": zod.boolean(),
+  "streakAlerts": zod.boolean(),
+  "weeklySummary": zod.boolean()
+})
+
+
+/**
+ * @summary Update notification preferences
+ */
+export const updateNotificationPrefsBodyEmailOverrideMax = 255;
+
+
+
+export const UpdateNotificationPrefsBody = zod.object({
+  "pushEnabled": zod.boolean().optional(),
+  "emailEnabled": zod.boolean().optional(),
+  "emailOverride": zod.string().max(updateNotificationPrefsBodyEmailOverrideMax).nullish(),
+  "announcements": zod.boolean().optional(),
+  "habitReminders": zod.boolean().optional(),
+  "streakAlerts": zod.boolean().optional(),
+  "weeklySummary": zod.boolean().optional()
+})
+
+export const UpdateNotificationPrefsResponse = zod.object({
+  "pushEnabled": zod.boolean(),
+  "emailEnabled": zod.boolean(),
+  "emailOverride": zod.string().nullable().describe('Alternate email for notifications; null uses the account email'),
+  "accountEmail": zod.string().nullable().describe('The account email on file (read-only)'),
+  "announcements": zod.boolean(),
+  "habitReminders": zod.boolean(),
+  "streakAlerts": zod.boolean(),
+  "weeklySummary": zod.boolean()
+})
+
+
+/**
+ * @summary Public key for browser push subscription
+ */
+export const GetVapidPublicKeyResponse = zod.object({
+  "publicKey": zod.string()
+})
+
+
+/**
+ * @summary Register this browser/device for push notifications
+ */
+export const subscribePushBodyEndpointMax = 2000;
+
+export const subscribePushBodyKeysP256dhMax = 500;
+
+export const subscribePushBodyKeysAuthMax = 500;
+
+
+
+export const SubscribePushBody = zod.object({
+  "endpoint": zod.string().max(subscribePushBodyEndpointMax),
+  "keys": zod.object({
+  "p256dh": zod.string().max(subscribePushBodyKeysP256dhMax),
+  "auth": zod.string().max(subscribePushBodyKeysAuthMax)
+})
+})
+
+export const SubscribePushResponse = zod.void()
+
+
+/**
+ * @summary Remove this browser/device push subscription
+ */
+export const unsubscribePushBodyEndpointMax = 2000;
+
+
+
+export const UnsubscribePushBody = zod.object({
+  "endpoint": zod.string().max(unsubscribePushBodyEndpointMax)
+})
+
+export const UnsubscribePushResponse = zod.void()
+
+
+/**
+ * @summary Send a test notification via the user's enabled channels
+ */
+export const SendTestNotificationResponse = zod.object({
+  "push": zod.boolean(),
+  "email": zod.boolean()
+})
+
+
+/**
  * @summary List all conversations
  */
 export const ListOpenaiConversationsResponseItem = zod.object({
