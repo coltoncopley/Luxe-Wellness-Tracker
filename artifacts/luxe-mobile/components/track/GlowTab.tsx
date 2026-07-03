@@ -120,7 +120,7 @@ export function GlowTab() {
                   style={{
                     fontFamily: "Inter_600SemiBold",
                     fontSize: 14,
-                    color: stress === n ? c.accentForeground : c.mutedForeground,
+                    color: stress === n ? "#0F1729" : c.mutedForeground,
                   }}
                 >
                   {n}

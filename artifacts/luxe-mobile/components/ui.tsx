@@ -122,7 +122,7 @@ export function LuxeButton({
           : "transparent";
   const fg =
     variant === "gold"
-      ? c.accentForeground
+      ? "#0F1729"
       : variant === "primary"
         ? c.primaryForeground
         : variant === "destructive"
@@ -179,7 +179,7 @@ export function Chip({ label, active, onPress }: { label: string; active?: boole
     >
       <Text
         style={{
-          color: active ? c.accentForeground : c.secondaryForeground,
+          color: active ? "#0F1729" : c.secondaryForeground,
           fontFamily: active ? "Inter_600SemiBold" : "Inter_500Medium",
           fontSize: 13,
         }}
@@ -307,7 +307,7 @@ export function Stepper({
           hitSlop={8}
           style={[styles.stepBtn, { backgroundColor: c.accent }]}
         >
-          <Feather name="plus" size={16} color={c.accentForeground} />
+          <Feather name="plus" size={16} color="#0F1729" />
         </Pressable>
       </View>
     </View>
