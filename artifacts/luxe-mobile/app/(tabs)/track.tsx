@@ -3,6 +3,7 @@ import React, { useState } from "react";
 
 import { FoodTab } from "@/components/track/FoodTab";
 import { GlowTab } from "@/components/track/GlowTab";
+import { MindTab } from "@/components/track/MindTab";
 import { WeightTab } from "@/components/track/WeightTab";
 import { Screen, Segmented } from "@/components/ui";
 
@@ -24,11 +25,20 @@ export default function TrackScreen() {
           { key: "weight", label: "Weight" },
           { key: "glow", label: "Glow" },
           { key: "food", label: "Food" },
+          { key: "mind", label: "Mind" },
         ]}
         value={tab}
         onChange={setTab}
       />
-      {tab === "weight" ? <WeightTab /> : tab === "glow" ? <GlowTab /> : <FoodTab />}
+      {tab === "weight" ? (
+        <WeightTab />
+      ) : tab === "glow" ? (
+        <GlowTab />
+      ) : tab === "food" ? (
+        <FoodTab />
+      ) : (
+        <MindTab />
+      )}
     </Screen>
   );
 }

@@ -37,6 +37,12 @@ const colors = {
     input: "#E9E5DD",
 
     success: "#16A34A",
+    warning: "#D97706",
+    info: "#0EA5E9",
+
+    // For text over dark photo overlays and switch thumbs (scheme-independent)
+    overlayForeground: "#FFFFFF",
+    switchThumb: "#FFFFFF",
   },
 
   dark: {
@@ -68,6 +74,11 @@ const colors = {
     input: "#242F42",
 
     success: "#4ADE80",
+    warning: "#FBBF24",
+    info: "#38BDF8",
+
+    overlayForeground: "#FFFFFF",
+    switchThumb: "#FFFFFF",
   },
 
   radius: 16,

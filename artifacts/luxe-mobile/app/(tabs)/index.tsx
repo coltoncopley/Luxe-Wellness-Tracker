@@ -157,6 +157,63 @@ export default function HomeScreen() {
         )}
       </Card>
 
+      <SectionTitle>Explore</SectionTitle>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
+        {[
+          { label: "Skin Scan", icon: "aperture" as const, href: "/explore/skin" },
+          { label: "Ingredient Scanner", icon: "search" as const, href: "/explore/ingredients" },
+          { label: "Progress Photos", icon: "camera" as const, href: "/explore/photos" },
+          { label: "Beauty Passport", icon: "book-open" as const, href: "/explore/passport" },
+          { label: "Dining Out Guide", icon: "map-pin" as const, href: "/explore/restaurants" },
+          { label: "Friends", icon: "users" as const, href: "/explore/friends" },
+          { label: "Community", icon: "heart" as const, href: "/explore/community" },
+          { label: "Hormone Health", icon: "activity" as const, href: "/explore/bhrt" },
+        ].map((item) => (
+          <Pressable
+            key={item.href}
+            onPress={() => router.push(item.href as never)}
+            style={({ pressed }) => ({
+              width: "48%",
+              flexGrow: 1,
+              backgroundColor: c.card,
+              borderWidth: 1,
+              borderColor: c.border,
+              borderRadius: 16,
+              paddingVertical: 14,
+              paddingHorizontal: 14,
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 10,
+              opacity: pressed ? 0.8 : 1,
+            })}
+          >
+            <View
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: 16,
+                backgroundColor: c.secondary,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Feather name={item.icon} size={15} color={c.tint} />
+            </View>
+            <Text
+              style={{
+                flex: 1,
+                fontFamily: "Inter_500Medium",
+                fontSize: 13,
+                color: c.foreground,
+              }}
+              numberOfLines={2}
+            >
+              {item.label}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+
       {y && (y.calories != null || y.glowScore != null || y.weightChangeLbs != null) ? (
         <>
           <SectionTitle>Yesterday</SectionTitle>

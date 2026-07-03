@@ -142,7 +142,7 @@ export function GlowTab() {
             value={skincare}
             onValueChange={(v) => setDraft((d) => ({ ...d, skincareDone: v }))}
             trackColor={{ true: c.accent, false: c.secondary }}
-            thumbColor="#FFFFFF"
+            thumbColor={c.switchThumb}
           />
         </View>
 

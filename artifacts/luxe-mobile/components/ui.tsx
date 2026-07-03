@@ -69,6 +69,38 @@ export function Screen({
   );
 }
 
+export function StackScreen({
+  children,
+  refreshing,
+  onRefresh,
+}: {
+  children: React.ReactNode;
+  refreshing?: boolean;
+  onRefresh?: () => void;
+}) {
+  const c = useColors();
+  const insets = useSafeAreaInsets();
+  return (
+    <View style={{ flex: 1, backgroundColor: c.background }}>
+      <ScrollView
+        contentContainerStyle={{
+          paddingTop: 16,
+          paddingHorizontal: 20,
+          paddingBottom: insets.bottom + 60,
+        }}
+        refreshControl={
+          onRefresh ? (
+            <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} tintColor={c.accent} />
+          ) : undefined
+        }
+        keyboardShouldPersistTaps="handled"
+      >
+        {children}
+      </ScrollView>
+    </View>
+  );
+}
+
 export function Card({ children, style }: { children: React.ReactNode; style?: ViewStyle }) {
   const c = useColors();
   return (

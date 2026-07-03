@@ -42,6 +42,7 @@ function RootLayoutNav() {
         name="settings"
         options={{ headerShown: false, presentation: "modal" }}
       />
+      <Stack.Screen name="explore" options={{ headerShown: false }} />
     </Stack>
   );
 }
