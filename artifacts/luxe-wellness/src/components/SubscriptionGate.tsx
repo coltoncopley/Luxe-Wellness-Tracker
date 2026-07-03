@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Link } from "wouter";
 import {
   useGetBillingStatus,
   getGetBillingStatusQueryKey,
@@ -316,6 +317,13 @@ export function SubscriptionGate({ children }: { children: React.ReactNode }) {
             ) : null}
             {!isPastDue ? <RedeemCodeSection /> : null}
           </div>
+
+          <p className="mt-4 text-center text-[11px] text-muted-foreground">
+            LUXE team member?{" "}
+            <Link href="/staff" className="underline" data-testid="link-staff-access">
+              Staff sign-in
+            </Link>
+          </p>
 
           <p className="mt-6 text-center text-[11px] leading-relaxed text-muted-foreground">
             Secure payment by Stripe. By subscribing you agree to our{" "}

@@ -225,6 +225,21 @@ function Protected({ component: Component }: { component: React.ComponentType })
   );
 }
 
+function StaffProtected({ component: Component }: { component: React.ComponentType }) {
+  return (
+    <>
+      <Show when="signed-in">
+        <Layout>
+          <Component />
+        </Layout>
+      </Show>
+      <Show when="signed-out">
+        <Redirect to="/" />
+      </Show>
+    </>
+  );
+}
+
 function PublicPage({ component: Component }: { component: React.ComponentType }) {
   return (
     <Layout>
@@ -288,7 +303,7 @@ function ClerkProviderWithRoutes() {
             <Route path="/activity">{() => <Protected component={ActivityPage} />}</Route>
             <Route path="/community">{() => <Protected component={Community} />}</Route>
             <Route path="/settings">{() => <Protected component={Settings} />}</Route>
-            <Route path="/staff">{() => <Protected component={StaffVerify} />}</Route>
+            <Route path="/staff">{() => <StaffProtected component={StaffVerify} />}</Route>
             <Route path="/privacy">{() => <PublicPage component={Privacy} />}</Route>
             <Route path="/terms">{() => <PublicPage component={Terms} />}</Route>
             <Route path="/support">{() => <PublicPage component={Support} />}</Route>

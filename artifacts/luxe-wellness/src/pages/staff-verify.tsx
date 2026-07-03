@@ -5,6 +5,7 @@ import {
   useMarkRedemptionUsed,
   useGetMe,
   getGetMeQueryKey,
+  getGetBillingStatusQueryKey,
   useActivateStaffAccess,
   useListServices,
   getListServicesQueryKey,
@@ -139,6 +140,7 @@ function StaffAccessGate() {
         onSuccess: () => {
           toast.success("Staff access activated");
           void queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
+          void queryClient.invalidateQueries({ queryKey: getGetBillingStatusQueryKey() });
         },
         onError: () => {
           toast.error("That access code isn't valid");
