@@ -267,7 +267,7 @@ async function seed() {
     { name: "Dr. Copley", title: "Physician & Medical Director, DO", bio: "Physician-owner of LUXE Wellness and Aesthetics, overseeing all medical treatments and the GLP-1 weight loss program.", photoUrl: null, bookingUrl: BOOKING_URL },
     { name: "Harlee", title: "APRN, Aesthetic Injector", bio: "Advanced practice nurse specializing in neurotoxin and dermal filler treatments with a natural-results philosophy.", photoUrl: "/team/harlee.jpg", bookingUrl: BOOKING_URL },
     { name: "Natalie", title: "Licensed Esthetician", bio: "Skincare specialist offering facials, peels, and personalized skin health plans.", photoUrl: null, bookingUrl: BOOKING_URL },
-    { name: "Bethany", title: "Wax Specialist", bio: "Professional waxing specialist dedicated to comfortable, high-quality smooth-skin services.", photoUrl: null, bookingUrl: BOOKING_URL },
+    { name: "Bethany", title: "Wax Specialist", bio: "Professional waxing specialist dedicated to comfortable, high-quality smooth-skin services.", photoUrl: "/team/bethany.jpg", bookingUrl: BOOKING_URL },
   ]);
 
   await db.insert(tipsTable).values([
