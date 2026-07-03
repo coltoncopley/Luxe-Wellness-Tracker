@@ -8,6 +8,8 @@ import {
   weightEntriesTable,
   goalsTable,
   appointmentsTable,
+  activitiesTable,
+  sleepEntriesTable,
 } from "@workspace/db";
 import { GetBriefingResponse } from "@workspace/api-zod";
 import { openai } from "@workspace/integrations-openai-ai-server";
@@ -66,6 +68,9 @@ interface BriefingStats {
   yesterdayCalories: number | null;
   yesterdayGlowScore: number | null;
   nextAppointmentLabel: string | null;
+  yesterdayActiveMinutes: number | null;
+  yesterdaySteps: number | null;
+  lastNightSleepMin: number | null;
 }
 
 async function generateAiBriefing(stats: BriefingStats): Promise<string | null> {
@@ -85,6 +90,15 @@ async function generateAiBriefing(stats: BriefingStats): Promise<string | null> 
     facts.push(`Yesterday's glow score: ${stats.yesterdayGlowScore}/100`);
   if (stats.nextAppointmentLabel != null)
     facts.push(`Next appointment: ${stats.nextAppointmentLabel}`);
+  if (stats.yesterdayActiveMinutes != null && stats.yesterdayActiveMinutes > 0)
+    facts.push(`Yesterday's active minutes: ${stats.yesterdayActiveMinutes}`);
+  if (stats.yesterdaySteps != null && stats.yesterdaySteps > 0)
+    facts.push(`Yesterday's steps: ${stats.yesterdaySteps}`);
+  if (stats.lastNightSleepMin != null) {
+    const h = Math.floor(stats.lastNightSleepMin / 60);
+    const m = stats.lastNightSleepMin % 60;
+    facts.push(`Last night's sleep: ${h}h ${m}m`);
+  }
 
   const completion = await Promise.race([
     openai.chat.completions.create({
@@ -143,6 +157,16 @@ router.get("/briefing", async (req, res): Promise<void> => {
     .where(and(eq(appointmentsTable.userId, userId), gte(appointmentsTable.date, today)))
     .orderBy(asc(appointmentsTable.date))
     .limit(5);
+  const yesterdayActivities = await db
+    .select()
+    .from(activitiesTable)
+    .where(and(eq(activitiesTable.userId, userId), eq(activitiesTable.date, yesterday)));
+  const lastNightSleep = await db
+    .select()
+    .from(sleepEntriesTable)
+    .where(and(eq(sleepEntriesTable.userId, userId), eq(sleepEntriesTable.date, today)))
+    .orderBy(desc(sleepEntriesTable.id))
+    .limit(1);
 
   const todayGlow = glowRows.find((r) => r.date === today) ?? null;
   const yesterdayGlow = glowRows.find((r) => r.date === yesterday) ?? null;
@@ -160,6 +184,10 @@ router.get("/briefing", async (req, res): Promise<void> => {
       : null;
 
   const nextAppointment = upcoming.find((a) => a.status !== "cancelled") ?? null;
+
+  const yesterdayActiveMinutes = yesterdayActivities.reduce((s, a) => s + a.durationMin, 0);
+  const yesterdaySteps = yesterdayActivities.reduce((s, a) => s + (a.steps ?? 0), 0);
+  const lastNightSleepMin = lastNightSleep[0]?.durationMin ?? null;
 
   // --- Wellness score (0-100): habits today + consistency ---
   const habitPoints = glowScoreToday != null ? Math.round(glowScoreToday * 0.4) : 0; // 0-40
@@ -240,6 +268,9 @@ router.get("/briefing", async (req, res): Promise<void> => {
           nextAppointmentLabel: nextAppointment
             ? `${nextAppointment.serviceName} on ${nextAppointment.date}`
             : null,
+          yesterdayActiveMinutes: yesterdayActiveMinutes > 0 ? yesterdayActiveMinutes : null,
+          yesterdaySteps: yesterdaySteps > 0 ? yesterdaySteps : null,
+          lastNightSleepMin,
         }).finally(() => {
           briefingInFlight.delete(userId);
         });

@@ -14,7 +14,10 @@
       "backgroundColor": "#0F1729"
     },
     "ios": {
-      "supportsTablet": false
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSMotionUsageDescription": "LUXE reads your step counts from the phone's motion sensor, only when you tap Import, so you can add them to your activity log."
+      }
     },
     "android": {},
     "web": {

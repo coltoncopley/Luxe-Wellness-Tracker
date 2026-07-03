@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { User, Calendar, Activity, Utensils, MapPin, Menu, X, Sparkles, Sun, Gift, BadgeCheck, LogOut, HeartPulse, Users, Images, ScanFace, FlaskConical, BookHeart, HeartHandshake, Megaphone, Bell } from "lucide-react";
+import { User, Calendar, Activity, Utensils, MapPin, Menu, X, Sparkles, Sun, Gift, BadgeCheck, LogOut, HeartPulse, Users, Images, ScanFace, FlaskConical, BookHeart, HeartHandshake, Megaphone, Bell, Footprints } from "lucide-react";
 import { useState } from "react";
 import { Show, useClerk, useUser } from "@clerk/react";
 import {
@@ -77,6 +77,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { href: "/food", label: "Food Log", icon: Utensils },
     { href: "/restaurants", label: "Restaurants", icon: MapPin },
     { href: "/glow", label: "Glow Score", icon: Sun },
+    ...(isStaff ? [] : [{ href: "/activity", label: "Activity & Sleep", icon: Footprints }]),
     ...(isStaff ? [] : [{ href: "/mind", label: "Mind", icon: HeartHandshake }]),
     { href: "/skin", label: "Skin Scan", icon: ScanFace },
     { href: "/ingredients", label: "Ingredient Scanner", icon: FlaskConical },

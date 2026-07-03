@@ -21,6 +21,9 @@ import type {
 
 import type {
   AccessCodeSetting,
+  Activity,
+  ActivityInput,
+  ActivitySummary,
   AdminGenerateDoctorTips201,
   AdminListAnnouncements200,
   AdminListCommunityPosts200,
@@ -45,6 +48,7 @@ import type {
   ClaimReferralResult,
   CommunityPost,
   CompAccess,
+  ConnectOuraInput,
   CreateAnnouncementInput,
   CreateCommunityPostInput,
   CreateCustomRestaurantInput,
@@ -53,6 +57,9 @@ import type {
   CreateProgressPhotoInput,
   DailySummary,
   DashboardSummary,
+  Device,
+  DeviceList,
+  DisconnectOuraParams,
   DoctorTip,
   DoctorTipInput,
   DoctorTipUpdate,
@@ -63,6 +70,7 @@ import type {
   FoodLog,
   FoodLogInput,
   FriendJourneysResponse,
+  GetActivitySummaryParams,
   GetCommunityPosts200,
   GetCurrentDoctorTip200,
   GetDailySummaryParams,
@@ -76,6 +84,7 @@ import type {
   GoalInput,
   GrantCompInput,
   HealthStatus,
+  ImportResult,
   IngredientScanResult,
   ListAnnouncements200,
   ListFoodLogsParams,
@@ -106,6 +115,7 @@ import type {
   OpenaiMessageInput,
   PassportEntry,
   PassportProfile,
+  PhoneStepsImportInput,
   ProgressPhoto,
   PushSubscriptionInput,
   RedeemMembershipCodeInput,
@@ -132,14 +142,18 @@ import type {
   SharingSettings,
   SkinScanHistory,
   SkinScanResult,
+  SleepEntry,
+  SleepEntryInput,
   StaffAccessInput,
   StaffMember,
+  SyncResult,
   ToggleCommunityHeart200,
   UnsubscribePushInput,
   UpdateAccessCodeInput,
   UpdateAnnouncementInput,
   UpdateBirthdayInput,
   UpdateNotificationPrefsInput,
+  UpdateOuraSettingsInput,
   UpdatePassportProfileInput,
   UpdatePassportReminderInput,
   UpdateStaffRoleInput,
@@ -3736,6 +3750,958 @@ export const useDeleteIngredientScan = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getDeleteIngredientScanMutationOptions(options));
+    }
+
+export const getListActivitiesUrl = () => {
+
+
+
+
+  return `/api/activities`
+}
+
+/**
+ * @summary List activity entries (newest first, last 90 days)
+ */
+export const listActivities = async ( options?: RequestInit): Promise<Activity[]> => {
+
+  return customFetch<Activity[]>(getListActivitiesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListActivitiesQueryKey = () => {
+    return [
+    `/api/activities`
+    ] as const;
+    }
+
+
+export const getListActivitiesQueryOptions = <TData = Awaited<ReturnType<typeof listActivities>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listActivities>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListActivitiesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listActivities>>> = ({ signal }) => listActivities({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listActivities>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListActivitiesQueryResult = NonNullable<Awaited<ReturnType<typeof listActivities>>>
+export type ListActivitiesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List activity entries (newest first, last 90 days)
+ */
+
+export function useListActivities<TData = Awaited<ReturnType<typeof listActivities>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listActivities>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListActivitiesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateActivityUrl = () => {
+
+
+
+
+  return `/api/activities`
+}
+
+/**
+ * @summary Log an activity (manual)
+ */
+export const createActivity = async (activityInput: ActivityInput, options?: RequestInit): Promise<Activity> => {
+
+  return customFetch<Activity>(getCreateActivityUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(activityInput)
+  }
+);}
+
+
+
+
+export const getCreateActivityMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createActivity>>, TError,{data: BodyType<ActivityInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createActivity>>, TError,{data: BodyType<ActivityInput>}, TContext> => {
+
+const mutationKey = ['createActivity'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createActivity>>, {data: BodyType<ActivityInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createActivity(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateActivityMutationResult = NonNullable<Awaited<ReturnType<typeof createActivity>>>
+    export type CreateActivityMutationBody = BodyType<ActivityInput>
+    export type CreateActivityMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Log an activity (manual)
+ */
+export const useCreateActivity = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createActivity>>, TError,{data: BodyType<ActivityInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createActivity>>,
+        TError,
+        {data: BodyType<ActivityInput>},
+        TContext
+      > => {
+      return useMutation(getCreateActivityMutationOptions(options));
+    }
+
+export const getDeleteActivityUrl = (id: number,) => {
+
+
+
+
+  return `/api/activities/${id}`
+}
+
+/**
+ * @summary Delete a manually logged activity
+ */
+export const deleteActivity = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteActivityUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteActivityMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteActivity>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteActivity>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteActivity'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteActivity>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteActivity(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteActivityMutationResult = NonNullable<Awaited<ReturnType<typeof deleteActivity>>>
+
+    export type DeleteActivityMutationError = ErrorType<void>
+
+    /**
+ * @summary Delete a manually logged activity
+ */
+export const useDeleteActivity = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteActivity>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteActivity>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteActivityMutationOptions(options));
+    }
+
+export const getImportPhoneStepsUrl = () => {
+
+
+
+
+  return `/api/activities/phone-steps`
+}
+
+/**
+ * @summary Import daily step counts read from the phone (patient-approved)
+ */
+export const importPhoneSteps = async (phoneStepsImportInput: PhoneStepsImportInput, options?: RequestInit): Promise<ImportResult> => {
+
+  return customFetch<ImportResult>(getImportPhoneStepsUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(phoneStepsImportInput)
+  }
+);}
+
+
+
+
+export const getImportPhoneStepsMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importPhoneSteps>>, TError,{data: BodyType<PhoneStepsImportInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof importPhoneSteps>>, TError,{data: BodyType<PhoneStepsImportInput>}, TContext> => {
+
+const mutationKey = ['importPhoneSteps'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof importPhoneSteps>>, {data: BodyType<PhoneStepsImportInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  importPhoneSteps(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ImportPhoneStepsMutationResult = NonNullable<Awaited<ReturnType<typeof importPhoneSteps>>>
+    export type ImportPhoneStepsMutationBody = BodyType<PhoneStepsImportInput>
+    export type ImportPhoneStepsMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Import daily step counts read from the phone (patient-approved)
+ */
+export const useImportPhoneSteps = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importPhoneSteps>>, TError,{data: BodyType<PhoneStepsImportInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof importPhoneSteps>>,
+        TError,
+        {data: BodyType<PhoneStepsImportInput>},
+        TContext
+      > => {
+      return useMutation(getImportPhoneStepsMutationOptions(options));
+    }
+
+export const getListSleepEntriesUrl = () => {
+
+
+
+
+  return `/api/sleep-entries`
+}
+
+/**
+ * @summary List sleep entries (newest first, last 90 days)
+ */
+export const listSleepEntries = async ( options?: RequestInit): Promise<SleepEntry[]> => {
+
+  return customFetch<SleepEntry[]>(getListSleepEntriesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListSleepEntriesQueryKey = () => {
+    return [
+    `/api/sleep-entries`
+    ] as const;
+    }
+
+
+export const getListSleepEntriesQueryOptions = <TData = Awaited<ReturnType<typeof listSleepEntries>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSleepEntries>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListSleepEntriesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listSleepEntries>>> = ({ signal }) => listSleepEntries({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listSleepEntries>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListSleepEntriesQueryResult = NonNullable<Awaited<ReturnType<typeof listSleepEntries>>>
+export type ListSleepEntriesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List sleep entries (newest first, last 90 days)
+ */
+
+export function useListSleepEntries<TData = Awaited<ReturnType<typeof listSleepEntries>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listSleepEntries>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListSleepEntriesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateSleepEntryUrl = () => {
+
+
+
+
+  return `/api/sleep-entries`
+}
+
+/**
+ * @summary Log a night of sleep (manual)
+ */
+export const createSleepEntry = async (sleepEntryInput: SleepEntryInput, options?: RequestInit): Promise<SleepEntry> => {
+
+  return customFetch<SleepEntry>(getCreateSleepEntryUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(sleepEntryInput)
+  }
+);}
+
+
+
+
+export const getCreateSleepEntryMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSleepEntry>>, TError,{data: BodyType<SleepEntryInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createSleepEntry>>, TError,{data: BodyType<SleepEntryInput>}, TContext> => {
+
+const mutationKey = ['createSleepEntry'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createSleepEntry>>, {data: BodyType<SleepEntryInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createSleepEntry(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateSleepEntryMutationResult = NonNullable<Awaited<ReturnType<typeof createSleepEntry>>>
+    export type CreateSleepEntryMutationBody = BodyType<SleepEntryInput>
+    export type CreateSleepEntryMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Log a night of sleep (manual)
+ */
+export const useCreateSleepEntry = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createSleepEntry>>, TError,{data: BodyType<SleepEntryInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createSleepEntry>>,
+        TError,
+        {data: BodyType<SleepEntryInput>},
+        TContext
+      > => {
+      return useMutation(getCreateSleepEntryMutationOptions(options));
+    }
+
+export const getDeleteSleepEntryUrl = (id: number,) => {
+
+
+
+
+  return `/api/sleep-entries/${id}`
+}
+
+/**
+ * @summary Delete a manually logged sleep entry
+ */
+export const deleteSleepEntry = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteSleepEntryUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteSleepEntryMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteSleepEntry>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteSleepEntry>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteSleepEntry'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteSleepEntry>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteSleepEntry(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteSleepEntryMutationResult = NonNullable<Awaited<ReturnType<typeof deleteSleepEntry>>>
+
+    export type DeleteSleepEntryMutationError = ErrorType<void>
+
+    /**
+ * @summary Delete a manually logged sleep entry
+ */
+export const useDeleteSleepEntry = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteSleepEntry>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteSleepEntry>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteSleepEntryMutationOptions(options));
+    }
+
+export const getGetActivitySummaryUrl = (params?: GetActivitySummaryParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/activity/summary?${stringifiedParams}` : `/api/activity/summary`
+}
+
+/**
+ * @summary Activity and sleep summary with chart series
+ */
+export const getActivitySummary = async (params?: GetActivitySummaryParams, options?: RequestInit): Promise<ActivitySummary> => {
+
+  return customFetch<ActivitySummary>(getGetActivitySummaryUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetActivitySummaryQueryKey = (params?: GetActivitySummaryParams,) => {
+    return [
+    `/api/activity/summary`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetActivitySummaryQueryOptions = <TData = Awaited<ReturnType<typeof getActivitySummary>>, TError = ErrorType<unknown>>(params?: GetActivitySummaryParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getActivitySummary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetActivitySummaryQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getActivitySummary>>> = ({ signal }) => getActivitySummary(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getActivitySummary>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetActivitySummaryQueryResult = NonNullable<Awaited<ReturnType<typeof getActivitySummary>>>
+export type GetActivitySummaryQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Activity and sleep summary with chart series
+ */
+
+export function useGetActivitySummary<TData = Awaited<ReturnType<typeof getActivitySummary>>, TError = ErrorType<unknown>>(
+ params?: GetActivitySummaryParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getActivitySummary>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetActivitySummaryQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getListDevicesUrl = () => {
+
+
+
+
+  return `/api/devices`
+}
+
+/**
+ * @summary List connected trackers (tokens never included)
+ */
+export const listDevices = async ( options?: RequestInit): Promise<DeviceList> => {
+
+  return customFetch<DeviceList>(getListDevicesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListDevicesQueryKey = () => {
+    return [
+    `/api/devices`
+    ] as const;
+    }
+
+
+export const getListDevicesQueryOptions = <TData = Awaited<ReturnType<typeof listDevices>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listDevices>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListDevicesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listDevices>>> = ({ signal }) => listDevices({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listDevices>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListDevicesQueryResult = NonNullable<Awaited<ReturnType<typeof listDevices>>>
+export type ListDevicesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List connected trackers (tokens never included)
+ */
+
+export function useListDevices<TData = Awaited<ReturnType<typeof listDevices>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listDevices>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListDevicesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getConnectOuraUrl = () => {
+
+
+
+
+  return `/api/devices/oura`
+}
+
+/**
+ * @summary Connect an Oura ring with a personal access token
+ */
+export const connectOura = async (connectOuraInput: ConnectOuraInput, options?: RequestInit): Promise<Device> => {
+
+  return customFetch<Device>(getConnectOuraUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(connectOuraInput)
+  }
+);}
+
+
+
+
+export const getConnectOuraMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof connectOura>>, TError,{data: BodyType<ConnectOuraInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof connectOura>>, TError,{data: BodyType<ConnectOuraInput>}, TContext> => {
+
+const mutationKey = ['connectOura'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof connectOura>>, {data: BodyType<ConnectOuraInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  connectOura(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ConnectOuraMutationResult = NonNullable<Awaited<ReturnType<typeof connectOura>>>
+    export type ConnectOuraMutationBody = BodyType<ConnectOuraInput>
+    export type ConnectOuraMutationError = ErrorType<void>
+
+    /**
+ * @summary Connect an Oura ring with a personal access token
+ */
+export const useConnectOura = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof connectOura>>, TError,{data: BodyType<ConnectOuraInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof connectOura>>,
+        TError,
+        {data: BodyType<ConnectOuraInput>},
+        TContext
+      > => {
+      return useMutation(getConnectOuraMutationOptions(options));
+    }
+
+export const getUpdateOuraSettingsUrl = () => {
+
+
+
+
+  return `/api/devices/oura`
+}
+
+/**
+ * @summary Update what the Oura connection imports
+ */
+export const updateOuraSettings = async (updateOuraSettingsInput: UpdateOuraSettingsInput, options?: RequestInit): Promise<Device> => {
+
+  return customFetch<Device>(getUpdateOuraSettingsUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(updateOuraSettingsInput)
+  }
+);}
+
+
+
+
+export const getUpdateOuraSettingsMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateOuraSettings>>, TError,{data: BodyType<UpdateOuraSettingsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateOuraSettings>>, TError,{data: BodyType<UpdateOuraSettingsInput>}, TContext> => {
+
+const mutationKey = ['updateOuraSettings'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateOuraSettings>>, {data: BodyType<UpdateOuraSettingsInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateOuraSettings(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateOuraSettingsMutationResult = NonNullable<Awaited<ReturnType<typeof updateOuraSettings>>>
+    export type UpdateOuraSettingsMutationBody = BodyType<UpdateOuraSettingsInput>
+    export type UpdateOuraSettingsMutationError = ErrorType<void>
+
+    /**
+ * @summary Update what the Oura connection imports
+ */
+export const useUpdateOuraSettings = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateOuraSettings>>, TError,{data: BodyType<UpdateOuraSettingsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateOuraSettings>>,
+        TError,
+        {data: BodyType<UpdateOuraSettingsInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateOuraSettingsMutationOptions(options));
+    }
+
+export const getDisconnectOuraUrl = (params?: DisconnectOuraParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/devices/oura?${stringifiedParams}` : `/api/devices/oura`
+}
+
+/**
+ * @summary Disconnect Oura (optionally removing synced data)
+ */
+export const disconnectOura = async (params?: DisconnectOuraParams, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDisconnectOuraUrl(params),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDisconnectOuraMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof disconnectOura>>, TError,{params?: DisconnectOuraParams}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof disconnectOura>>, TError,{params?: DisconnectOuraParams}, TContext> => {
+
+const mutationKey = ['disconnectOura'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof disconnectOura>>, {params?: DisconnectOuraParams}> = (props) => {
+          const {params} = props ?? {};
+
+          return  disconnectOura(params,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DisconnectOuraMutationResult = NonNullable<Awaited<ReturnType<typeof disconnectOura>>>
+
+    export type DisconnectOuraMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Disconnect Oura (optionally removing synced data)
+ */
+export const useDisconnectOura = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof disconnectOura>>, TError,{params?: DisconnectOuraParams}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof disconnectOura>>,
+        TError,
+        {params?: DisconnectOuraParams},
+        TContext
+      > => {
+      return useMutation(getDisconnectOuraMutationOptions(options));
+    }
+
+export const getSyncOuraUrl = () => {
+
+
+
+
+  return `/api/devices/oura/sync`
+}
+
+/**
+ * @summary Pull the latest Oura data now
+ */
+export const syncOura = async ( options?: RequestInit): Promise<SyncResult> => {
+
+  return customFetch<SyncResult>(getSyncOuraUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getSyncOuraMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof syncOura>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof syncOura>>, TError,void, TContext> => {
+
+const mutationKey = ['syncOura'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof syncOura>>, void> = () => {
+
+
+          return  syncOura(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SyncOuraMutationResult = NonNullable<Awaited<ReturnType<typeof syncOura>>>
+
+    export type SyncOuraMutationError = ErrorType<void>
+
+    /**
+ * @summary Pull the latest Oura data now
+ */
+export const useSyncOura = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof syncOura>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof syncOura>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getSyncOuraMutationOptions(options));
     }
 
 export const getGetPassportUrl = () => {

@@ -24,6 +24,7 @@ import notificationsRouter from "./notifications";
 import meRouter from "./me";
 import doctorTipsRouter from "./doctorTips";
 import offersRouter from "./offers";
+import activityRouter from "./activity";
 import adminRouter from "./admin";
 import billingRouter from "./billing";
 import { requireAuth, requireStaff, requirePatient } from "../middlewares/auth";
@@ -68,11 +69,16 @@ const patientOnlyPaths = [
   "/social",
   "/cheers",
   "/community",
+  "/activities",
+  "/activity",
+  "/sleep-entries",
+  "/devices",
 ];
 router.use(patientOnlyPaths, requireAuth, requirePatient);
 
 router.use(requireAuth, requireActiveSubscription, passportRouter);
 router.use(requireAuth, requireActiveSubscription, mindRouter);
+router.use(requireAuth, requireActiveSubscription, activityRouter);
 router.use(requireAuth, requireActiveSubscription, storageRouter);
 router.use(requireAuth, requireActiveSubscription, referralsRouter);
 router.use(requireAuth, requireActiveSubscription, socialRouter);

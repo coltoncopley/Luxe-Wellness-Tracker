@@ -859,6 +859,219 @@ paths:
           description: Deleted
         "404":
           description: Not found
+  /activities:
+    get:
+      operationId: listActivities
+      tags: [activity]
+      summary: List activity entries (newest first, last 90 days)
+      responses:
+        "200":
+          description: Activities
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Activity"
+    post:
+      operationId: createActivity
+      tags: [activity]
+      summary: Log an activity (manual)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ActivityInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Activity"
+  /activities/{id}:
+    delete:
+      operationId: deleteActivity
+      tags: [activity]
+      summary: Delete a manually logged activity
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found or not deletable
+  /activities/phone-steps:
+    post:
+      operationId: importPhoneSteps
+      tags: [activity]
+      summary: Import daily step counts read from the phone (patient-approved)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PhoneStepsImportInput"
+      responses:
+        "200":
+          description: Import result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ImportResult"
+  /sleep-entries:
+    get:
+      operationId: listSleepEntries
+      tags: [activity]
+      summary: List sleep entries (newest first, last 90 days)
+      responses:
+        "200":
+          description: Sleep entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SleepEntry"
+    post:
+      operationId: createSleepEntry
+      tags: [activity]
+      summary: Log a night of sleep (manual)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SleepEntryInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SleepEntry"
+  /sleep-entries/{id}:
+    delete:
+      operationId: deleteSleepEntry
+      tags: [activity]
+      summary: Delete a manually logged sleep entry
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found or not deletable
+  /activity/summary:
+    get:
+      operationId: getActivitySummary
+      tags: [activity]
+      summary: Activity and sleep summary with chart series
+      parameters:
+        - name: days
+          in: query
+          required: false
+          schema:
+            type: integer
+            enum: [7, 30]
+      responses:
+        "200":
+          description: Summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ActivitySummary"
+  /devices:
+    get:
+      operationId: listDevices
+      tags: [devices]
+      summary: List connected trackers (tokens never included)
+      responses:
+        "200":
+          description: Devices
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeviceList"
+  /devices/oura:
+    post:
+      operationId: connectOura
+      tags: [devices]
+      summary: Connect an Oura ring with a personal access token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ConnectOuraInput"
+      responses:
+        "200":
+          description: Connected
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Device"
+        "400":
+          description: Token rejected by Oura
+        "429":
+          description: Too many attempts
+    put:
+      operationId: updateOuraSettings
+      tags: [devices]
+      summary: Update what the Oura connection imports
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateOuraSettingsInput"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Device"
+        "404":
+          description: No Oura connection
+    delete:
+      operationId: disconnectOura
+      tags: [devices]
+      summary: Disconnect Oura (optionally removing synced data)
+      parameters:
+        - name: removeData
+          in: query
+          required: false
+          schema:
+            type: boolean
+      responses:
+        "204":
+          description: Disconnected
+  /devices/oura/sync:
+    post:
+      operationId: syncOura
+      tags: [devices]
+      summary: Pull the latest Oura data now
+      responses:
+        "200":
+          description: Sync result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyncResult"
+        "404":
+          description: No Oura connection
+        "429":
+          description: Too many syncs — try later
   /passport:
     get:
       operationId: getPassport
@@ -4211,3 +4424,132 @@ components:
       required: [sent]
       properties:
         sent: { type: boolean }
+    Activity:
+      type: object
+      required: [id, date, type, durationMin, source]
+      properties:
+        id: { type: integer }
+        date: { type: string, description: YYYY-MM-DD }
+        type:
+          type: string
+          enum: [walk, run, strength, yoga, swim, cycle, steps, other]
+        durationMin: { type: integer }
+        steps: { type: ["integer", "null"] }
+        calories: { type: ["integer", "null"] }
+        distanceMi: { type: ["number", "null"] }
+        notes: { type: ["string", "null"] }
+        source:
+          type: string
+          enum: [manual, oura, phone]
+    ActivityInput:
+      type: object
+      required: [date, type, durationMin]
+      properties:
+        date: { type: string, pattern: '^\d{4}-\d{2}-\d{2}$' }
+        type:
+          type: string
+          enum: [walk, run, strength, yoga, swim, cycle, other]
+        durationMin: { type: integer, minimum: 1, maximum: 1440 }
+        steps: { type: ["integer", "null"], minimum: 0, maximum: 200000 }
+        calories: { type: ["integer", "null"], minimum: 0, maximum: 10000 }
+        distanceMi: { type: ["number", "null"], minimum: 0, maximum: 200 }
+        notes: { type: ["string", "null"], maxLength: 300 }
+    PhoneStepsImportInput:
+      type: object
+      required: [entries]
+      properties:
+        entries:
+          type: array
+          minItems: 1
+          maxItems: 14
+          items:
+            type: object
+            required: [date, steps]
+            properties:
+              date: { type: string, pattern: '^\d{4}-\d{2}-\d{2}$' }
+              steps: { type: integer, minimum: 0, maximum: 200000 }
+    ImportResult:
+      type: object
+      required: [imported]
+      properties:
+        imported: { type: integer }
+    SleepEntry:
+      type: object
+      required: [id, date, durationMin, source]
+      properties:
+        id: { type: integer }
+        date: { type: string, description: Wake-up date YYYY-MM-DD }
+        durationMin: { type: integer }
+        bedtime: { type: ["string", "null"], description: "HH:MM" }
+        wakeTime: { type: ["string", "null"], description: "HH:MM" }
+        quality: { type: ["integer", "null"], description: 1-5 self-rating }
+        score: { type: ["integer", "null"], description: 0-100 device score }
+        source:
+          type: string
+          enum: [manual, oura]
+    SleepEntryInput:
+      type: object
+      required: [date, durationMin]
+      properties:
+        date: { type: string, pattern: '^\d{4}-\d{2}-\d{2}$' }
+        durationMin: { type: integer, minimum: 30, maximum: 1440 }
+        bedtime: { type: ["string", "null"], pattern: '^\d{2}:\d{2}$' }
+        wakeTime: { type: ["string", "null"], pattern: '^\d{2}:\d{2}$' }
+        quality: { type: ["integer", "null"], minimum: 1, maximum: 5 }
+    ActivitySummary:
+      type: object
+      required: [days, totalMinutes, totalSteps, activityCount, avgSleepMin, streak, series]
+      properties:
+        days: { type: integer }
+        totalMinutes: { type: integer }
+        totalSteps: { type: integer }
+        activityCount: { type: integer }
+        avgSleepMin: { type: ["integer", "null"] }
+        streak: { type: integer, description: Consecutive days ending today with any activity or sleep logged }
+        series:
+          type: array
+          items:
+            type: object
+            required: [date, minutes, steps, sleepMin]
+            properties:
+              date: { type: string }
+              minutes: { type: integer }
+              steps: { type: integer }
+              sleepMin: { type: ["integer", "null"] }
+    Device:
+      type: object
+      required: [provider, tokenLast4, importActivity, importSleep, lastSyncedAt, lastSyncStatus, connectedAt]
+      properties:
+        provider: { type: string, enum: [oura] }
+        tokenLast4: { type: string, description: Last 4 characters of the stored token }
+        importActivity: { type: boolean }
+        importSleep: { type: boolean }
+        lastSyncedAt: { type: ["string", "null"], description: ISO timestamp }
+        lastSyncStatus: { type: ["string", "null"], enum: [ok, error, null] }
+        connectedAt: { type: string, description: ISO timestamp }
+    DeviceList:
+      type: object
+      required: [devices]
+      properties:
+        devices:
+          type: array
+          items: { $ref: "#/components/schemas/Device" }
+    ConnectOuraInput:
+      type: object
+      required: [token]
+      properties:
+        token: { type: string, minLength: 8, maxLength: 200 }
+        importActivity: { type: boolean }
+        importSleep: { type: boolean }
+    UpdateOuraSettingsInput:
+      type: object
+      required: [importActivity, importSleep]
+      properties:
+        importActivity: { type: boolean }
+        importSleep: { type: boolean }
+    SyncResult:
+      type: object
+      required: [activitiesImported, sleepImported]
+      properties:
+        activitiesImported: { type: integer }
+        sleepImported: { type: integer }

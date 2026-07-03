@@ -894,6 +894,259 @@ export const DeleteIngredientScanResponse = zod.void()
 
 
 /**
+ * @summary List activity entries (newest first, last 90 days)
+ */
+export const ListActivitiesResponseItem = zod.object({
+  "id": zod.number(),
+  "date": zod.string().describe('YYYY-MM-DD'),
+  "type": zod.enum(['walk', 'run', 'strength', 'yoga', 'swim', 'cycle', 'steps', 'other']),
+  "durationMin": zod.number(),
+  "steps": zod.number().nullish(),
+  "calories": zod.number().nullish(),
+  "distanceMi": zod.number().nullish(),
+  "notes": zod.string().nullish(),
+  "source": zod.enum(['manual', 'oura', 'phone'])
+})
+export const ListActivitiesResponse = zod.array(ListActivitiesResponseItem)
+
+
+/**
+ * @summary Log an activity (manual)
+ */
+export const createActivityBodyDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const createActivityBodyDurationMinMax = 1440;
+
+export const createActivityBodyStepsMin = 0;
+export const createActivityBodyStepsMax = 200000;
+
+export const createActivityBodyCaloriesMin = 0;
+export const createActivityBodyCaloriesMax = 10000;
+
+export const createActivityBodyDistanceMiMin = 0;
+export const createActivityBodyDistanceMiMax = 200;
+
+export const createActivityBodyNotesMax = 300;
+
+
+
+export const CreateActivityBody = zod.object({
+  "date": zod.string().regex(createActivityBodyDateRegExp),
+  "type": zod.enum(['walk', 'run', 'strength', 'yoga', 'swim', 'cycle', 'other']),
+  "durationMin": zod.number().min(1).max(createActivityBodyDurationMinMax),
+  "steps": zod.number().min(createActivityBodyStepsMin).max(createActivityBodyStepsMax).nullish(),
+  "calories": zod.number().min(createActivityBodyCaloriesMin).max(createActivityBodyCaloriesMax).nullish(),
+  "distanceMi": zod.number().min(createActivityBodyDistanceMiMin).max(createActivityBodyDistanceMiMax).nullish(),
+  "notes": zod.string().max(createActivityBodyNotesMax).nullish()
+})
+
+export const CreateActivityResponse = zod.object({
+  "id": zod.number(),
+  "date": zod.string().describe('YYYY-MM-DD'),
+  "type": zod.enum(['walk', 'run', 'strength', 'yoga', 'swim', 'cycle', 'steps', 'other']),
+  "durationMin": zod.number(),
+  "steps": zod.number().nullish(),
+  "calories": zod.number().nullish(),
+  "distanceMi": zod.number().nullish(),
+  "notes": zod.string().nullish(),
+  "source": zod.enum(['manual', 'oura', 'phone'])
+})
+
+
+/**
+ * @summary Delete a manually logged activity
+ */
+export const DeleteActivityParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DeleteActivityResponse = zod.void()
+
+
+/**
+ * @summary Import daily step counts read from the phone (patient-approved)
+ */
+export const importPhoneStepsBodyEntriesItemDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const importPhoneStepsBodyEntriesItemStepsMin = 0;
+export const importPhoneStepsBodyEntriesItemStepsMax = 200000;
+
+export const importPhoneStepsBodyEntriesMax = 14;
+
+
+
+export const ImportPhoneStepsBody = zod.object({
+  "entries": zod.array(zod.object({
+  "date": zod.string().regex(importPhoneStepsBodyEntriesItemDateRegExp),
+  "steps": zod.number().min(importPhoneStepsBodyEntriesItemStepsMin).max(importPhoneStepsBodyEntriesItemStepsMax)
+})).min(1).max(importPhoneStepsBodyEntriesMax)
+})
+
+export const ImportPhoneStepsResponse = zod.object({
+  "imported": zod.number()
+})
+
+
+/**
+ * @summary List sleep entries (newest first, last 90 days)
+ */
+export const ListSleepEntriesResponseItem = zod.object({
+  "id": zod.number(),
+  "date": zod.string().describe('Wake-up date YYYY-MM-DD'),
+  "durationMin": zod.number(),
+  "bedtime": zod.string().nullish().describe('HH:MM'),
+  "wakeTime": zod.string().nullish().describe('HH:MM'),
+  "quality": zod.number().nullish().describe('1-5 self-rating'),
+  "score": zod.number().nullish().describe('0-100 device score'),
+  "source": zod.enum(['manual', 'oura'])
+})
+export const ListSleepEntriesResponse = zod.array(ListSleepEntriesResponseItem)
+
+
+/**
+ * @summary Log a night of sleep (manual)
+ */
+export const createSleepEntryBodyDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const createSleepEntryBodyDurationMinMin = 30;
+export const createSleepEntryBodyDurationMinMax = 1440;
+
+export const createSleepEntryBodyBedtimeRegExp = new RegExp('^\\d{2}:\\d{2}$');
+export const createSleepEntryBodyWakeTimeRegExp = new RegExp('^\\d{2}:\\d{2}$');
+export const createSleepEntryBodyQualityMax = 5;
+
+
+
+export const CreateSleepEntryBody = zod.object({
+  "date": zod.string().regex(createSleepEntryBodyDateRegExp),
+  "durationMin": zod.number().min(createSleepEntryBodyDurationMinMin).max(createSleepEntryBodyDurationMinMax),
+  "bedtime": zod.string().regex(createSleepEntryBodyBedtimeRegExp).nullish(),
+  "wakeTime": zod.string().regex(createSleepEntryBodyWakeTimeRegExp).nullish(),
+  "quality": zod.number().min(1).max(createSleepEntryBodyQualityMax).nullish()
+})
+
+export const CreateSleepEntryResponse = zod.object({
+  "id": zod.number(),
+  "date": zod.string().describe('Wake-up date YYYY-MM-DD'),
+  "durationMin": zod.number(),
+  "bedtime": zod.string().nullish().describe('HH:MM'),
+  "wakeTime": zod.string().nullish().describe('HH:MM'),
+  "quality": zod.number().nullish().describe('1-5 self-rating'),
+  "score": zod.number().nullish().describe('0-100 device score'),
+  "source": zod.enum(['manual', 'oura'])
+})
+
+
+/**
+ * @summary Delete a manually logged sleep entry
+ */
+export const DeleteSleepEntryParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DeleteSleepEntryResponse = zod.void()
+
+
+/**
+ * @summary Activity and sleep summary with chart series
+ */
+export const GetActivitySummaryQueryParams = zod.object({
+  "days": zod.union([zod.literal(7),zod.literal(30)]).optional()
+})
+
+export const GetActivitySummaryResponse = zod.object({
+  "days": zod.number(),
+  "totalMinutes": zod.number(),
+  "totalSteps": zod.number(),
+  "activityCount": zod.number(),
+  "avgSleepMin": zod.number().nullable(),
+  "streak": zod.number().describe('Consecutive days ending today with any activity or sleep logged'),
+  "series": zod.array(zod.object({
+  "date": zod.string(),
+  "minutes": zod.number(),
+  "steps": zod.number(),
+  "sleepMin": zod.number().nullable()
+}))
+})
+
+
+/**
+ * @summary List connected trackers (tokens never included)
+ */
+export const ListDevicesResponse = zod.object({
+  "devices": zod.array(zod.object({
+  "provider": zod.enum(['oura']),
+  "tokenLast4": zod.string().describe('Last 4 characters of the stored token'),
+  "importActivity": zod.boolean(),
+  "importSleep": zod.boolean(),
+  "lastSyncedAt": zod.string().nullable().describe('ISO timestamp'),
+  "lastSyncStatus": zod.union([zod.literal('ok'),zod.literal('error'),zod.literal(null)]).nullable(),
+  "connectedAt": zod.string().describe('ISO timestamp')
+}))
+})
+
+
+/**
+ * @summary Connect an Oura ring with a personal access token
+ */
+export const connectOuraBodyTokenMin = 8;
+export const connectOuraBodyTokenMax = 200;
+
+
+
+export const ConnectOuraBody = zod.object({
+  "token": zod.string().min(connectOuraBodyTokenMin).max(connectOuraBodyTokenMax),
+  "importActivity": zod.boolean().optional(),
+  "importSleep": zod.boolean().optional()
+})
+
+export const ConnectOuraResponse = zod.object({
+  "provider": zod.enum(['oura']),
+  "tokenLast4": zod.string().describe('Last 4 characters of the stored token'),
+  "importActivity": zod.boolean(),
+  "importSleep": zod.boolean(),
+  "lastSyncedAt": zod.string().nullable().describe('ISO timestamp'),
+  "lastSyncStatus": zod.union([zod.literal('ok'),zod.literal('error'),zod.literal(null)]).nullable(),
+  "connectedAt": zod.string().describe('ISO timestamp')
+})
+
+
+/**
+ * @summary Update what the Oura connection imports
+ */
+export const UpdateOuraSettingsBody = zod.object({
+  "importActivity": zod.boolean(),
+  "importSleep": zod.boolean()
+})
+
+export const UpdateOuraSettingsResponse = zod.object({
+  "provider": zod.enum(['oura']),
+  "tokenLast4": zod.string().describe('Last 4 characters of the stored token'),
+  "importActivity": zod.boolean(),
+  "importSleep": zod.boolean(),
+  "lastSyncedAt": zod.string().nullable().describe('ISO timestamp'),
+  "lastSyncStatus": zod.union([zod.literal('ok'),zod.literal('error'),zod.literal(null)]).nullable(),
+  "connectedAt": zod.string().describe('ISO timestamp')
+})
+
+
+/**
+ * @summary Disconnect Oura (optionally removing synced data)
+ */
+export const DisconnectOuraQueryParams = zod.object({
+  "removeData": zod.coerce.boolean().optional()
+})
+
+export const DisconnectOuraResponse = zod.void()
+
+
+/**
+ * @summary Pull the latest Oura data now
+ */
+export const SyncOuraResponse = zod.object({
+  "activitiesImported": zod.number(),
+  "sleepImported": zod.number()
+})
+
+
+/**
  * @summary Beauty Passport profile + treatment history for the requesting user
  */
 export const GetPassportResponse = zod.object({

@@ -56,6 +56,10 @@ import("./lib/engagementScheduler")
   .then(({ startEngagementScheduler }) => startEngagementScheduler())
   .catch((err: unknown) => logger.error({ err }, "Failed to start engagement scheduler"));
 
+import("./lib/activityScheduler")
+  .then(({ startActivityScheduler }) => startActivityScheduler())
+  .catch((err: unknown) => logger.error({ err }, "Failed to start activity scheduler"));
+
 const rawPort = process.env["PORT"];
 
 if (!rawPort) {

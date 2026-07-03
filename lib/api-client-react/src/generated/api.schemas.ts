@@ -1612,6 +1612,256 @@ export interface SendCheerResult {
   sent: boolean;
 }
 
+export type ActivityType = typeof ActivityType[keyof typeof ActivityType];
+
+
+export const ActivityType = {
+  walk: 'walk',
+  run: 'run',
+  strength: 'strength',
+  yoga: 'yoga',
+  swim: 'swim',
+  cycle: 'cycle',
+  steps: 'steps',
+  other: 'other',
+} as const;
+
+export type ActivitySource = typeof ActivitySource[keyof typeof ActivitySource];
+
+
+export const ActivitySource = {
+  manual: 'manual',
+  oura: 'oura',
+  phone: 'phone',
+} as const;
+
+export interface Activity {
+  id: number;
+  /** YYYY-MM-DD */
+  date: string;
+  type: ActivityType;
+  durationMin: number;
+  /** @nullable */
+  steps?: number | null;
+  /** @nullable */
+  calories?: number | null;
+  /** @nullable */
+  distanceMi?: number | null;
+  /** @nullable */
+  notes?: string | null;
+  source: ActivitySource;
+}
+
+export type ActivityInputType = typeof ActivityInputType[keyof typeof ActivityInputType];
+
+
+export const ActivityInputType = {
+  walk: 'walk',
+  run: 'run',
+  strength: 'strength',
+  yoga: 'yoga',
+  swim: 'swim',
+  cycle: 'cycle',
+  other: 'other',
+} as const;
+
+export interface ActivityInput {
+  /** @pattern ^\d{4}-\d{2}-\d{2}$ */
+  date: string;
+  type: ActivityInputType;
+  /**
+     * @minimum 1
+     * @maximum 1440
+     */
+  durationMin: number;
+  /**
+     * @minimum 0
+     * @maximum 200000
+     * @nullable
+     */
+  steps?: number | null;
+  /**
+     * @minimum 0
+     * @maximum 10000
+     * @nullable
+     */
+  calories?: number | null;
+  /**
+     * @minimum 0
+     * @maximum 200
+     * @nullable
+     */
+  distanceMi?: number | null;
+  /**
+     * @maxLength 300
+     * @nullable
+     */
+  notes?: string | null;
+}
+
+export type PhoneStepsImportInputEntriesItem = {
+  /** @pattern ^\d{4}-\d{2}-\d{2}$ */
+  date: string;
+  /**
+     * @minimum 0
+     * @maximum 200000
+     */
+  steps: number;
+};
+
+export interface PhoneStepsImportInput {
+  /**
+     * @minItems 1
+     * @maxItems 14
+     */
+  entries: PhoneStepsImportInputEntriesItem[];
+}
+
+export interface ImportResult {
+  imported: number;
+}
+
+export type SleepEntrySource = typeof SleepEntrySource[keyof typeof SleepEntrySource];
+
+
+export const SleepEntrySource = {
+  manual: 'manual',
+  oura: 'oura',
+} as const;
+
+export interface SleepEntry {
+  id: number;
+  /** Wake-up date YYYY-MM-DD */
+  date: string;
+  durationMin: number;
+  /**
+     * HH:MM
+     * @nullable
+     */
+  bedtime?: string | null;
+  /**
+     * HH:MM
+     * @nullable
+     */
+  wakeTime?: string | null;
+  /**
+     * 1-5 self-rating
+     * @nullable
+     */
+  quality?: number | null;
+  /**
+     * 0-100 device score
+     * @nullable
+     */
+  score?: number | null;
+  source: SleepEntrySource;
+}
+
+export interface SleepEntryInput {
+  /** @pattern ^\d{4}-\d{2}-\d{2}$ */
+  date: string;
+  /**
+     * @minimum 30
+     * @maximum 1440
+     */
+  durationMin: number;
+  /**
+     * @nullable
+     * @pattern ^\d{2}:\d{2}$
+     */
+  bedtime?: string | null;
+  /**
+     * @nullable
+     * @pattern ^\d{2}:\d{2}$
+     */
+  wakeTime?: string | null;
+  /**
+     * @minimum 1
+     * @maximum 5
+     * @nullable
+     */
+  quality?: number | null;
+}
+
+export type ActivitySummarySeriesItem = {
+  date: string;
+  minutes: number;
+  steps: number;
+  /** @nullable */
+  sleepMin: number | null;
+};
+
+export interface ActivitySummary {
+  days: number;
+  totalMinutes: number;
+  totalSteps: number;
+  activityCount: number;
+  /** @nullable */
+  avgSleepMin: number | null;
+  /** Consecutive days ending today with any activity or sleep logged */
+  streak: number;
+  series: ActivitySummarySeriesItem[];
+}
+
+export type DeviceProvider = typeof DeviceProvider[keyof typeof DeviceProvider];
+
+
+export const DeviceProvider = {
+  oura: 'oura',
+} as const;
+
+/**
+ * @nullable
+ */
+export type DeviceLastSyncStatus = typeof DeviceLastSyncStatus[keyof typeof DeviceLastSyncStatus] | null;
+
+
+export const DeviceLastSyncStatus = {
+  ok: 'ok',
+  error: 'error',
+} as const;
+
+export interface Device {
+  provider: DeviceProvider;
+  /** Last 4 characters of the stored token */
+  tokenLast4: string;
+  importActivity: boolean;
+  importSleep: boolean;
+  /**
+     * ISO timestamp
+     * @nullable
+     */
+  lastSyncedAt: string | null;
+  /** @nullable */
+  lastSyncStatus: DeviceLastSyncStatus;
+  /** ISO timestamp */
+  connectedAt: string;
+}
+
+export interface DeviceList {
+  devices: Device[];
+}
+
+export interface ConnectOuraInput {
+  /**
+     * @minLength 8
+     * @maxLength 200
+     */
+  token: string;
+  importActivity?: boolean;
+  importSleep?: boolean;
+}
+
+export interface UpdateOuraSettingsInput {
+  importActivity: boolean;
+  importSleep: boolean;
+}
+
+export interface SyncResult {
+  activitiesImported: number;
+  sleepImported: number;
+}
+
 export type SearchMenuItemsParams = {
 q: string;
 };
@@ -1630,6 +1880,22 @@ category?: string;
 
 export type ListIngredientScans200 = {
   scans: IngredientScanResult[];
+};
+
+export type GetActivitySummaryParams = {
+days?: GetActivitySummaryDays;
+};
+
+export type GetActivitySummaryDays = typeof GetActivitySummaryDays[keyof typeof GetActivitySummaryDays];
+
+
+export const GetActivitySummaryDays = {
+  NUMBER_7: 7,
+  NUMBER_30: 30,
+} as const;
+
+export type DisconnectOuraParams = {
+removeData?: boolean;
 };
 
 export type GetPassport200 = {

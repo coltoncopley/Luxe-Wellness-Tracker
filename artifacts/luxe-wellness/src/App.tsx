@@ -28,6 +28,7 @@ import Skin from "@/pages/skin";
 import Ingredients from "@/pages/ingredients";
 import Passport from "@/pages/passport";
 import Mind from "@/pages/mind";
+import ActivityPage from "@/pages/activity";
 import Community from "@/pages/community";
 import Settings from "@/pages/settings";
 import StaffVerify from "@/pages/staff-verify";
@@ -284,6 +285,7 @@ function ClerkProviderWithRoutes() {
             <Route path="/ingredients">{() => <Protected component={Ingredients} />}</Route>
             <Route path="/passport">{() => <Protected component={Passport} />}</Route>
             <Route path="/mind">{() => <Protected component={Mind} />}</Route>
+            <Route path="/activity">{() => <Protected component={ActivityPage} />}</Route>
             <Route path="/community">{() => <Protected component={Community} />}</Route>
             <Route path="/settings">{() => <Protected component={Settings} />}</Route>
             <Route path="/staff">{() => <Protected component={StaffVerify} />}</Route>
