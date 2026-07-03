@@ -10,6 +10,7 @@ export const usersTable = pgTable("users", {
   stripeSubscriptionId: text("stripe_subscription_id"),
   compUntil: timestamp("comp_until", { withTimezone: true }),
   compLifetime: boolean("comp_lifetime").notNull().default(false),
+  compSource: text("comp_source"),
   privacyAckAt: timestamp("privacy_ack_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });

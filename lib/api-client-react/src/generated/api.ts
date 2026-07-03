@@ -42,6 +42,7 @@ import type {
   CompAccess,
   CreateAnnouncementInput,
   CreateCommunityPostInput,
+  CreateMembershipCodeInput,
   CreatePassportEntryInput,
   CreateProgressPhotoInput,
   DailySummary,
@@ -75,6 +76,7 @@ import type {
   MealPhotoAnalysisInput,
   Measurement,
   MeasurementInput,
+  MembershipCode,
   MenuItem,
   MenuItemInput,
   MindCheckin,
@@ -91,6 +93,8 @@ import type {
   PassportProfile,
   ProgressPhoto,
   PushSubscriptionInput,
+  RedeemMembershipCodeInput,
+  RedeemMembershipCodeResult,
   RedeemRewardInput,
   RedemptionDetail,
   RedemptionResult,
@@ -373,6 +377,76 @@ export const useCreateBillingPortal = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getCreateBillingPortalMutationOptions(options));
+    }
+
+export const getRedeemMembershipCodeUrl = () => {
+
+
+
+
+  return `/api/billing/redeem-code`
+}
+
+/**
+ * @summary Redeem a one-time membership access code
+ */
+export const redeemMembershipCode = async (redeemMembershipCodeInput: RedeemMembershipCodeInput, options?: RequestInit): Promise<RedeemMembershipCodeResult> => {
+
+  return customFetch<RedeemMembershipCodeResult>(getRedeemMembershipCodeUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(redeemMembershipCodeInput)
+  }
+);}
+
+
+
+
+export const getRedeemMembershipCodeMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof redeemMembershipCode>>, TError,{data: BodyType<RedeemMembershipCodeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof redeemMembershipCode>>, TError,{data: BodyType<RedeemMembershipCodeInput>}, TContext> => {
+
+const mutationKey = ['redeemMembershipCode'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof redeemMembershipCode>>, {data: BodyType<RedeemMembershipCodeInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  redeemMembershipCode(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RedeemMembershipCodeMutationResult = NonNullable<Awaited<ReturnType<typeof redeemMembershipCode>>>
+    export type RedeemMembershipCodeMutationBody = BodyType<RedeemMembershipCodeInput>
+    export type RedeemMembershipCodeMutationError = ErrorType<void>
+
+    /**
+ * @summary Redeem a one-time membership access code
+ */
+export const useRedeemMembershipCode = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof redeemMembershipCode>>, TError,{data: BodyType<RedeemMembershipCodeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof redeemMembershipCode>>,
+        TError,
+        {data: BodyType<RedeemMembershipCodeInput>},
+        TContext
+      > => {
+      return useMutation(getRedeemMembershipCodeMutationOptions(options));
     }
 
 export const getHealthCheckUrl = () => {
@@ -6765,6 +6839,223 @@ export const useAdminRevokeComp = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getAdminRevokeCompMutationOptions(options));
+    }
+
+export const getAdminListMembershipCodesUrl = () => {
+
+
+
+
+  return `/api/admin/membership-codes`
+}
+
+/**
+ * @summary List one-time membership access codes (staff)
+ */
+export const adminListMembershipCodes = async ( options?: RequestInit): Promise<MembershipCode[]> => {
+
+  return customFetch<MembershipCode[]>(getAdminListMembershipCodesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminListMembershipCodesQueryKey = () => {
+    return [
+    `/api/admin/membership-codes`
+    ] as const;
+    }
+
+
+export const getAdminListMembershipCodesQueryOptions = <TData = Awaited<ReturnType<typeof adminListMembershipCodes>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListMembershipCodes>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminListMembershipCodesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminListMembershipCodes>>> = ({ signal }) => adminListMembershipCodes({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminListMembershipCodes>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminListMembershipCodesQueryResult = NonNullable<Awaited<ReturnType<typeof adminListMembershipCodes>>>
+export type AdminListMembershipCodesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List one-time membership access codes (staff)
+ */
+
+export function useAdminListMembershipCodes<TData = Awaited<ReturnType<typeof adminListMembershipCodes>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListMembershipCodes>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminListMembershipCodesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAdminCreateMembershipCodeUrl = () => {
+
+
+
+
+  return `/api/admin/membership-codes`
+}
+
+/**
+ * @summary Generate a one-time membership code (staff = 6 months, admin can also create unlimited)
+ */
+export const adminCreateMembershipCode = async (createMembershipCodeInput: CreateMembershipCodeInput, options?: RequestInit): Promise<MembershipCode> => {
+
+  return customFetch<MembershipCode>(getAdminCreateMembershipCodeUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(createMembershipCodeInput)
+  }
+);}
+
+
+
+
+export const getAdminCreateMembershipCodeMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminCreateMembershipCode>>, TError,{data: BodyType<CreateMembershipCodeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminCreateMembershipCode>>, TError,{data: BodyType<CreateMembershipCodeInput>}, TContext> => {
+
+const mutationKey = ['adminCreateMembershipCode'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminCreateMembershipCode>>, {data: BodyType<CreateMembershipCodeInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  adminCreateMembershipCode(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminCreateMembershipCodeMutationResult = NonNullable<Awaited<ReturnType<typeof adminCreateMembershipCode>>>
+    export type AdminCreateMembershipCodeMutationBody = BodyType<CreateMembershipCodeInput>
+    export type AdminCreateMembershipCodeMutationError = ErrorType<void>
+
+    /**
+ * @summary Generate a one-time membership code (staff = 6 months, admin can also create unlimited)
+ */
+export const useAdminCreateMembershipCode = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminCreateMembershipCode>>, TError,{data: BodyType<CreateMembershipCodeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminCreateMembershipCode>>,
+        TError,
+        {data: BodyType<CreateMembershipCodeInput>},
+        TContext
+      > => {
+      return useMutation(getAdminCreateMembershipCodeMutationOptions(options));
+    }
+
+export const getAdminRevokeMembershipCodeUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/membership-codes/${id}/revoke`
+}
+
+/**
+ * @summary Revoke a membership code and remove the redeemer's free access (admin only)
+ */
+export const adminRevokeMembershipCode = async (id: number, options?: RequestInit): Promise<MembershipCode> => {
+
+  return customFetch<MembershipCode>(getAdminRevokeMembershipCodeUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getAdminRevokeMembershipCodeMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminRevokeMembershipCode>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminRevokeMembershipCode>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['adminRevokeMembershipCode'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminRevokeMembershipCode>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  adminRevokeMembershipCode(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminRevokeMembershipCodeMutationResult = NonNullable<Awaited<ReturnType<typeof adminRevokeMembershipCode>>>
+
+    export type AdminRevokeMembershipCodeMutationError = ErrorType<void>
+
+    /**
+ * @summary Revoke a membership code and remove the redeemer's free access (admin only)
+ */
+export const useAdminRevokeMembershipCode = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminRevokeMembershipCode>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminRevokeMembershipCode>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getAdminRevokeMembershipCodeMutationOptions(options));
     }
 
 export const getAdminListStaffUrl = () => {

@@ -4,11 +4,13 @@ import {
   getGetBillingStatusQueryKey,
   useCreateBillingCheckout,
   useCreateBillingPortal,
+  useRedeemMembershipCode,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   Sparkles,
   Loader2,
@@ -53,6 +55,75 @@ function FullScreenSpinner({ message }: { message?: string }) {
       <Loader2 className="h-8 w-8 animate-spin text-primary" />
       {message ? <p className="text-sm text-muted-foreground">{message}</p> : null}
     </div>
+  );
+}
+
+function RedeemCodeSection() {
+  const queryClient = useQueryClient();
+  const [open, setOpen] = useState(false);
+  const [code, setCode] = useState("");
+
+  const redeem = useRedeemMembershipCode({
+    mutation: {
+      onSuccess: (result) => {
+        toast.success(
+          result.kind === "unlimited"
+            ? "Code accepted — you now have free access!"
+            : "Code accepted — you have 6 months of free access!",
+        );
+        void queryClient.invalidateQueries({ queryKey: getGetBillingStatusQueryKey() });
+      },
+      onError: (err: unknown) => {
+        const status = (err as { response?: { status?: number } })?.response?.status;
+        toast.error(
+          status === 429
+            ? "Too many attempts — please wait a minute and try again."
+            : "That code is not valid or has already been used.",
+        );
+      },
+    },
+  });
+
+  if (!open) {
+    return (
+      <Button
+        variant="ghost"
+        className="w-full text-xs text-muted-foreground"
+        onClick={() => setOpen(true)}
+        data-testid="button-have-code"
+      >
+        Have an access code?
+      </Button>
+    );
+  }
+
+  return (
+    <form
+      className="flex gap-2"
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (code.trim().length < 4 || redeem.isPending) return;
+        redeem.mutate({ data: { code: code.trim() } });
+      }}
+    >
+      <Input
+        value={code}
+        onChange={(e) => setCode(e.target.value.toUpperCase())}
+        placeholder="LW-XXXX-XXXX"
+        className="flex-1 font-mono uppercase"
+        maxLength={40}
+        autoFocus
+        data-testid="input-access-code"
+      />
+      <Button
+        type="submit"
+        variant="secondary"
+        disabled={redeem.isPending || code.trim().length < 4}
+        data-testid="button-redeem-code"
+      >
+        {redeem.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "Apply"}
+      </Button>
+    </form>
   );
 }
 
@@ -243,6 +314,7 @@ export function SubscriptionGate({ children }: { children: React.ReactNode }) {
                 Billing settings
               </Button>
             ) : null}
+            {!isPastDue ? <RedeemCodeSection /> : null}
           </div>
 
           <p className="mt-6 text-center text-[11px] leading-relaxed text-muted-foreground">

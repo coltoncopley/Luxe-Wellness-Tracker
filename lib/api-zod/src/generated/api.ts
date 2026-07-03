@@ -38,6 +38,24 @@ export const CreateBillingPortalResponse = zod.object({
 
 
 /**
+ * @summary Redeem a one-time membership access code
+ */
+export const redeemMembershipCodeBodyCodeMin = 4;
+export const redeemMembershipCodeBodyCodeMax = 40;
+
+
+
+export const RedeemMembershipCodeBody = zod.object({
+  "code": zod.string().min(redeemMembershipCodeBodyCodeMin).max(redeemMembershipCodeBodyCodeMax)
+})
+
+export const RedeemMembershipCodeResponse = zod.object({
+  "kind": zod.enum(['six_month', 'unlimited']),
+  "accessUntil": zod.string().nullable().describe('When free access ends (null for unlimited)')
+})
+
+
+/**
  * Returns server health status
  * @summary Health check
  */
@@ -1715,6 +1733,72 @@ export const AdminRevokeCompParams = zod.object({
 })
 
 export const AdminRevokeCompResponse = zod.void()
+
+
+/**
+ * @summary List one-time membership access codes (staff)
+ */
+export const AdminListMembershipCodesResponseItem = zod.object({
+  "id": zod.number(),
+  "code": zod.string(),
+  "kind": zod.enum(['six_month', 'unlimited']),
+  "status": zod.enum(['active', 'redeemed', 'expired', 'revoked']).describe('active = not yet used; redeemed = in use; expired = 6-month period over; revoked = access removed'),
+  "createdAt": zod.string().describe('ISO timestamp'),
+  "createdByName": zod.string().nullable(),
+  "createdByEmail": zod.string().nullable(),
+  "redeemedAt": zod.string().nullable().describe('ISO timestamp'),
+  "redeemedByName": zod.string().nullable(),
+  "redeemedByEmail": zod.string().nullable(),
+  "accessUntil": zod.string().nullable().describe('When the 6-month free period ends (null for unlimited codes)'),
+  "revokedAt": zod.string().nullable().describe('ISO timestamp')
+})
+export const AdminListMembershipCodesResponse = zod.array(AdminListMembershipCodesResponseItem)
+
+
+/**
+ * @summary Generate a one-time membership code (staff = 6 months, admin can also create unlimited)
+ */
+export const AdminCreateMembershipCodeBody = zod.object({
+  "kind": zod.enum(['six_month', 'unlimited']).describe('six_month = staff or admin; unlimited = admin only')
+})
+
+export const AdminCreateMembershipCodeResponse = zod.object({
+  "id": zod.number(),
+  "code": zod.string(),
+  "kind": zod.enum(['six_month', 'unlimited']),
+  "status": zod.enum(['active', 'redeemed', 'expired', 'revoked']).describe('active = not yet used; redeemed = in use; expired = 6-month period over; revoked = access removed'),
+  "createdAt": zod.string().describe('ISO timestamp'),
+  "createdByName": zod.string().nullable(),
+  "createdByEmail": zod.string().nullable(),
+  "redeemedAt": zod.string().nullable().describe('ISO timestamp'),
+  "redeemedByName": zod.string().nullable(),
+  "redeemedByEmail": zod.string().nullable(),
+  "accessUntil": zod.string().nullable().describe('When the 6-month free period ends (null for unlimited codes)'),
+  "revokedAt": zod.string().nullable().describe('ISO timestamp')
+})
+
+
+/**
+ * @summary Revoke a membership code and remove the redeemer's free access (admin only)
+ */
+export const AdminRevokeMembershipCodeParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const AdminRevokeMembershipCodeResponse = zod.object({
+  "id": zod.number(),
+  "code": zod.string(),
+  "kind": zod.enum(['six_month', 'unlimited']),
+  "status": zod.enum(['active', 'redeemed', 'expired', 'revoked']).describe('active = not yet used; redeemed = in use; expired = 6-month period over; revoked = access removed'),
+  "createdAt": zod.string().describe('ISO timestamp'),
+  "createdByName": zod.string().nullable(),
+  "createdByEmail": zod.string().nullable(),
+  "redeemedAt": zod.string().nullable().describe('ISO timestamp'),
+  "redeemedByName": zod.string().nullable(),
+  "redeemedByEmail": zod.string().nullable(),
+  "accessUntil": zod.string().nullable().describe('When the 6-month free period ends (null for unlimited codes)'),
+  "revokedAt": zod.string().nullable().describe('ISO timestamp')
+})
 
 
 /**

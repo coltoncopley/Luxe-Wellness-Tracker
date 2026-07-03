@@ -16,3 +16,4 @@ export * from "./mind";
 export * from "./community";
 export * from "./announcements";
 export * from "./notifications";
+export * from "./accessCodes";

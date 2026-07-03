@@ -72,6 +72,101 @@ export interface GrantCompInput {
   lifetime?: boolean;
 }
 
+export type MembershipCodeKind = typeof MembershipCodeKind[keyof typeof MembershipCodeKind];
+
+
+export const MembershipCodeKind = {
+  six_month: 'six_month',
+  unlimited: 'unlimited',
+} as const;
+
+/**
+ * active = not yet used; redeemed = in use; expired = 6-month period over; revoked = access removed
+ */
+export type MembershipCodeStatus = typeof MembershipCodeStatus[keyof typeof MembershipCodeStatus];
+
+
+export const MembershipCodeStatus = {
+  active: 'active',
+  redeemed: 'redeemed',
+  expired: 'expired',
+  revoked: 'revoked',
+} as const;
+
+export interface MembershipCode {
+  id: number;
+  code: string;
+  kind: MembershipCodeKind;
+  /** active = not yet used; redeemed = in use; expired = 6-month period over; revoked = access removed */
+  status: MembershipCodeStatus;
+  /** ISO timestamp */
+  createdAt: string;
+  /** @nullable */
+  createdByName: string | null;
+  /** @nullable */
+  createdByEmail: string | null;
+  /**
+     * ISO timestamp
+     * @nullable
+     */
+  redeemedAt: string | null;
+  /** @nullable */
+  redeemedByName: string | null;
+  /** @nullable */
+  redeemedByEmail: string | null;
+  /**
+     * When the 6-month free period ends (null for unlimited codes)
+     * @nullable
+     */
+  accessUntil: string | null;
+  /**
+     * ISO timestamp
+     * @nullable
+     */
+  revokedAt: string | null;
+}
+
+/**
+ * six_month = staff or admin; unlimited = admin only
+ */
+export type CreateMembershipCodeInputKind = typeof CreateMembershipCodeInputKind[keyof typeof CreateMembershipCodeInputKind];
+
+
+export const CreateMembershipCodeInputKind = {
+  six_month: 'six_month',
+  unlimited: 'unlimited',
+} as const;
+
+export interface CreateMembershipCodeInput {
+  /** six_month = staff or admin; unlimited = admin only */
+  kind: CreateMembershipCodeInputKind;
+}
+
+export interface RedeemMembershipCodeInput {
+  /**
+     * @minLength 4
+     * @maxLength 40
+     */
+  code: string;
+}
+
+export type RedeemMembershipCodeResultKind = typeof RedeemMembershipCodeResultKind[keyof typeof RedeemMembershipCodeResultKind];
+
+
+export const RedeemMembershipCodeResultKind = {
+  six_month: 'six_month',
+  unlimited: 'unlimited',
+} as const;
+
+export interface RedeemMembershipCodeResult {
+  kind: RedeemMembershipCodeResultKind;
+  /**
+     * When free access ends (null for unlimited)
+     * @nullable
+     */
+  accessUntil: string | null;
+}
+
 export type AdminStaffMemberRole = typeof AdminStaffMemberRole[keyof typeof AdminStaffMemberRole];
 
 

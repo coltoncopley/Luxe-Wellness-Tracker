@@ -29,6 +29,11 @@ import {
   getAdminListCompsQueryKey,
   useAdminGrantComp,
   useAdminRevokeComp,
+  useAdminListMembershipCodes,
+  getAdminListMembershipCodesQueryKey,
+  useAdminCreateMembershipCode,
+  useAdminRevokeMembershipCode,
+  type MembershipCode,
   useAdminListCommunityPosts,
   getAdminListCommunityPostsQueryKey,
   useModerateCommunityPost,
@@ -91,6 +96,9 @@ import {
   EyeOff,
   Bell,
   BarChart3,
+  Copy,
+  Ban,
+  TicketPercent,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -1350,6 +1358,206 @@ function FreeAccessTab() {
   );
 }
 
+/* ---------- Membership codes tab ---------- */
+
+const CODE_STATUS_BADGE: Record<
+  MembershipCode["status"],
+  { label: string; className: string }
+> = {
+  active: { label: "Active", className: "bg-emerald-100 text-emerald-800" },
+  redeemed: { label: "Redeemed", className: "bg-blue-100 text-blue-800" },
+  expired: { label: "Expired", className: "bg-muted text-muted-foreground" },
+  revoked: { label: "Revoked", className: "bg-red-100 text-red-800" },
+};
+
+function MembershipCodesTab({ isAdmin }: { isAdmin: boolean }) {
+  const queryClient = useQueryClient();
+  const { data: codes, isLoading } = useAdminListMembershipCodes({
+    query: { queryKey: getAdminListMembershipCodesQueryKey() },
+  });
+  const create = useAdminCreateMembershipCode();
+  const revoke = useAdminRevokeMembershipCode();
+
+  function refresh() {
+    void queryClient.invalidateQueries({ queryKey: getAdminListMembershipCodesQueryKey() });
+  }
+
+  function handleCreate(kind: "six_month" | "unlimited") {
+    create.mutate(
+      { data: { kind } },
+      {
+        onSuccess: (c) => {
+          void navigator.clipboard?.writeText(c.code).catch(() => {});
+          toast.success(`Code ${c.code} created and copied to clipboard`);
+          refresh();
+        },
+        onError: () => toast.error("Couldn't create the code. Please try again."),
+      },
+    );
+  }
+
+  function handleCopy(code: string) {
+    void navigator.clipboard?.writeText(code).then(
+      () => toast.success("Code copied"),
+      () => toast.error("Couldn't copy — select and copy it manually"),
+    );
+  }
+
+  function handleRevoke(c: MembershipCode) {
+    if (
+      !window.confirm(
+        c.status === "redeemed"
+          ? "Revoke this code? The patient who used it will lose their free access."
+          : "Revoke this code so it can never be used?",
+      )
+    ) {
+      return;
+    }
+    revoke.mutate(
+      { id: c.id },
+      {
+        onSuccess: () => {
+          toast.success("Code revoked");
+          refresh();
+        },
+        onError: () => toast.error("Couldn't revoke the code. Please try again."),
+      },
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <TicketPercent className="h-5 w-5 text-primary" /> Membership access codes
+          </CardTitle>
+          <CardDescription>
+            Each code works exactly once. Give it to a patient — they enter it on the membership
+            screen and get free access without paying. 6-month codes expire on their own
+            {isAdmin ? "; unlimited codes give free access for life" : ""}.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="flex flex-col sm:flex-row gap-2">
+          <Button onClick={() => handleCreate("six_month")} disabled={create.isPending}>
+            <Plus className="h-4 w-4 mr-1" />
+            {create.isPending ? "Creating..." : "New 6-month code"}
+          </Button>
+          {isAdmin && (
+            <Button
+              variant="outline"
+              onClick={() => handleCreate("unlimited")}
+              disabled={create.isPending}
+            >
+              <Plus className="h-4 w-4 mr-1" /> New unlimited code
+            </Button>
+          )}
+        </CardContent>
+      </Card>
+
+      {isLoading ? (
+        <p className="text-muted-foreground text-sm">Loading…</p>
+      ) : !codes || codes.length === 0 ? (
+        <Card>
+          <CardContent className="py-8 text-center text-muted-foreground">
+            No codes yet — create one above.
+          </CardContent>
+        </Card>
+      ) : (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">All codes</CardTitle>
+          </CardHeader>
+          <CardContent className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Code</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Created by</TableHead>
+                  <TableHead>Used by</TableHead>
+                  <TableHead>Free until</TableHead>
+                  {isAdmin && <TableHead className="text-right">Actions</TableHead>}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {codes.map((c) => {
+                  const badge = CODE_STATUS_BADGE[c.status];
+                  return (
+                    <TableRow key={c.id}>
+                      <TableCell>
+                        <button
+                          type="button"
+                          onClick={() => handleCopy(c.code)}
+                          className="font-mono text-sm inline-flex items-center gap-1.5 hover:text-primary"
+                          title="Copy code"
+                        >
+                          {c.code}
+                          <Copy className="h-3.5 w-3.5 opacity-50" />
+                        </button>
+                        <div className="text-xs text-muted-foreground">
+                          {format(new Date(c.createdAt), "MMM d, yyyy")}
+                        </div>
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-sm">
+                        {c.kind === "unlimited" ? "Unlimited" : "6 months"}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary" className={badge.className}>
+                          {badge.label}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="text-sm">{c.createdByName ?? "—"}</div>
+                        <div className="text-xs text-muted-foreground">{c.createdByEmail ?? ""}</div>
+                      </TableCell>
+                      <TableCell>
+                        {c.redeemedByName || c.redeemedByEmail ? (
+                          <>
+                            <div className="text-sm">{c.redeemedByName ?? "—"}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {c.redeemedByEmail ?? ""}
+                            </div>
+                          </>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-sm">
+                        {c.kind === "unlimited" && c.status === "redeemed"
+                          ? "Lifetime"
+                          : c.accessUntil
+                            ? format(new Date(c.accessUntil), "MMM d, yyyy")
+                            : "—"}
+                      </TableCell>
+                      {isAdmin && (
+                        <TableCell className="text-right">
+                          {c.status === "active" || c.status === "redeemed" ? (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="text-destructive hover:text-destructive"
+                              disabled={revoke.isPending}
+                              onClick={() => handleRevoke(c)}
+                            >
+                              <Ban className="h-4 w-4 mr-1" /> Revoke
+                            </Button>
+                          ) : null}
+                        </TableCell>
+                      )}
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
 /* ---------- Page ---------- */
 
 function CommunityModerationTab() {
@@ -1939,6 +2147,9 @@ export default function StaffVerify() {
           <TabsTrigger value="freeaccess">
             <HeartHandshake className="h-4 w-4 mr-1" /> Free access
           </TabsTrigger>
+          <TabsTrigger value="codes">
+            <TicketPercent className="h-4 w-4 mr-1" /> Codes
+          </TabsTrigger>
           <TabsTrigger value="community">
             <Megaphone className="h-4 w-4 mr-1" /> Community
           </TabsTrigger>
@@ -1973,6 +2184,9 @@ export default function StaffVerify() {
         </TabsContent>
         <TabsContent value="freeaccess" className="mt-6">
           <FreeAccessTab />
+        </TabsContent>
+        <TabsContent value="codes" className="mt-6">
+          <MembershipCodesTab isAdmin={isAdmin} />
         </TabsContent>
         <TabsContent value="community" className="mt-6">
           <CommunityModerationTab />

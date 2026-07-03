@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
-import { asc, desc, eq, gt, or, sql } from "drizzle-orm";
+import crypto from "node:crypto";
+import { asc, desc, eq, gt, inArray, or, sql } from "drizzle-orm";
 import {
   db,
   servicesTable,
@@ -12,6 +13,8 @@ import {
   communityHeartsTable,
   announcementsTable,
   rewardEventsTable,
+  membershipCodesTable,
+  type MembershipCode,
 } from "@workspace/db";
 import {
   AdminCreateServiceBody,
@@ -45,6 +48,10 @@ import {
   AdminUpdateAnnouncementBody,
   AdminUpdateAnnouncementResponse,
   AdminGetMetricsResponse,
+  AdminListMembershipCodesResponse,
+  AdminCreateMembershipCodeBody,
+  AdminCreateMembershipCodeResponse,
+  AdminRevokeMembershipCodeResponse,
 } from "@workspace/api-zod";
 import { clearSubscriptionCache } from "../middlewares/subscription";
 import { fanOutAnnouncement } from "../lib/notifications";
@@ -343,6 +350,7 @@ router.post("/admin/comps", async (req, res): Promise<void> => {
     .set({
       compLifetime: lifetime,
       compUntil: lifetime ? null : until,
+      compSource: "manual",
     })
     .where(eq(usersTable.id, user.id))
     .returning();
@@ -354,7 +362,7 @@ router.delete("/admin/comps/:userId", async (req, res): Promise<void> => {
   const userId = req.params.userId;
   const [updated] = await db
     .update(usersTable)
-    .set({ compLifetime: false, compUntil: null })
+    .set({ compLifetime: false, compUntil: null, compSource: null })
     .where(eq(usersTable.id, userId))
     .returning();
   if (!updated) {
@@ -364,6 +372,165 @@ router.delete("/admin/comps/:userId", async (req, res): Promise<void> => {
   clearSubscriptionCache(userId);
   res.status(204).end();
 });
+
+// ---- One-time membership access codes ----
+
+const CODE_ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+
+function generateMembershipCode(): string {
+  const bytes = crypto.randomBytes(8);
+  let s = "";
+  for (let i = 0; i < 8; i++) {
+    s += CODE_ALPHABET[bytes[i]! % CODE_ALPHABET.length];
+    if (i === 3) s += "-";
+  }
+  return `LW-${s}`;
+}
+
+function membershipCodeStatus(row: MembershipCode): "active" | "redeemed" | "expired" | "revoked" {
+  if (row.revokedAt) return "revoked";
+  if (row.redeemedBy) {
+    if (row.kind === "six_month" && row.accessUntil && row.accessUntil <= new Date()) {
+      return "expired";
+    }
+    return "redeemed";
+  }
+  return "active";
+}
+
+async function toMembershipCodeResponses(rows: MembershipCode[]) {
+  const userIds = new Set<string>();
+  for (const r of rows) {
+    userIds.add(r.createdBy);
+    if (r.redeemedBy) userIds.add(r.redeemedBy);
+  }
+  const users =
+    userIds.size > 0
+      ? await db
+          .select({
+            id: usersTable.id,
+            email: usersTable.email,
+            firstName: usersTable.firstName,
+          })
+          .from(usersTable)
+          .where(inArray(usersTable.id, [...userIds]))
+      : [];
+  const byId = new Map(users.map((u) => [u.id, u]));
+  return rows.map((r) => {
+    const creator = byId.get(r.createdBy);
+    const redeemer = r.redeemedBy ? byId.get(r.redeemedBy) : undefined;
+    return {
+      id: r.id,
+      code: r.code,
+      kind: r.kind,
+      status: membershipCodeStatus(r),
+      createdAt: r.createdAt.toISOString(),
+      createdByName: creator?.firstName ?? null,
+      createdByEmail: creator?.email ?? null,
+      redeemedAt: r.redeemedAt ? r.redeemedAt.toISOString() : null,
+      redeemedByName: redeemer?.firstName ?? null,
+      redeemedByEmail: redeemer?.email ?? null,
+      accessUntil: r.accessUntil ? r.accessUntil.toISOString() : null,
+      revokedAt: r.revokedAt ? r.revokedAt.toISOString() : null,
+    };
+  });
+}
+
+router.get("/admin/membership-codes", async (_req, res): Promise<void> => {
+  const rows = await db
+    .select()
+    .from(membershipCodesTable)
+    .orderBy(desc(membershipCodesTable.createdAt))
+    .limit(500);
+  res.json(AdminListMembershipCodesResponse.parse(await toMembershipCodeResponses(rows)));
+});
+
+router.post("/admin/membership-codes", async (req, res): Promise<void> => {
+  const body = AdminCreateMembershipCodeBody.safeParse(req.body);
+  if (!body.success) {
+    res.status(400).json({ error: "Invalid input" });
+    return;
+  }
+  const actorId = res.locals.userId as string;
+  if (body.data.kind === "unlimited") {
+    const [actor] = await db.select().from(usersTable).where(eq(usersTable.id, actorId));
+    if (actor?.role !== "admin") {
+      res.status(403).json({ error: "Only admins can create unlimited access codes" });
+      return;
+    }
+  }
+  // Retry on the (astronomically unlikely) chance of a code collision.
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const [row] = await db
+        .insert(membershipCodesTable)
+        .values({ code: generateMembershipCode(), kind: body.data.kind, createdBy: actorId })
+        .returning();
+      const [payload] = await toMembershipCodeResponses([row!]);
+      res.status(201).json(AdminCreateMembershipCodeResponse.parse(payload));
+      return;
+    } catch (err) {
+      if (attempt === 2) throw err;
+    }
+  }
+});
+
+router.post(
+  "/admin/membership-codes/:id/revoke",
+  requireAdmin,
+  async (req, res): Promise<void> => {
+    const id = Number(req.params.id);
+    if (!Number.isInteger(id)) {
+      res.status(404).json({ error: "Code not found" });
+      return;
+    }
+    const actorId = res.locals.userId as string;
+    const row = await db.transaction(async (tx) => {
+      const [code] = await tx
+        .select()
+        .from(membershipCodesTable)
+        .where(eq(membershipCodesTable.id, id))
+        .for("update");
+      if (!code) return null;
+      let updated = code;
+      if (!code.revokedAt) {
+        const [r] = await tx
+          .update(membershipCodesTable)
+          .set({ revokedAt: new Date(), revokedBy: actorId })
+          .where(eq(membershipCodesTable.id, id))
+          .returning();
+        updated = r!;
+        // Remove only the free access this exact code granted — never clobber a
+        // separate manual comp grant (those carry compSource "manual").
+        if (code.redeemedBy) {
+          const [redeemer] = await tx
+            .select()
+            .from(usersTable)
+            .where(eq(usersTable.id, code.redeemedBy))
+            .for("update");
+          if (redeemer && redeemer.compSource === `code:${code.id}`) {
+            await tx
+              .update(usersTable)
+              .set(
+                code.kind === "unlimited"
+                  ? { compLifetime: false, compSource: null }
+                  : { compUntil: null, compSource: null },
+              )
+              .where(eq(usersTable.id, code.redeemedBy));
+          }
+        }
+      }
+      return updated;
+    });
+    if (!row) {
+      res.status(404).json({ error: "Code not found" });
+      return;
+    }
+    if (row.redeemedBy) clearSubscriptionCache(row.redeemedBy);
+    const [payload] = await toMembershipCodeResponses([row]);
+    res.json(AdminRevokeMembershipCodeResponse.parse(payload));
+  },
+);
 
 router.get("/admin/community/posts", async (_req, res): Promise<void> => {
   const posts = await db
