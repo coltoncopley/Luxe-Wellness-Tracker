@@ -179,7 +179,7 @@ export function SubscriptionGate({ children }: { children: React.ReactNode }) {
                 ? "Your last payment didn't go through. Update your payment method to keep your membership active."
                 : isReturning
                   ? "Restart your membership to pick up right where you left off."
-                  : `Try everything free for 7 days, then ${priceLabel}/month. Cancel anytime.`}
+                  : `Try everything free for 30 days, then ${priceLabel}/month. Cancel anytime.`}
             </p>
           </div>
 
@@ -222,7 +222,7 @@ export function SubscriptionGate({ children }: { children: React.ReactNode }) {
                 ) : isReturning ? (
                   `Restart membership — ${priceLabel}/month`
                 ) : (
-                  "Start 7-day free trial"
+                  "Start 30-day free trial"
                 )}
               </Button>
             )}

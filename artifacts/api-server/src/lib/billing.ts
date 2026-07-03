@@ -4,7 +4,7 @@ import { getUncachableStripeClient } from "./stripeClient";
 
 export const MEMBERSHIP_PRICE_CENTS = 499;
 export const MEMBERSHIP_PRODUCT_NAME = "LUXE Membership";
-export const TRIAL_DAYS = 7;
+export const TRIAL_DAYS = 30;
 
 const ACTIVE_STATUSES = new Set(["trialing", "active"]);
 
