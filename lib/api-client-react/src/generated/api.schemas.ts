@@ -659,6 +659,8 @@ export interface Me {
   /** @nullable */
   firstName?: string | null;
   role: MeRole;
+  /** Whether the user has acknowledged the privacy notice */
+  privacyAcknowledged: boolean;
 }
 
 export interface StaffAccessInput {

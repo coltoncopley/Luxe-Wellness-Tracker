@@ -77,6 +77,7 @@ A patient companion app for LUXE Wellness and Aesthetics (physician-owned med sp
 - Staff Verify (/staff): front desk enters a patient's LUXE code, sees the reward + status, marks it used (one-time use)
 - Legal/support pages: /privacy, /terms, /support (linked from sidebar + mobile menu footer); App Store submission kit in exports/app-store/, marketing screenshots in screenshots/appstore/ (captured with temporary demo data, since removed)
 - Accounts: patient sign-up/sign-in via Clerk (email + Google); staff unlock the Staff Portal with access code 52K33Z on /staff
+- Privacy acknowledgment: `users.privacy_ack_at` + POST /api/me/privacy-ack (requireAuth, NOT subscription-gated — must show pre-paywall); GET /me returns privacyAcknowledged (Me schema requires it — any route returning Me-shaped responses must include it, staff-access regression was caught for this). PrivacyAckDialog (non-dismissable AlertDialog, mounted in App.tsx signed-in Show) forces first-sign-in acknowledgment that the office/staff cannot see app data. Privacy page has a highlighted "Our office cannot see your app data" section (copy must stay accurate: staff DO see patient name/email on redemption records + comp emails — don't overclaim); landing page has a privacy line under the sign-up CTAs.
 
 ## User preferences
 

@@ -1,7 +1,12 @@
 import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
 import { eq } from "drizzle-orm";
 import { db, usersTable, appSettingsTable } from "@workspace/db";
-import { GetMeResponse, ActivateStaffAccessBody, ActivateStaffAccessResponse } from "@workspace/api-zod";
+import {
+  GetMeResponse,
+  ActivateStaffAccessBody,
+  ActivateStaffAccessResponse,
+  AcknowledgePrivacyNoticeResponse,
+} from "@workspace/api-zod";
 import { userIdOf } from "../middlewares/auth";
 
 const router: IRouter = Router();
@@ -41,6 +46,29 @@ router.get("/me", async (_req, res): Promise<void> => {
       email: user.email,
       firstName: user.firstName,
       role: user.role,
+      privacyAcknowledged: user.privacyAckAt !== null,
+    }),
+  );
+});
+
+router.post("/me/privacy-ack", async (_req, res): Promise<void> => {
+  const userId = userIdOf(res);
+  const [user] = await db
+    .update(usersTable)
+    .set({ privacyAckAt: new Date() })
+    .where(eq(usersTable.id, userId))
+    .returning();
+  if (!user) {
+    res.status(401).json({ error: "Not signed in" });
+    return;
+  }
+  res.json(
+    AcknowledgePrivacyNoticeResponse.parse({
+      id: user.id,
+      email: user.email,
+      firstName: user.firstName,
+      role: user.role,
+      privacyAcknowledged: true,
     }),
   );
 });
@@ -68,6 +96,7 @@ router.post("/me/staff-access", rateLimitActivation, async (req, res): Promise<v
     .returning();
   res.json(
     ActivateStaffAccessResponse.parse({
+      privacyAcknowledged: user!.privacyAckAt !== null,
       id: user.id,
       email: user.email,
       firstName: user.firstName,

@@ -961,6 +961,18 @@ paths:
                 $ref: "#/components/schemas/SendCheerResult"
         "403":
           description: Not following this user
+  /me/privacy-ack:
+    post:
+      operationId: acknowledgePrivacyNotice
+      tags: [me]
+      summary: Record the user's acknowledgment of the privacy notice
+      responses:
+        "200":
+          description: Acknowledgment recorded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Me"
   /me:
     get:
       operationId: getMe
@@ -2217,12 +2229,15 @@ components:
         - usedAt
     Me:
       type: object
-      required: [id, role]
+      required: [id, role, privacyAcknowledged]
       properties:
         id: { type: string }
         email: { type: ["string", "null"] }
         firstName: { type: ["string", "null"] }
         role: { type: string, enum: [patient, staff] }
+        privacyAcknowledged:
+          type: boolean
+          description: Whether the user has acknowledged the privacy notice
     StaffAccessInput:
       type: object
       required: [code]

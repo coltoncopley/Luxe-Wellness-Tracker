@@ -8,6 +8,7 @@ import {
   Sun,
   Gift,
   Calendar,
+  ShieldCheck,
 } from "lucide-react";
 import luxeLogo from "@assets/brand/luxe_logo.jpeg";
 
@@ -84,6 +85,11 @@ export default function Landing() {
               <Button size="lg" variant="outline" className="px-8">Sign in</Button>
             </Link>
           </div>
+          <p className="text-xs text-muted-foreground mt-4 flex items-center justify-center gap-1.5">
+            <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
+            Your tracking data is private to you — LUXE staff and our office have no access to it.{" "}
+            <Link href="/privacy" className="underline hover:text-primary">Learn more</Link>
+          </p>
         </section>
 
         <section className="max-w-6xl mx-auto px-6 pb-20">

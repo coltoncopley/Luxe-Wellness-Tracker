@@ -1028,13 +1028,26 @@ export const SendCheerResponse = zod.object({
 
 
 /**
+ * @summary Record the user's acknowledgment of the privacy notice
+ */
+export const AcknowledgePrivacyNoticeResponse = zod.object({
+  "id": zod.string(),
+  "email": zod.string().nullish(),
+  "firstName": zod.string().nullish(),
+  "role": zod.enum(['patient', 'staff']),
+  "privacyAcknowledged": zod.boolean().describe('Whether the user has acknowledged the privacy notice')
+})
+
+
+/**
  * @summary Get the current user's profile
  */
 export const GetMeResponse = zod.object({
   "id": zod.string(),
   "email": zod.string().nullish(),
   "firstName": zod.string().nullish(),
-  "role": zod.enum(['patient', 'staff'])
+  "role": zod.enum(['patient', 'staff']),
+  "privacyAcknowledged": zod.boolean().describe('Whether the user has acknowledged the privacy notice')
 })
 
 
@@ -1052,7 +1065,8 @@ export const ActivateStaffAccessResponse = zod.object({
   "id": zod.string(),
   "email": zod.string().nullish(),
   "firstName": zod.string().nullish(),
-  "role": zod.enum(['patient', 'staff'])
+  "role": zod.enum(['patient', 'staff']),
+  "privacyAcknowledged": zod.boolean().describe('Whether the user has acknowledged the privacy notice')
 })
 
 

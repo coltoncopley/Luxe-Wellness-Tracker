@@ -11,6 +11,7 @@ import { Toaster as SonnerToaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { Layout } from "@/components/layout/Layout";
 import { SubscriptionGate } from "@/components/SubscriptionGate";
+import { PrivacyAckDialog } from "@/components/PrivacyAckDialog";
 import Landing from "@/pages/landing";
 import Dashboard from "@/pages/dashboard";
 import Book from "@/pages/book";
@@ -257,6 +258,7 @@ function ClerkProviderWithRoutes() {
         <ClerkQueryClientCacheInvalidator />
         <Show when="signed-in">
           <ReferralClaimer />
+          <PrivacyAckDialog />
         </Show>
         <TooltipProvider>
           <Switch>

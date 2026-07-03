@@ -20,14 +20,34 @@ export default function Privacy() {
           </p>
         </section>
 
+        <section className="rounded-xl border border-primary/30 bg-primary/5 p-5">
+          <h2>Our office cannot see your app data</h2>
+          <p>
+            Everything you track in this app — weight entries, measurements, meals, meal and
+            progress photos, habit check-ins, skin scans, wellness scores, and Luxe AI
+            conversations — is <strong>private to you</strong>. LUXE Wellness and Aesthetics staff,
+            providers, and front-desk team members have <strong>no access</strong> to this
+            information, and it is never shared with our office or added to any medical record.
+          </p>
+          <p className="mt-2">
+            The only app information our staff can ever see is reward and account related: reward
+            redemption codes you generate (with the reward name, your name, and your email so we
+            can honor them at the front desk), and your email if we set up free membership access
+            for you. Nothing about your health, habits, photos, or progress is ever visible to us.
+          </p>
+          <p className="mt-2">
+            You acknowledge this notice the first time you sign in to your account.
+          </p>
+        </section>
+
         <section>
           <h2>Important: this is a wellness app, not a medical record</h2>
           <p>
             The information you enter in this app (weight, meals, habits, chat messages) is
             self-reported lifestyle data that you choose to track for your own benefit. This app is
-            not connected to your medical chart, and LUXE staff do not use it to make medical
-            decisions. Please do not enter medical information such as diagnoses, medications, or
-            treatment details.
+            not connected to your medical chart, and because LUXE staff cannot see it, it is never
+            used to make medical decisions. Please do not enter medical information such as
+            diagnoses, medications, or treatment details.
           </p>
         </section>
 
@@ -104,11 +124,9 @@ export default function Privacy() {
             enter.
           </p>
           <p className="mt-2">
-            <strong>Please note:</strong> the app does not currently require a login. It is
-            designed for use on your own personal device. Anyone with access to the app on your
-            device can view the information entered in it, so treat access to the app like access
-            to a personal journal. Individual patient accounts with login are planned for a future
-            update.
+            Your data is protected by your personal account: you sign in with your email or Google
+            account, and only you can view the information in your account. Keep your sign-in
+            credentials private, and sign out on shared devices.
           </p>
         </section>
 

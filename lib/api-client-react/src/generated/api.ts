@@ -4285,6 +4285,76 @@ export const useSendCheer = <TError = ErrorType<void>,
       return useMutation(getSendCheerMutationOptions(options));
     }
 
+export const getAcknowledgePrivacyNoticeUrl = () => {
+
+
+
+
+  return `/api/me/privacy-ack`
+}
+
+/**
+ * @summary Record the user's acknowledgment of the privacy notice
+ */
+export const acknowledgePrivacyNotice = async ( options?: RequestInit): Promise<Me> => {
+
+  return customFetch<Me>(getAcknowledgePrivacyNoticeUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getAcknowledgePrivacyNoticeMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof acknowledgePrivacyNotice>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof acknowledgePrivacyNotice>>, TError,void, TContext> => {
+
+const mutationKey = ['acknowledgePrivacyNotice'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof acknowledgePrivacyNotice>>, void> = () => {
+
+
+          return  acknowledgePrivacyNotice(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AcknowledgePrivacyNoticeMutationResult = NonNullable<Awaited<ReturnType<typeof acknowledgePrivacyNotice>>>
+
+    export type AcknowledgePrivacyNoticeMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Record the user's acknowledgment of the privacy notice
+ */
+export const useAcknowledgePrivacyNotice = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof acknowledgePrivacyNotice>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof acknowledgePrivacyNotice>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getAcknowledgePrivacyNoticeMutationOptions(options));
+    }
+
 export const getGetMeUrl = () => {
 
 
