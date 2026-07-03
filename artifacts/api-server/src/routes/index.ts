@@ -56,12 +56,27 @@ router.use(requireAuth, requireActiveSubscription, missionsRouter);
 router.use(requireAuth, requireActiveSubscription, photosRouter);
 router.use(requireAuth, requireActiveSubscription, skinRouter);
 router.use(requireAuth, requireActiveSubscription, ingredientsRouter);
-router.use(requireAuth, requireActiveSubscription, requirePatient, passportRouter);
-router.use(requireAuth, requireActiveSubscription, requirePatient, mindRouter);
+// requirePatient must be scoped to the patient-only paths. Mounting it inline
+// (e.g. `router.use(requirePatient, passportRouter)`) would run it for EVERY
+// request that falls through to that layer — including staff/admin requests
+// headed for the admin router below — and reject them with a 403.
+const patientOnlyPaths = [
+  "/passport",
+  "/mind",
+  "/follows",
+  "/friends",
+  "/social",
+  "/cheers",
+  "/community",
+];
+router.use(patientOnlyPaths, requireAuth, requirePatient);
+
+router.use(requireAuth, requireActiveSubscription, passportRouter);
+router.use(requireAuth, requireActiveSubscription, mindRouter);
 router.use(requireAuth, requireActiveSubscription, storageRouter);
 router.use(requireAuth, requireActiveSubscription, referralsRouter);
-router.use(requireAuth, requireActiveSubscription, requirePatient, socialRouter);
-router.use(requireAuth, requireActiveSubscription, requirePatient, communityRouter);
+router.use(requireAuth, requireActiveSubscription, socialRouter);
+router.use(requireAuth, requireActiveSubscription, communityRouter);
 
 // Staff-only management routes
 router.use(requireAuth, requireStaff, adminRouter);

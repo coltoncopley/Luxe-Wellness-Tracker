@@ -43,7 +43,7 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
 }
 
 export async function requireStaff(
-  _req: Request,
+  req: Request,
   res: Response,
   next: NextFunction,
 ): Promise<void> {
@@ -55,6 +55,10 @@ export async function requireStaff(
   try {
     const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
     if (!user || !isStaffRole(user.role)) {
+      req.log.warn(
+        { staffCheckUserId: userId, rowFound: Boolean(user), rowRole: user?.role ?? null },
+        "requireStaff rejected request",
+      );
       res.status(403).json({ error: "Staff access required" });
       return;
     }
