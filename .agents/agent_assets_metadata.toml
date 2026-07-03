@@ -1,5 +1,10 @@
 uploads = []
-generated = []
+
+[[generated]]
+id = "8zsTQSrKviVMmZU5xE_ir"
+uri = "file://artifacts/luxe-mobile/assets/images/icon.png"
+type = "image"
+title = "LUXE app icon"
 
 [[outputs]]
 id = "sJscGYG0bTqmu-VWlL30y"
