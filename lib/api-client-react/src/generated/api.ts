@@ -20,8 +20,10 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AccessCodeSetting,
   AdminListCommunityPosts200,
   AdminRedemption,
+  AdminStaffMember,
   AnalyzeIngredientsInput,
   AnalyzeSkinScanInput,
   Appointment,
@@ -104,7 +106,9 @@ import type {
   StaffAccessInput,
   StaffMember,
   ToggleCommunityHeart200,
+  UpdateAccessCodeInput,
   UpdatePassportProfileInput,
+  UpdateStaffRoleInput,
   UploadUrlRequest,
   UploadUrlResponse,
   UpsertMindCheckinInput,
@@ -6677,6 +6681,301 @@ export const useAdminRevokeComp = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getAdminRevokeCompMutationOptions(options));
+    }
+
+export const getAdminListStaffUrl = () => {
+
+
+
+
+  return `/api/admin/staff`
+}
+
+/**
+ * @summary List staff and admin accounts (admin only)
+ */
+export const adminListStaff = async ( options?: RequestInit): Promise<AdminStaffMember[]> => {
+
+  return customFetch<AdminStaffMember[]>(getAdminListStaffUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminListStaffQueryKey = () => {
+    return [
+    `/api/admin/staff`
+    ] as const;
+    }
+
+
+export const getAdminListStaffQueryOptions = <TData = Awaited<ReturnType<typeof adminListStaff>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListStaff>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminListStaffQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminListStaff>>> = ({ signal }) => adminListStaff({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminListStaff>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminListStaffQueryResult = NonNullable<Awaited<ReturnType<typeof adminListStaff>>>
+export type AdminListStaffQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List staff and admin accounts (admin only)
+ */
+
+export function useAdminListStaff<TData = Awaited<ReturnType<typeof adminListStaff>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListStaff>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminListStaffQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAdminUpdateStaffRoleUrl = (userId: string,) => {
+
+
+
+
+  return `/api/admin/staff/${userId}/role`
+}
+
+/**
+ * @summary Change a user's role (admin only)
+ */
+export const adminUpdateStaffRole = async (userId: string,
+    updateStaffRoleInput: UpdateStaffRoleInput, options?: RequestInit): Promise<AdminStaffMember> => {
+
+  return customFetch<AdminStaffMember>(getAdminUpdateStaffRoleUrl(userId),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(updateStaffRoleInput)
+  }
+);}
+
+
+
+
+export const getAdminUpdateStaffRoleMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminUpdateStaffRole>>, TError,{userId: string;data: BodyType<UpdateStaffRoleInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminUpdateStaffRole>>, TError,{userId: string;data: BodyType<UpdateStaffRoleInput>}, TContext> => {
+
+const mutationKey = ['adminUpdateStaffRole'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminUpdateStaffRole>>, {userId: string;data: BodyType<UpdateStaffRoleInput>}> = (props) => {
+          const {userId,data} = props ?? {};
+
+          return  adminUpdateStaffRole(userId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminUpdateStaffRoleMutationResult = NonNullable<Awaited<ReturnType<typeof adminUpdateStaffRole>>>
+    export type AdminUpdateStaffRoleMutationBody = BodyType<UpdateStaffRoleInput>
+    export type AdminUpdateStaffRoleMutationError = ErrorType<void>
+
+    /**
+ * @summary Change a user's role (admin only)
+ */
+export const useAdminUpdateStaffRole = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminUpdateStaffRole>>, TError,{userId: string;data: BodyType<UpdateStaffRoleInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminUpdateStaffRole>>,
+        TError,
+        {userId: string;data: BodyType<UpdateStaffRoleInput>},
+        TContext
+      > => {
+      return useMutation(getAdminUpdateStaffRoleMutationOptions(options));
+    }
+
+export const getAdminGetAccessCodeUrl = () => {
+
+
+
+
+  return `/api/admin/access-code`
+}
+
+/**
+ * @summary View the current staff access code (admin only)
+ */
+export const adminGetAccessCode = async ( options?: RequestInit): Promise<AccessCodeSetting> => {
+
+  return customFetch<AccessCodeSetting>(getAdminGetAccessCodeUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminGetAccessCodeQueryKey = () => {
+    return [
+    `/api/admin/access-code`
+    ] as const;
+    }
+
+
+export const getAdminGetAccessCodeQueryOptions = <TData = Awaited<ReturnType<typeof adminGetAccessCode>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetAccessCode>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminGetAccessCodeQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminGetAccessCode>>> = ({ signal }) => adminGetAccessCode({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminGetAccessCode>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminGetAccessCodeQueryResult = NonNullable<Awaited<ReturnType<typeof adminGetAccessCode>>>
+export type AdminGetAccessCodeQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary View the current staff access code (admin only)
+ */
+
+export function useAdminGetAccessCode<TData = Awaited<ReturnType<typeof adminGetAccessCode>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminGetAccessCode>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminGetAccessCodeQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAdminUpdateAccessCodeUrl = () => {
+
+
+
+
+  return `/api/admin/access-code`
+}
+
+/**
+ * @summary Change the staff access code (admin only)
+ */
+export const adminUpdateAccessCode = async (updateAccessCodeInput: UpdateAccessCodeInput, options?: RequestInit): Promise<AccessCodeSetting> => {
+
+  return customFetch<AccessCodeSetting>(getAdminUpdateAccessCodeUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(updateAccessCodeInput)
+  }
+);}
+
+
+
+
+export const getAdminUpdateAccessCodeMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminUpdateAccessCode>>, TError,{data: BodyType<UpdateAccessCodeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminUpdateAccessCode>>, TError,{data: BodyType<UpdateAccessCodeInput>}, TContext> => {
+
+const mutationKey = ['adminUpdateAccessCode'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminUpdateAccessCode>>, {data: BodyType<UpdateAccessCodeInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  adminUpdateAccessCode(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminUpdateAccessCodeMutationResult = NonNullable<Awaited<ReturnType<typeof adminUpdateAccessCode>>>
+    export type AdminUpdateAccessCodeMutationBody = BodyType<UpdateAccessCodeInput>
+    export type AdminUpdateAccessCodeMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Change the staff access code (admin only)
+ */
+export const useAdminUpdateAccessCode = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminUpdateAccessCode>>, TError,{data: BodyType<UpdateAccessCodeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminUpdateAccessCode>>,
+        TError,
+        {data: BodyType<UpdateAccessCodeInput>},
+        TContext
+      > => {
+      return useMutation(getAdminUpdateAccessCodeMutationOptions(options));
     }
 
 export const getListOpenaiConversationsUrl = () => {

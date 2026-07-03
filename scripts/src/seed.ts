@@ -17,6 +17,11 @@ async function seedSettingsAndRewards() {
     .values({ key: "staff_access_code", value: "52K33Z" })
     .onConflictDoNothing();
 
+  await db
+    .insert(appSettingsTable)
+    .values({ key: "admin_bootstrap_email", value: "coltoncopley@gmail.com" })
+    .onConflictDoNothing();
+
   const existingRewards = await db.select().from(rewardItemsTable).limit(1);
   if (existingRewards.length === 0) {
     await db.insert(rewardItemsTable).values([

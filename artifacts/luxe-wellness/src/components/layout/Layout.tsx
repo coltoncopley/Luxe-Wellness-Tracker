@@ -68,7 +68,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   const { data: me } = useGetMe({
     query: { queryKey: getGetMeQueryKey(), enabled: !!isSignedIn },
   });
-  const isStaff = me?.role === "staff";
+  const isStaff = me?.role === "staff" || me?.role === "admin";
 
   const navItems = [
     { href: "/", label: "Dashboard", icon: User },

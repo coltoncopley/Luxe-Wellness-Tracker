@@ -72,6 +72,58 @@ export interface GrantCompInput {
   lifetime?: boolean;
 }
 
+export type AdminStaffMemberRole = typeof AdminStaffMemberRole[keyof typeof AdminStaffMemberRole];
+
+
+export const AdminStaffMemberRole = {
+  patient: 'patient',
+  staff: 'staff',
+  admin: 'admin',
+} as const;
+
+export interface AdminStaffMember {
+  id: string;
+  /** @nullable */
+  email: string | null;
+  /** @nullable */
+  firstName: string | null;
+  role: AdminStaffMemberRole;
+  /** ISO timestamp */
+  createdAt: string;
+}
+
+/**
+ * New role for the user (patient removes staff access)
+ */
+export type UpdateStaffRoleInputRole = typeof UpdateStaffRoleInputRole[keyof typeof UpdateStaffRoleInputRole];
+
+
+export const UpdateStaffRoleInputRole = {
+  patient: 'patient',
+  staff: 'staff',
+  admin: 'admin',
+} as const;
+
+export interface UpdateStaffRoleInput {
+  /** New role for the user (patient removes staff access) */
+  role: UpdateStaffRoleInputRole;
+}
+
+export interface AccessCodeSetting {
+  /** The staff access code */
+  code: string;
+}
+
+export interface UpdateAccessCodeInput {
+  /**
+     * New staff access code (4-20 letters/numbers)
+     * @minLength 4
+     * @maxLength 20
+     * @pattern ^[A-Za-z0-9]+$
+     */
+  code: string;
+}
+
 export interface CheckoutSession {
   /** Stripe-hosted URL to redirect the user to */
   url: string;
@@ -902,6 +954,7 @@ export type MeRole = typeof MeRole[keyof typeof MeRole];
 export const MeRole = {
   patient: 'patient',
   staff: 'staff',
+  admin: 'admin',
 } as const;
 
 export interface Me {

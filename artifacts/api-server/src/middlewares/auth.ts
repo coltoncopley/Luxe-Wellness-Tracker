@@ -54,8 +54,34 @@ export async function requireStaff(
   }
   try {
     const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
-    if (!user || user.role !== "staff") {
+    if (!user || !isStaffRole(user.role)) {
       res.status(403).json({ error: "Staff access required" });
+      return;
+    }
+    next();
+  } catch (err) {
+    next(err);
+  }
+}
+
+export function isStaffRole(role: string): boolean {
+  return role === "staff" || role === "admin";
+}
+
+export async function requireAdmin(
+  _req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> {
+  const userId = res.locals.userId as string | undefined;
+  if (!userId) {
+    res.status(401).json({ error: "Not signed in" });
+    return;
+  }
+  try {
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+    if (!user || user.role !== "admin") {
+      res.status(403).json({ error: "Admin access required" });
       return;
     }
     next();
@@ -76,7 +102,7 @@ export async function requirePatient(
   }
   try {
     const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
-    if (!user || user.role === "staff") {
+    if (!user || user.role !== "patient") {
       res.status(403).json({ error: "This feature is only available to patient accounts" });
       return;
     }

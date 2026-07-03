@@ -55,7 +55,7 @@ router.get("/billing/status", async (_req, res, next): Promise<void> => {
 
     const hasComp =
       user.compLifetime || (user.compUntil !== null && user.compUntil > new Date());
-    if (user.role === "staff" || hasComp) {
+    if (user.role === "staff" || user.role === "admin" || hasComp) {
       res.json(
         GetBillingStatusResponse.parse({
           status: "none",
@@ -116,7 +116,7 @@ router.post("/billing/checkout", async (req, res, next): Promise<void> => {
       res.status(401).json({ error: "Not signed in" });
       return;
     }
-    if (user.role === "staff") {
+    if (user.role === "staff" || user.role === "admin") {
       res.status(400).json({ error: "Staff accounts do not need a membership" });
       return;
     }

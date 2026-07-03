@@ -6,9 +6,12 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './accessCodeSetting';
 export * from './adminCommunityPost';
 export * from './adminListCommunityPosts200';
 export * from './adminRedemption';
+export * from './adminStaffMember';
+export * from './adminStaffMemberRole';
 export * from './analyzeIngredientsInput';
 export * from './analyzeSkinScanInput';
 export * from './appointment';
@@ -119,7 +122,10 @@ export * from './staffMember';
 export * from './tierInfo';
 export * from './tierInfoName';
 export * from './toggleCommunityHeart200';
+export * from './updateAccessCodeInput';
 export * from './updatePassportProfileInput';
+export * from './updateStaffRoleInput';
+export * from './updateStaffRoleInputRole';
 export * from './uploadUrlRequest';
 export * from './uploadUrlResponse';
 export * from './upsertMindCheckinInput';

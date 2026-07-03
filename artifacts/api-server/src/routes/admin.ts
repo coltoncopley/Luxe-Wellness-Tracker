@@ -31,8 +31,16 @@ import {
   AdminGrantCompResponse,
   ModerateCommunityPostBody,
   AdminListCommunityPostsResponse,
+  AdminListStaffResponse,
+  AdminUpdateStaffRoleBody,
+  AdminUpdateStaffRoleResponse,
+  AdminGetAccessCodeResponse,
+  AdminUpdateAccessCodeBody,
+  AdminUpdateAccessCodeResponse,
 } from "@workspace/api-zod";
 import { clearSubscriptionCache } from "../middlewares/subscription";
+import { requireAdmin, isStaffRole } from "../middlewares/auth";
+import { appSettingsTable } from "@workspace/db";
 
 const router: IRouter = Router();
 
@@ -397,6 +405,100 @@ router.post("/admin/community/posts/:id/moderate", async (req, res): Promise<voi
     return;
   }
   res.status(204).end();
+});
+
+// ---- Admin-only routes (requireAdmin on top of the staff gate) ----
+
+function toStaffMember(user: {
+  id: string;
+  email: string | null;
+  firstName: string | null;
+  role: string;
+  createdAt: Date;
+}) {
+  return {
+    id: user.id,
+    email: user.email,
+    firstName: user.firstName,
+    role: user.role,
+    createdAt: user.createdAt.toISOString(),
+  };
+}
+
+router.get("/admin/staff", requireAdmin, async (_req, res): Promise<void> => {
+  const rows = await db
+    .select()
+    .from(usersTable)
+    .where(or(eq(usersTable.role, "staff"), eq(usersTable.role, "admin")))
+    .orderBy(asc(usersTable.createdAt));
+  res.json(AdminListStaffResponse.parse(rows.map(toStaffMember)));
+});
+
+router.post("/admin/staff/:userId/role", requireAdmin, async (req, res): Promise<void> => {
+  const targetId = String(req.params.userId);
+  const body = AdminUpdateStaffRoleBody.safeParse(req.body);
+  if (!body.success) {
+    res.status(400).json({ error: "Invalid input" });
+    return;
+  }
+  const actorId = res.locals.userId as string;
+  if (targetId === actorId) {
+    res.status(400).json({ error: "You cannot change your own role" });
+    return;
+  }
+  const [target] = await db.select().from(usersTable).where(eq(usersTable.id, targetId));
+  if (!target) {
+    res.status(404).json({ error: "User not found" });
+    return;
+  }
+  if (!isStaffRole(target.role) && body.data.role === "patient") {
+    res.status(400).json({ error: "That user is not a staff member" });
+    return;
+  }
+  const updated = await db.transaction(async (tx) => {
+    await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext('admin_role_change'))`);
+    if (target.role === "admin" && body.data.role !== "admin") {
+      const [{ count }] = (await tx
+        .select({ count: sql<number>`count(*)` })
+        .from(usersTable)
+        .where(eq(usersTable.role, "admin"))) as [{ count: number }];
+      if (Number(count) <= 1) return null;
+    }
+    const [row] = await tx
+      .update(usersTable)
+      .set({ role: body.data.role })
+      .where(eq(usersTable.id, targetId))
+      .returning();
+    return row ?? null;
+  });
+  if (!updated) {
+    res.status(400).json({ error: "The app must always have at least one admin" });
+    return;
+  }
+  clearSubscriptionCache(targetId);
+  res.json(AdminUpdateStaffRoleResponse.parse(toStaffMember(updated)));
+});
+
+router.get("/admin/access-code", requireAdmin, async (_req, res): Promise<void> => {
+  const [setting] = await db
+    .select()
+    .from(appSettingsTable)
+    .where(eq(appSettingsTable.key, "staff_access_code"));
+  res.json(AdminGetAccessCodeResponse.parse({ code: setting?.value ?? "" }));
+});
+
+router.put("/admin/access-code", requireAdmin, async (req, res): Promise<void> => {
+  const body = AdminUpdateAccessCodeBody.safeParse(req.body);
+  if (!body.success) {
+    res.status(400).json({ error: "Code must be 4-20 letters or numbers" });
+    return;
+  }
+  const code = body.data.code.trim().toUpperCase();
+  await db
+    .insert(appSettingsTable)
+    .values({ key: "staff_access_code", value: code })
+    .onConflictDoUpdate({ target: appSettingsTable.key, set: { value: code } });
+  res.json(AdminUpdateAccessCodeResponse.parse({ code }));
 });
 
 export default router;

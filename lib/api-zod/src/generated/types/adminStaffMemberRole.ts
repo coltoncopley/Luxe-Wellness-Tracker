@@ -6,10 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type MeRole = typeof MeRole[keyof typeof MeRole];
+export type AdminStaffMemberRole = typeof AdminStaffMemberRole[keyof typeof AdminStaffMemberRole];
 
 
-export const MeRole = {
+export const AdminStaffMemberRole = {
   patient: 'patient',
   staff: 'staff',
   admin: 'admin',

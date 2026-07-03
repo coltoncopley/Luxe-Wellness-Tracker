@@ -49,7 +49,7 @@ export async function requireActiveSubscription(
     }
 
     let ok = false;
-    if (user.role === "staff") {
+    if (user.role === "staff" || user.role === "admin") {
       ok = true;
     } else if (user.compLifetime || (user.compUntil && user.compUntil > new Date())) {
       // Complimentary access granted by staff

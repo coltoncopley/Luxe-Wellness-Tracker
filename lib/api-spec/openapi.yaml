@@ -1622,6 +1622,77 @@ paths:
           description: Comp access revoked
         "404":
           description: User not found
+  /admin/staff:
+    get:
+      operationId: adminListStaff
+      tags: [admin]
+      summary: List staff and admin accounts (admin only)
+      responses:
+        "200":
+          description: Staff member list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminStaffMember"
+  /admin/staff/{userId}/role:
+    post:
+      operationId: adminUpdateStaffRole
+      tags: [admin]
+      summary: Change a user's role (admin only)
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateStaffRoleInput"
+      responses:
+        "200":
+          description: Updated user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminStaffMember"
+        "400":
+          description: Cannot change your own role
+        "404":
+          description: User not found
+  /admin/access-code:
+    get:
+      operationId: adminGetAccessCode
+      tags: [admin]
+      summary: View the current staff access code (admin only)
+      responses:
+        "200":
+          description: Current access code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccessCodeSetting"
+    put:
+      operationId: adminUpdateAccessCode
+      tags: [admin]
+      summary: Change the staff access code (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateAccessCodeInput"
+      responses:
+        "200":
+          description: Updated access code
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccessCodeSetting"
   /openai/conversations:
     get:
       operationId: listOpenaiConversations
@@ -1791,6 +1862,42 @@ components:
         lifetime:
           type: boolean
           description: Grant free access for life
+    AdminStaffMember:
+      type: object
+      required: [id, email, firstName, role, createdAt]
+      properties:
+        id: { type: string }
+        email: { type: ["string", "null"] }
+        firstName: { type: ["string", "null"] }
+        role: { type: string, enum: [patient, staff, admin] }
+        createdAt:
+          type: string
+          description: ISO timestamp
+    UpdateStaffRoleInput:
+      type: object
+      required: [role]
+      properties:
+        role:
+          type: string
+          enum: [patient, staff, admin]
+          description: New role for the user (patient removes staff access)
+    AccessCodeSetting:
+      type: object
+      required: [code]
+      properties:
+        code:
+          type: string
+          description: The staff access code
+    UpdateAccessCodeInput:
+      type: object
+      required: [code]
+      properties:
+        code:
+          type: string
+          minLength: 4
+          maxLength: 20
+          pattern: "^[A-Za-z0-9]+$"
+          description: New staff access code (4-20 letters/numbers)
     CheckoutSession:
       type: object
       required: [url]
@@ -2798,7 +2905,7 @@ components:
         id: { type: string }
         email: { type: ["string", "null"] }
         firstName: { type: ["string", "null"] }
-        role: { type: string, enum: [patient, staff] }
+        role: { type: string, enum: [patient, staff, admin] }
         privacyAcknowledged:
           type: boolean
           description: Whether the user has acknowledged the privacy notice

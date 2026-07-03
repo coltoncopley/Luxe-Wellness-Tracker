@@ -1360,7 +1360,7 @@ export const AcknowledgePrivacyNoticeResponse = zod.object({
   "id": zod.string(),
   "email": zod.string().nullish(),
   "firstName": zod.string().nullish(),
-  "role": zod.enum(['patient', 'staff']),
+  "role": zod.enum(['patient', 'staff', 'admin']),
   "privacyAcknowledged": zod.boolean().describe('Whether the user has acknowledged the privacy notice')
 })
 
@@ -1372,7 +1372,7 @@ export const GetMeResponse = zod.object({
   "id": zod.string(),
   "email": zod.string().nullish(),
   "firstName": zod.string().nullish(),
-  "role": zod.enum(['patient', 'staff']),
+  "role": zod.enum(['patient', 'staff', 'admin']),
   "privacyAcknowledged": zod.boolean().describe('Whether the user has acknowledged the privacy notice')
 })
 
@@ -1391,7 +1391,7 @@ export const ActivateStaffAccessResponse = zod.object({
   "id": zod.string(),
   "email": zod.string().nullish(),
   "firstName": zod.string().nullish(),
-  "role": zod.enum(['patient', 'staff']),
+  "role": zod.enum(['patient', 'staff', 'admin']),
   "privacyAcknowledged": zod.boolean().describe('Whether the user has acknowledged the privacy notice')
 })
 
@@ -1683,6 +1683,66 @@ export const AdminRevokeCompParams = zod.object({
 })
 
 export const AdminRevokeCompResponse = zod.void()
+
+
+/**
+ * @summary List staff and admin accounts (admin only)
+ */
+export const AdminListStaffResponseItem = zod.object({
+  "id": zod.string(),
+  "email": zod.string().nullable(),
+  "firstName": zod.string().nullable(),
+  "role": zod.enum(['patient', 'staff', 'admin']),
+  "createdAt": zod.string().describe('ISO timestamp')
+})
+export const AdminListStaffResponse = zod.array(AdminListStaffResponseItem)
+
+
+/**
+ * @summary Change a user's role (admin only)
+ */
+export const AdminUpdateStaffRoleParams = zod.object({
+  "userId": zod.coerce.string()
+})
+
+export const AdminUpdateStaffRoleBody = zod.object({
+  "role": zod.enum(['patient', 'staff', 'admin']).describe('New role for the user (patient removes staff access)')
+})
+
+export const AdminUpdateStaffRoleResponse = zod.object({
+  "id": zod.string(),
+  "email": zod.string().nullable(),
+  "firstName": zod.string().nullable(),
+  "role": zod.enum(['patient', 'staff', 'admin']),
+  "createdAt": zod.string().describe('ISO timestamp')
+})
+
+
+/**
+ * @summary View the current staff access code (admin only)
+ */
+export const AdminGetAccessCodeResponse = zod.object({
+  "code": zod.string().describe('The staff access code')
+})
+
+
+/**
+ * @summary Change the staff access code (admin only)
+ */
+export const adminUpdateAccessCodeBodyCodeMin = 4;
+export const adminUpdateAccessCodeBodyCodeMax = 20;
+
+
+export const adminUpdateAccessCodeBodyCodeRegExp = new RegExp('^[A-Za-z0-9]+$');
+
+
+export const AdminUpdateAccessCodeBody = zod.object({
+  "code": zod.string().min(adminUpdateAccessCodeBodyCodeMin).max(adminUpdateAccessCodeBodyCodeMax).regex(adminUpdateAccessCodeBodyCodeRegExp).describe('New staff access code (4-20 letters\/numbers)')
+})
+
+export const AdminUpdateAccessCodeResponse = zod.object({
+  "code": zod.string().describe('The staff access code')
+})
 
 
 /**

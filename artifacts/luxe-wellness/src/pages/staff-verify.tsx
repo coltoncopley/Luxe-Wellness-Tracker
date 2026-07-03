@@ -32,6 +32,13 @@ import {
   useAdminListCommunityPosts,
   getAdminListCommunityPostsQueryKey,
   useModerateCommunityPost,
+  useAdminListStaff,
+  getAdminListStaffQueryKey,
+  useAdminUpdateStaffRole,
+  useAdminGetAccessCode,
+  getAdminGetAccessCodeQueryKey,
+  useAdminUpdateAccessCode,
+  type AdminStaffMember,
   type CompAccess,
   type RedemptionDetail,
   type Service,
@@ -71,6 +78,9 @@ import {
   ChevronUp,
   HeartHandshake,
   Megaphone,
+  ShieldCheck,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -1410,6 +1420,229 @@ function CommunityModerationTab() {
   );
 }
 
+/* ---------- Admin tab (admin only) ---------- */
+
+function roleBadge(role: AdminStaffMember["role"]) {
+  if (role === "admin") return <Badge>Admin</Badge>;
+  return <Badge variant="secondary">Staff</Badge>;
+}
+
+function AdminTab({ myUserId }: { myUserId: string }) {
+  const queryClient = useQueryClient();
+
+  const { data: accessCode } = useAdminGetAccessCode({
+    query: { queryKey: getAdminGetAccessCodeQueryKey() },
+  });
+  const { data: staffList, isLoading: staffLoading } = useAdminListStaff({
+    query: { queryKey: getAdminListStaffQueryKey() },
+  });
+
+  const [showCode, setShowCode] = useState(false);
+  const [newCode, setNewCode] = useState("");
+
+  const updateCode = useAdminUpdateAccessCode();
+  const updateRole = useAdminUpdateStaffRole();
+
+  function handleCodeSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const trimmed = newCode.trim();
+    if (!/^[A-Za-z0-9]{4,20}$/.test(trimmed)) {
+      toast.error("The code must be 4-20 letters or numbers (no spaces)");
+      return;
+    }
+    updateCode.mutate(
+      { data: { code: trimmed } },
+      {
+        onSuccess: (result) => {
+          toast.success(`Access code changed to ${result.code}`);
+          setNewCode("");
+          void queryClient.invalidateQueries({ queryKey: getAdminGetAccessCodeQueryKey() });
+        },
+        onError: () => toast.error("Couldn't change the code — try again"),
+      },
+    );
+  }
+
+  function changeRole(member: AdminStaffMember, role: AdminStaffMember["role"], label: string) {
+    if (!window.confirm(label)) return;
+    updateRole.mutate(
+      { userId: member.id, data: { role } },
+      {
+        onSuccess: () => {
+          toast.success("Updated");
+          void queryClient.invalidateQueries({ queryKey: getAdminListStaffQueryKey() });
+        },
+        onError: (err) => {
+          const status = (err as { status?: number }).status;
+          toast.error(
+            status === 400 ? "That change isn't allowed" : "Couldn't update — try again",
+          );
+        },
+      },
+    );
+  }
+
+  const members = staffList ?? [];
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <KeyRound className="h-5 w-5 text-primary" /> Staff access code
+          </CardTitle>
+          <CardDescription>
+            Team members enter this code once on the Staff Portal page to unlock staff access.
+            Change it any time — people who already unlocked access keep it (remove them below if
+            needed).
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center gap-3">
+            <span className="text-sm text-muted-foreground">Current code:</span>
+            <code
+              className="font-mono text-lg tracking-widest"
+              data-testid="text-current-access-code"
+            >
+              {showCode ? (accessCode?.code ?? "…") : "••••••"}
+            </code>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setShowCode((v) => !v)}
+              data-testid="button-toggle-code-visibility"
+            >
+              {showCode ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </Button>
+          </div>
+          <form onSubmit={handleCodeSubmit} className="flex gap-2 max-w-sm">
+            <Input
+              value={newCode}
+              onChange={(e) => setNewCode(e.target.value.toUpperCase())}
+              placeholder="New code (4-20 letters/numbers)"
+              data-testid="input-new-access-code"
+            />
+            <Button
+              type="submit"
+              disabled={updateCode.isPending || !newCode.trim()}
+              data-testid="button-save-access-code"
+            >
+              {updateCode.isPending ? "Saving…" : "Change code"}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ShieldCheck className="h-5 w-5 text-primary" /> Staff members
+          </CardTitle>
+          <CardDescription>
+            Everyone with Staff Portal access. Admins can also change the access code and manage
+            this list. Removing someone turns their account back into a regular patient account —
+            it does not delete anything.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {staffLoading ? (
+            <p className="text-muted-foreground text-sm">Loading…</p>
+          ) : members.length === 0 ? (
+            <p className="text-muted-foreground text-sm">No staff members yet.</p>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {members.map((m) => {
+                  const isSelf = m.id === myUserId;
+                  return (
+                    <TableRow key={m.id} data-testid={`row-staff-${m.id}`}>
+                      <TableCell>
+                        {m.firstName ?? "—"}
+                        {isSelf && (
+                          <span className="text-muted-foreground text-xs ml-1">(you)</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{m.email ?? "—"}</TableCell>
+                      <TableCell>{roleBadge(m.role)}</TableCell>
+                      <TableCell className="text-right space-x-2">
+                        {isSelf ? (
+                          <span className="text-muted-foreground text-xs">
+                            You can't change your own role
+                          </span>
+                        ) : (
+                          <>
+                            {m.role === "staff" ? (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                disabled={updateRole.isPending}
+                                onClick={() =>
+                                  changeRole(
+                                    m,
+                                    "admin",
+                                    `Make ${m.firstName ?? m.email ?? "this person"} an admin? They'll be able to change the access code and manage staff.`,
+                                  )
+                                }
+                                data-testid={`button-make-admin-${m.id}`}
+                              >
+                                Make admin
+                              </Button>
+                            ) : (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                disabled={updateRole.isPending}
+                                onClick={() =>
+                                  changeRole(
+                                    m,
+                                    "staff",
+                                    `Remove admin privileges from ${m.firstName ?? m.email ?? "this person"}? They'll stay staff.`,
+                                  )
+                                }
+                                data-testid={`button-remove-admin-${m.id}`}
+                              >
+                                Remove admin
+                              </Button>
+                            )}
+                            <Button
+                              variant="destructive"
+                              size="sm"
+                              disabled={updateRole.isPending}
+                              onClick={() =>
+                                changeRole(
+                                  m,
+                                  "patient",
+                                  `Remove ${m.firstName ?? m.email ?? "this person"} from staff? Their account becomes a regular patient account.`,
+                                )
+                              }
+                              data-testid={`button-remove-staff-${m.id}`}
+                            >
+                              Remove staff
+                            </Button>
+                          </>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 export default function StaffVerify() {
   const { data: me, isLoading } = useGetMe();
 
@@ -1417,9 +1650,11 @@ export default function StaffVerify() {
     return <p className="text-muted-foreground pt-12 text-center">Loading…</p>;
   }
 
-  if (me && me.role !== "staff") {
+  if (me && me.role !== "staff" && me.role !== "admin") {
     return <StaffAccessGate />;
   }
+
+  const isAdmin = me?.role === "admin";
 
   return (
     <div className="max-w-3xl mx-auto space-y-8 pb-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -1455,6 +1690,11 @@ export default function StaffVerify() {
           <TabsTrigger value="community">
             <Megaphone className="h-4 w-4 mr-1" /> Community
           </TabsTrigger>
+          {isAdmin && (
+            <TabsTrigger value="admin">
+              <ShieldCheck className="h-4 w-4 mr-1" /> Admin
+            </TabsTrigger>
+          )}
         </TabsList>
         <TabsContent value="verify" className="mt-6">
           <VerifyTab />
@@ -1477,6 +1717,11 @@ export default function StaffVerify() {
         <TabsContent value="community" className="mt-6">
           <CommunityModerationTab />
         </TabsContent>
+        {isAdmin && (
+          <TabsContent value="admin" className="mt-6">
+            <AdminTab myUserId={me?.id ?? ""} />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );

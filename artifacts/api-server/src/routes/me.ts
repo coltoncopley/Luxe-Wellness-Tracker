@@ -89,9 +89,20 @@ router.post("/me/staff-access", rateLimitActivation, async (req, res): Promise<v
     res.status(403).json({ error: "That access code is not valid" });
     return;
   }
+  const [current] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+  const [bootstrap] = await db
+    .select()
+    .from(appSettingsTable)
+    .where(eq(appSettingsTable.key, "admin_bootstrap_email"));
+  const isBootstrapAdmin =
+    bootstrap !== undefined &&
+    current?.email !== null &&
+    current?.email !== undefined &&
+    current.email.trim().toLowerCase() === bootstrap.value.trim().toLowerCase();
+  const newRole = isBootstrapAdmin || current?.role === "admin" ? "admin" : "staff";
   const [user] = await db
     .update(usersTable)
-    .set({ role: "staff" })
+    .set({ role: newRole })
     .where(eq(usersTable.id, userId))
     .returning();
   res.json(
