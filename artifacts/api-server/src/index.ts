@@ -33,6 +33,21 @@ try {
   logger.error({ err }, "Failed to initialize Stripe");
 }
 
+if (process.env.NODE_ENV === "production") {
+  // Bootstrap a fresh production environment: core catalog data (services,
+  // staff, restaurants, rewards, access code) and the Stripe membership
+  // product. Both are idempotent; failures are logged but non-fatal.
+  import("@workspace/db")
+    .then(({ seedCoreData }) => seedCoreData((msg) => logger.info(msg)))
+    .then(() => logger.info("Core data seed check complete"))
+    .catch((err: unknown) => logger.error({ err }, "Failed to seed core data"));
+
+  import("./lib/billing")
+    .then(({ ensureMembershipProduct }) => ensureMembershipProduct())
+    .then(() => logger.info("Membership product ensured in Stripe"))
+    .catch((err: unknown) => logger.error({ err }, "Failed to ensure membership product"));
+}
+
 import("./lib/notificationScheduler")
   .then(({ startNotificationScheduler }) => startNotificationScheduler())
   .catch((err: unknown) => logger.error({ err }, "Failed to start notification scheduler"));

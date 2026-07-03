@@ -18,6 +18,7 @@ Patient companion app for LUXE Wellness and Aesthetics (physician-owned med spa 
 - `pnpm --filter @workspace/scripts run seed` — seed services/staff/restaurants/rewards/access code (idempotent)
 - `pnpm --filter @workspace/scripts run seed-membership` — seed Stripe product/price (idempotent)
 - Env: `DATABASE_URL`; Stripe keys via Replit Stripe connector (dev = test; live keys in Publish pane); Resend via connector; optional `NOTIFICATION_FROM_EMAIL`
+- **Production bootstrap:** deployment target is `vm` (node-cron schedulers need always-on). On startup with NODE_ENV=production, the API server runs `seedCoreData` (from `@workspace/db`, advisory-lock + single-transaction, component-wise idempotent) and `ensureMembershipProduct` (creates LUXE Membership product/price in live Stripe, advisory-lock + Stripe idempotency keys) — both non-fatal. Prod DB schema is applied by Replit's Publish flow automatically.
 
 ## Stack & layout
 

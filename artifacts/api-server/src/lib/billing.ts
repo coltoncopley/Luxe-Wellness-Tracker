@@ -95,3 +95,64 @@ export async function getMembershipPriceId(): Promise<string> {
   cachedPriceId = monthly.id;
   return cachedPriceId;
 }
+
+/** Advisory lock key serializing membership product bootstrap across instances. */
+const MEMBERSHIP_BOOTSTRAP_LOCK_KEY = 84291002;
+
+/**
+ * Ensures the LUXE Membership product and $4.99/month price exist in Stripe.
+ * Idempotent: searches first, creates only when missing. Run at startup so a
+ * fresh Stripe environment (e.g. live mode in production) is bootstrapped
+ * without a manual seed step.
+ *
+ * The check-then-create sequence is guarded by a Postgres transaction-scoped
+ * advisory lock so overlapping server instances (deploy rollover, restarts)
+ * serialize instead of racing to create duplicate products/prices.
+ */
+export async function ensureMembershipProduct(): Promise<void> {
+  await db.transaction(async (tx) => {
+    await tx.execute(sql`SELECT pg_advisory_xact_lock(${MEMBERSHIP_BOOTSTRAP_LOCK_KEY})`);
+
+    const stripe = await getUncachableStripeClient();
+
+    const existing = await stripe.products.search({
+      query: `name:'${MEMBERSHIP_PRODUCT_NAME}' AND active:'true'`,
+    });
+
+    let productId: string;
+    if (existing.data.length > 0) {
+      productId = existing.data[0]!.id;
+    } else {
+      const product = await stripe.products.create(
+        {
+          name: MEMBERSHIP_PRODUCT_NAME,
+          description:
+            "Full access to the LUXE Wellness patient app: Luxe AI coach, weight & glow tracking, meal scanner, rewards, and friends.",
+          metadata: { app: "luxe-wellness", tier: "membership" },
+        },
+        { idempotencyKey: "luxe-membership-product-v1" },
+      );
+      productId = product.id;
+    }
+
+    const prices = await stripe.prices.list({ product: productId, active: true, limit: 10 });
+    const monthly = prices.data.find(
+      (p) =>
+        p.recurring?.interval === "month" &&
+        p.unit_amount === MEMBERSHIP_PRICE_CENTS &&
+        p.currency === "usd",
+    );
+    if (!monthly) {
+      await stripe.prices.create(
+        {
+          product: productId,
+          unit_amount: MEMBERSHIP_PRICE_CENTS,
+          currency: "usd",
+          recurring: { interval: "month" },
+          metadata: { app: "luxe-wellness" },
+        },
+        { idempotencyKey: `luxe-membership-price-v1-${productId}` },
+      );
+    }
+  });
+}
