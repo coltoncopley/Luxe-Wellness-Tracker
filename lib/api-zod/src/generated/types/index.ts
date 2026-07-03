@@ -7,6 +7,7 @@
  */
 
 export * from './adminRedemption';
+export * from './analyzeIngredientsInput';
 export * from './analyzeSkinScanInput';
 export * from './appointment';
 export * from './appointmentInput';
@@ -49,7 +50,11 @@ export * from './goalInput';
 export * from './grantCompInput';
 export * from './grantCompInputMonths';
 export * from './healthStatus';
+export * from './ingredientScanResult';
+export * from './ingredientScanResultPregnancySafety';
+export * from './ingredientScanResultVerdict';
 export * from './listFoodLogsParams';
+export * from './listIngredientScans200';
 export * from './listTipsParams';
 export * from './me';
 export * from './mealPhotoAnalysis';

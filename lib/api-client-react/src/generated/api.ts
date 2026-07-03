@@ -21,6 +21,7 @@ import type {
 
 import type {
   AdminRedemption,
+  AnalyzeIngredientsInput,
   AnalyzeSkinScanInput,
   Appointment,
   AppointmentInput,
@@ -50,7 +51,9 @@ import type {
   GoalInput,
   GrantCompInput,
   HealthStatus,
+  IngredientScanResult,
   ListFoodLogsParams,
+  ListIngredientScans200,
   ListTipsParams,
   Me,
   MealPhotoAnalysis,
@@ -3183,6 +3186,223 @@ export const useAnalyzeSkinScan = <TError = ErrorType<OpenaiError>,
         TContext
       > => {
       return useMutation(getAnalyzeSkinScanMutationOptions(options));
+    }
+
+export const getListIngredientScansUrl = () => {
+
+
+
+
+  return `/api/ingredients`
+}
+
+/**
+ * @summary Ingredient scan history for the requesting user
+ */
+export const listIngredientScans = async ( options?: RequestInit): Promise<ListIngredientScans200> => {
+
+  return customFetch<ListIngredientScans200>(getListIngredientScansUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListIngredientScansQueryKey = () => {
+    return [
+    `/api/ingredients`
+    ] as const;
+    }
+
+
+export const getListIngredientScansQueryOptions = <TData = Awaited<ReturnType<typeof listIngredientScans>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listIngredientScans>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListIngredientScansQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listIngredientScans>>> = ({ signal }) => listIngredientScans({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listIngredientScans>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListIngredientScansQueryResult = NonNullable<Awaited<ReturnType<typeof listIngredientScans>>>
+export type ListIngredientScansQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Ingredient scan history for the requesting user
+ */
+
+export function useListIngredientScans<TData = Awaited<ReturnType<typeof listIngredientScans>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listIngredientScans>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListIngredientScansQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAnalyzeIngredientsUrl = () => {
+
+
+
+
+  return `/api/ingredients/analyze`
+}
+
+/**
+ * @summary Analyze a skincare product ingredient label photo with AI
+ */
+export const analyzeIngredients = async (analyzeIngredientsInput: AnalyzeIngredientsInput, options?: RequestInit): Promise<IngredientScanResult> => {
+
+  return customFetch<IngredientScanResult>(getAnalyzeIngredientsUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(analyzeIngredientsInput)
+  }
+);}
+
+
+
+
+export const getAnalyzeIngredientsMutationOptions = <TError = ErrorType<OpenaiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof analyzeIngredients>>, TError,{data: BodyType<AnalyzeIngredientsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof analyzeIngredients>>, TError,{data: BodyType<AnalyzeIngredientsInput>}, TContext> => {
+
+const mutationKey = ['analyzeIngredients'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof analyzeIngredients>>, {data: BodyType<AnalyzeIngredientsInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  analyzeIngredients(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AnalyzeIngredientsMutationResult = NonNullable<Awaited<ReturnType<typeof analyzeIngredients>>>
+    export type AnalyzeIngredientsMutationBody = BodyType<AnalyzeIngredientsInput>
+    export type AnalyzeIngredientsMutationError = ErrorType<OpenaiError>
+
+    /**
+ * @summary Analyze a skincare product ingredient label photo with AI
+ */
+export const useAnalyzeIngredients = <TError = ErrorType<OpenaiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof analyzeIngredients>>, TError,{data: BodyType<AnalyzeIngredientsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof analyzeIngredients>>,
+        TError,
+        {data: BodyType<AnalyzeIngredientsInput>},
+        TContext
+      > => {
+      return useMutation(getAnalyzeIngredientsMutationOptions(options));
+    }
+
+export const getDeleteIngredientScanUrl = (id: number,) => {
+
+
+
+
+  return `/api/ingredients/${id}`
+}
+
+/**
+ * @summary Delete an ingredient scan
+ */
+export const deleteIngredientScan = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteIngredientScanUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteIngredientScanMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteIngredientScan>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteIngredientScan>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteIngredientScan'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteIngredientScan>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteIngredientScan(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteIngredientScanMutationResult = NonNullable<Awaited<ReturnType<typeof deleteIngredientScan>>>
+
+    export type DeleteIngredientScanMutationError = ErrorType<void>
+
+    /**
+ * @summary Delete an ingredient scan
+ */
+export const useDeleteIngredientScan = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteIngredientScan>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteIngredientScan>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteIngredientScanMutationOptions(options));
     }
 
 export const getGetRewardsSummaryUrl = () => {

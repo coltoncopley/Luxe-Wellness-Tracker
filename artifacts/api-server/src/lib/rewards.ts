@@ -16,7 +16,10 @@ export const POINTS = {
   referralFriend: 50,
   progressPhoto: 10,
   skinScan: 25,
+  ingredientScan: 5,
 } as const;
+
+export const INGREDIENT_SCAN_DAILY_CAP = 2;
 
 export const FOOD_LOG_DAILY_CAP = 3;
 

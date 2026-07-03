@@ -529,6 +529,51 @@ export interface Mission {
   rewardPoints: number;
 }
 
+export interface AnalyzeIngredientsInput {
+  /**
+     * Base64 data URL of the ingredient label photo (JPEG/PNG/WebP)
+     * @minLength 1
+     */
+  imageDataUrl: string;
+}
+
+export type IngredientScanResultVerdict = typeof IngredientScanResultVerdict[keyof typeof IngredientScanResultVerdict];
+
+
+export const IngredientScanResultVerdict = {
+  great: 'great',
+  good: 'good',
+  mixed: 'mixed',
+  caution: 'caution',
+} as const;
+
+export type IngredientScanResultPregnancySafety = typeof IngredientScanResultPregnancySafety[keyof typeof IngredientScanResultPregnancySafety];
+
+
+export const IngredientScanResultPregnancySafety = {
+  generally_ok: 'generally_ok',
+  use_caution: 'use_caution',
+  avoid: 'avoid',
+  unknown: 'unknown',
+} as const;
+
+export interface IngredientScanResult {
+  id: number;
+  /** Date scanned (YYYY-MM-DD) */
+  scannedOn: string;
+  productName: string;
+  verdict: IngredientScanResultVerdict;
+  summary: string;
+  /** Beneficial ingredients, each as "Name — why it helps" */
+  goodIngredients: string[];
+  /** Flagged ingredients (incl. comedogenic), each as "Name — the concern" */
+  concerns: string[];
+  pregnancySafety: IngredientScanResultPregnancySafety;
+  pregnancyNote: string;
+  /** Optional single LUXE suggestion (soft-sell) */
+  suggestion?: string | null;
+}
+
 export interface AnalyzeSkinScanInput {
   /**
      * Base64 data URL of the selfie (JPEG/PNG/WebP, downscaled client-side)
@@ -888,5 +933,9 @@ date: string;
 
 export type ListTipsParams = {
 category?: string;
+};
+
+export type ListIngredientScans200 = {
+  scans: IngredientScanResult[];
 };
 

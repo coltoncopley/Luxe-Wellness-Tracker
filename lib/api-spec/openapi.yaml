@@ -699,6 +699,70 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/OpenaiError"
+  /ingredients:
+    get:
+      operationId: listIngredientScans
+      tags: [ingredients]
+      summary: Ingredient scan history for the requesting user
+      responses:
+        "200":
+          description: Scan history, newest first
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [scans]
+                properties:
+                  scans:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/IngredientScanResult"
+  /ingredients/analyze:
+    post:
+      operationId: analyzeIngredients
+      tags: [ingredients]
+      summary: Analyze a skincare product ingredient label photo with AI
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnalyzeIngredientsInput"
+      responses:
+        "200":
+          description: Analysis saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IngredientScanResult"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenaiError"
+        "422":
+          description: The photo could not be analyzed (no readable ingredient list)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenaiError"
+  /ingredients/{id}:
+    delete:
+      operationId: deleteIngredientScan
+      tags: [ingredients]
+      summary: Delete an ingredient scan
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
   /rewards/summary:
     get:
       operationId: getRewardsSummary
@@ -2050,6 +2114,50 @@ components:
         rewardPoints:
           type: integer
           description: Bonus points awarded on completion
+    AnalyzeIngredientsInput:
+      type: object
+      required: [imageDataUrl]
+      properties:
+        imageDataUrl:
+          type: string
+          minLength: 1
+          description: Base64 data URL of the ingredient label photo (JPEG/PNG/WebP)
+    IngredientScanResult:
+      type: object
+      required:
+        [id, scannedOn, productName, verdict, summary, goodIngredients, concerns, pregnancySafety, pregnancyNote]
+      properties:
+        id:
+          type: integer
+        scannedOn:
+          type: string
+          description: Date scanned (YYYY-MM-DD)
+        productName:
+          type: string
+        verdict:
+          type: string
+          enum: [great, good, mixed, caution]
+        summary:
+          type: string
+        goodIngredients:
+          type: array
+          items:
+            type: string
+          description: Beneficial ingredients, each as "Name — why it helps"
+        concerns:
+          type: array
+          items:
+            type: string
+          description: Flagged ingredients (incl. comedogenic), each as "Name — the concern"
+        pregnancySafety:
+          type: string
+          enum: [generally_ok, use_caution, avoid, unknown]
+        pregnancyNote:
+          type: string
+        suggestion:
+          type: string
+          nullable: true
+          description: Optional single LUXE suggestion (soft-sell)
     AnalyzeSkinScanInput:
       type: object
       required: [imageDataUrl]

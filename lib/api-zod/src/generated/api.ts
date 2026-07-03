@@ -764,6 +764,59 @@ export const AnalyzeSkinScanResponse = zod.object({
 
 
 /**
+ * @summary Ingredient scan history for the requesting user
+ */
+export const ListIngredientScansResponse = zod.object({
+  "scans": zod.array(zod.object({
+  "id": zod.number(),
+  "scannedOn": zod.string().describe('Date scanned (YYYY-MM-DD)'),
+  "productName": zod.string(),
+  "verdict": zod.enum(['great', 'good', 'mixed', 'caution']),
+  "summary": zod.string(),
+  "goodIngredients": zod.array(zod.string()).describe('Beneficial ingredients, each as \"Name — why it helps\"'),
+  "concerns": zod.array(zod.string()).describe('Flagged ingredients (incl. comedogenic), each as \"Name — the concern\"'),
+  "pregnancySafety": zod.enum(['generally_ok', 'use_caution', 'avoid', 'unknown']),
+  "pregnancyNote": zod.string(),
+  "suggestion": zod.string().nullish().describe('Optional single LUXE suggestion (soft-sell)')
+}))
+})
+
+
+/**
+ * @summary Analyze a skincare product ingredient label photo with AI
+ */
+
+
+
+export const AnalyzeIngredientsBody = zod.object({
+  "imageDataUrl": zod.string().min(1).describe('Base64 data URL of the ingredient label photo (JPEG\/PNG\/WebP)')
+})
+
+export const AnalyzeIngredientsResponse = zod.object({
+  "id": zod.number(),
+  "scannedOn": zod.string().describe('Date scanned (YYYY-MM-DD)'),
+  "productName": zod.string(),
+  "verdict": zod.enum(['great', 'good', 'mixed', 'caution']),
+  "summary": zod.string(),
+  "goodIngredients": zod.array(zod.string()).describe('Beneficial ingredients, each as \"Name — why it helps\"'),
+  "concerns": zod.array(zod.string()).describe('Flagged ingredients (incl. comedogenic), each as \"Name — the concern\"'),
+  "pregnancySafety": zod.enum(['generally_ok', 'use_caution', 'avoid', 'unknown']),
+  "pregnancyNote": zod.string(),
+  "suggestion": zod.string().nullish().describe('Optional single LUXE suggestion (soft-sell)')
+})
+
+
+/**
+ * @summary Delete an ingredient scan
+ */
+export const DeleteIngredientScanParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DeleteIngredientScanResponse = zod.void()
+
+
+/**
  * @summary Points balance, earning history, and reward catalog
  */
 export const GetRewardsSummaryResponse = zod.object({
