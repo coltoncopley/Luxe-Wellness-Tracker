@@ -1,7 +1,9 @@
 import { Feather } from "@expo/vector-icons";
 import { useQueryClient } from "@tanstack/react-query";
+import * as Clipboard from "expo-clipboard";
+import * as Contacts from "expo-contacts";
 import React, { useState } from "react";
-import { Modal, Pressable, Switch, Text, View } from "react-native";
+import { Linking, Modal, Platform, Pressable, Share, Switch, Text, View } from "react-native";
 import { Alert } from "@/lib/alert";
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -15,6 +17,7 @@ import {
   useGetCheers,
   useGetFollows,
   useGetFriendJourneys,
+  useGetReferralSummary,
   useGetSharingSettings,
   useRemoveFollow,
   useRequestFollow,
@@ -33,9 +36,108 @@ import {
   StackScreen,
 } from "@/components/ui";
 import { useColors } from "@/hooks/useColors";
-import { timeAgo } from "@/lib/luxe";
+import { timeAgo, webUrl } from "@/lib/luxe";
 
 const CHEER_EMOJIS = ["👏", "💪", "🎉", "❤️", "🔥", "🌟"];
+
+function InviteFriendsCard() {
+  const c = useColors();
+  const referral = useGetReferralSummary();
+  const [busy, setBusy] = useState(false);
+
+  const code = referral.data?.code;
+
+  const inviteMessage = () => {
+    const link = webUrl(code ? `/?ref=${code}` : "/");
+    return `Join me on LUXE Wellness & Aesthetics! Sign up here: ${link}${
+      code ? " — use my invite link and we both earn rewards points." : ""
+    }`;
+  };
+
+  const shareInvite = async () => {
+    const message = inviteMessage();
+    try {
+      await Share.share({ message });
+    } catch {
+      try {
+        await Clipboard.setStringAsync(message);
+        Alert.alert(
+          "Invite copied",
+          "Sharing isn't available here, so your invite was copied instead — paste it into a text or email."
+        );
+      } catch {
+        Alert.alert("Couldn't share", "Something went wrong — please try again.");
+      }
+    }
+  };
+
+  const inviteFromContacts = async () => {
+    if (busy) return;
+    if (Platform.OS === "web") {
+      await shareInvite();
+      return;
+    }
+    setBusy(true);
+    try {
+      if (Platform.OS !== "ios") {
+        const perm = await Contacts.requestPermissionsAsync();
+        if (!perm.granted) {
+          Alert.alert(
+            "Contacts access needed",
+            "Allow contacts access in Settings to invite friends directly, or use Share invite instead."
+          );
+          return;
+        }
+      }
+      const contact = await Contacts.presentContactPickerAsync();
+      if (!contact) return;
+      const rawPhone = contact.phoneNumbers?.find((p) => p.number)?.number;
+      const phone = rawPhone?.replace(/[^+\d]/g, "");
+      if (phone) {
+        const sep = Platform.OS === "ios" ? "&" : "?";
+        await Linking.openURL(`sms:${phone}${sep}body=${encodeURIComponent(inviteMessage())}`);
+      } else {
+        await shareInvite();
+      }
+    } catch {
+      Alert.alert("Couldn't open contacts", "Please try again, or use Share invite instead.");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <>
+      <SectionTitle>Invite friends</SectionTitle>
+      <Card style={{ gap: 12 }}>
+        <Text style={{ fontFamily: "Inter_400Regular", fontSize: 13, color: c.mutedForeground }}>
+          Know someone who'd love LUXE? Send them an invite to download the app — when they join
+          with your link, you both earn rewards points.
+        </Text>
+        {code ? (
+          <Text style={{ fontFamily: "Inter_400Regular", fontSize: 13, color: c.mutedForeground }}>
+            Your invite code:{" "}
+            <Text style={{ fontFamily: "Inter_600SemiBold", color: c.primary, letterSpacing: 1 }}>
+              {code}
+            </Text>
+          </Text>
+        ) : null}
+        <LuxeButton
+          label={busy ? "Opening contacts…" : "Invite from contacts"}
+          icon="users"
+          disabled={busy}
+          onPress={() => void inviteFromContacts()}
+        />
+        <LuxeButton
+          label="Share invite link"
+          icon="share-2"
+          variant="outline"
+          onPress={() => void shareInvite()}
+        />
+      </Card>
+    </>
+  );
+}
 
 const REQUEST_ERRORS: Record<string, string> = {
   invalid_code: "We couldn't find anyone with that code — double-check it with your friend.",
@@ -138,6 +240,8 @@ export default function FriendsScreen() {
         Follow friends (with their permission), track their journey highlights, and cheer each
         other on.
       </Text>
+
+      <InviteFriendsCard />
 
       {incoming.length > 0 ? (
         <>
