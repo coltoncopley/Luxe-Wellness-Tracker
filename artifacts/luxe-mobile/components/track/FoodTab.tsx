@@ -7,15 +7,17 @@ import { Alert } from "@/lib/alert";
 import {
   getGetDailySummaryQueryKey,
   getListFoodLogsQueryKey,
+  useAnalyzeMealPhoto,
   useCreateFoodLog,
   useDeleteFoodLog,
   useGetDailySummary,
   useListFoodLogs,
 } from "@workspace/api-client-react";
+import type { MealPhotoAnalysis } from "@workspace/api-client-react";
 
 import { Card, Chip, EmptyState, LuxeButton, LuxeInput, SectionTitle } from "@/components/ui";
 import { useColors } from "@/hooks/useColors";
-import { todayStr } from "@/lib/luxe";
+import { pickImageAsset, todayStr } from "@/lib/luxe";
 
 const MEAL_TYPES = ["breakfast", "lunch", "dinner", "snack"] as const;
 
@@ -34,10 +36,65 @@ export function FoodTab() {
   const [calories, setCalories] = useState("");
   const [protein, setProtein] = useState("");
 
+  const analyze = useAnalyzeMealPhoto();
+  const [scanning, setScanning] = useState(false);
+  const [scanResult, setScanResult] = useState<MealPhotoAnalysis | null>(null);
+
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: getGetDailySummaryQueryKey({ date }) });
     void queryClient.invalidateQueries({ queryKey: getListFoodLogsQueryKey({ date }) });
   };
+
+  async function scanMeal(source: "camera" | "library") {
+    setScanning(true);
+    try {
+      const asset = await pickImageAsset(source, { base64: true });
+      if (!asset) return;
+      if (!asset.base64) throw new Error("Couldn't read the photo. Please try again.");
+      const imageDataUrl = `data:image/jpeg;base64,${asset.base64}`;
+      const result = await analyze.mutateAsync({ data: { imageDataUrl } });
+      setScanResult(result);
+    } catch (err) {
+      Alert.alert(
+        "Couldn't analyze photo",
+        err instanceof Error ? err.message : "Please try again.",
+      );
+    } finally {
+      setScanning(false);
+    }
+  }
+
+  function handleScanMeal() {
+    if (scanning) return;
+    Alert.alert("Scan a meal", "AI estimates calories, protein, carbs & fat from a photo.", [
+      { text: "Take photo", onPress: () => void scanMeal("camera") },
+      { text: "Choose from library", onPress: () => void scanMeal("library") },
+      { text: "Cancel", style: "cancel" },
+    ]);
+  }
+
+  function logScan() {
+    if (!scanResult) return;
+    createLog.mutate(
+      {
+        data: {
+          date,
+          mealType,
+          foodName: scanResult.name,
+          calories: scanResult.calories,
+          proteinG: scanResult.proteinG,
+          carbsG: scanResult.carbsG,
+          fatG: scanResult.fatG,
+        },
+      },
+      {
+        onSuccess: () => {
+          setScanResult(null);
+          invalidate();
+        },
+      },
+    );
+  }
 
   const handleAdd = () => {
     const cal = parseInt(calories, 10);
@@ -96,6 +153,86 @@ export function FoodTab() {
 
       <SectionTitle>Log a meal</SectionTitle>
       <Card style={{ gap: 12 }}>
+        <LuxeButton
+          label={scanning ? "Analyzing..." : "Scan a meal photo"}
+          onPress={handleScanMeal}
+          loading={scanning}
+        />
+        {scanResult ? (
+          <View
+            style={{
+              borderWidth: 1,
+              borderColor: c.border,
+              borderRadius: 14,
+              padding: 12,
+              gap: 8,
+            }}
+          >
+            <View style={{ flexDirection: "row", justifyContent: "space-between", gap: 8 }}>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 14, color: c.foreground }}>
+                  {scanResult.name}
+                </Text>
+                <Text style={{ fontFamily: "Inter_400Regular", fontSize: 12, color: c.mutedForeground, marginTop: 2 }}>
+                  {scanResult.confidence} confidence estimate
+                </Text>
+              </View>
+              <Text style={{ fontFamily: "PlayfairDisplay_600SemiBold", fontSize: 18, color: c.primary }}>
+                {scanResult.calories} kcal
+              </Text>
+            </View>
+            <View style={{ flexDirection: "row", gap: 14 }}>
+              <Text style={{ fontFamily: "Inter_500Medium", fontSize: 13, color: c.mutedForeground }}>
+                P: {Math.round(scanResult.proteinG)}g
+              </Text>
+              <Text style={{ fontFamily: "Inter_500Medium", fontSize: 13, color: c.mutedForeground }}>
+                C: {Math.round(scanResult.carbsG)}g
+              </Text>
+              <Text style={{ fontFamily: "Inter_500Medium", fontSize: 13, color: c.mutedForeground }}>
+                F: {Math.round(scanResult.fatG)}g
+              </Text>
+            </View>
+            {scanResult.notes ? (
+              <Text style={{ fontFamily: "Inter_400Regular", fontSize: 12, color: c.mutedForeground }}>
+                {scanResult.notes}
+              </Text>
+            ) : null}
+            <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
+              {MEAL_TYPES.map((m) => (
+                <Chip
+                  key={m}
+                  label={m.charAt(0).toUpperCase() + m.slice(1)}
+                  active={mealType === m}
+                  onPress={() => setMealType(m)}
+                />
+              ))}
+            </View>
+            <View style={{ flexDirection: "row", gap: 10, alignItems: "center" }}>
+              <View style={{ flex: 1 }}>
+                <LuxeButton
+                  label="Log this meal"
+                  onPress={logScan}
+                  loading={createLog.isPending}
+                />
+              </View>
+              <Pressable hitSlop={8} onPress={() => setScanResult(null)} disabled={createLog.isPending}>
+                <Text style={{ fontFamily: "Inter_500Medium", fontSize: 14, color: c.mutedForeground }}>
+                  Discard
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        ) : null}
+        <Text
+          style={{
+            fontFamily: "Inter_400Regular",
+            fontSize: 12,
+            color: c.mutedForeground,
+            textAlign: "center",
+          }}
+        >
+          or enter it manually
+        </Text>
         <View style={{ flexDirection: "row", gap: 8, flexWrap: "wrap" }}>
           {MEAL_TYPES.map((m) => (
             <Chip
