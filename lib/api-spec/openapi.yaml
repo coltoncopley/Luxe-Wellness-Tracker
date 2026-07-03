@@ -887,6 +887,127 @@ paths:
                 $ref: "#/components/schemas/MindCheckin"
         "400":
           description: Invalid input
+  /community/posts:
+    get:
+      operationId: getCommunityPosts
+      tags: [community]
+      summary: Anonymous community wins feed (newest first)
+      responses:
+        "200":
+          description: Community feed
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [posts]
+                properties:
+                  posts:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/CommunityPost"
+    post:
+      operationId: createCommunityPost
+      tags: [community]
+      summary: Share an anonymous win with the community
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCommunityPostInput"
+      responses:
+        "201":
+          description: Created post
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CommunityPost"
+        "400":
+          description: Invalid input
+        "429":
+          description: Daily post limit reached
+  /community/posts/{id}:
+    delete:
+      operationId: deleteCommunityPost
+      tags: [community]
+      summary: Delete your own community post
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found or not yours
+  /community/posts/{id}/heart:
+    post:
+      operationId: toggleCommunityHeart
+      tags: [community]
+      summary: Heart or un-heart a community post
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Updated heart state
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [hearted, heartCount]
+                properties:
+                  hearted:
+                    type: boolean
+                  heartCount:
+                    type: integer
+        "404":
+          description: Post not found
+  /admin/community/posts:
+    get:
+      operationId: adminListCommunityPosts
+      tags: [admin]
+      summary: All community posts for moderation (anonymous — no author identity)
+      responses:
+        "200":
+          description: Posts for moderation
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [posts]
+                properties:
+                  posts:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/AdminCommunityPost"
+  /admin/community/posts/{id}/moderate:
+    post:
+      operationId: moderateCommunityPost
+      tags: [admin]
+      summary: Hide or unhide a community post
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ModerateCommunityPostInput"
+      responses:
+        "204":
+          description: Updated
+        "404":
+          description: Post not found
   /rewards/summary:
     get:
       operationId: getRewardsSummary
@@ -2304,6 +2425,60 @@ components:
           type: string
           maxLength: 4000
           nullable: true
+    CommunityPost:
+      type: object
+      required: [id, category, body, createdAt, heartCount, heartedByMe, mine]
+      properties:
+        id:
+          type: integer
+        category:
+          type: string
+          enum: [weight_loss, glow, skin, recipe, motivation, other]
+        body:
+          type: string
+        createdAt:
+          type: string
+          description: ISO timestamp
+        heartCount:
+          type: integer
+        heartedByMe:
+          type: boolean
+        mine:
+          type: boolean
+          description: True if the current user wrote this post
+    CreateCommunityPostInput:
+      type: object
+      required: [category, body]
+      properties:
+        category:
+          type: string
+          enum: [weight_loss, glow, skin, recipe, motivation, other]
+        body:
+          type: string
+          minLength: 10
+          maxLength: 500
+    ModerateCommunityPostInput:
+      type: object
+      required: [hidden]
+      properties:
+        hidden:
+          type: boolean
+    AdminCommunityPost:
+      type: object
+      required: [id, category, body, createdAt, hidden, heartCount]
+      properties:
+        id:
+          type: integer
+        category:
+          type: string
+        body:
+          type: string
+        createdAt:
+          type: string
+        hidden:
+          type: boolean
+        heartCount:
+          type: integer
     PassportEntry:
       type: object
       required: [id, entryType, performedOn, title]

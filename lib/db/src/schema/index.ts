@@ -13,3 +13,4 @@ export * from "./skin";
 export * from "./ingredients";
 export * from "./passport";
 export * from "./mind";
+export * from "./community";

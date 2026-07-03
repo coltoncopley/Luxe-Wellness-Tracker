@@ -8,6 +8,8 @@ import {
   usersTable,
   restaurantsTable,
   menuItemsTable,
+  communityPostsTable,
+  communityHeartsTable,
 } from "@workspace/db";
 import {
   AdminCreateServiceBody,
@@ -27,6 +29,8 @@ import {
   AdminListCompsResponse,
   AdminGrantCompBody,
   AdminGrantCompResponse,
+  ModerateCommunityPostBody,
+  AdminListCommunityPostsResponse,
 } from "@workspace/api-zod";
 import { clearSubscriptionCache } from "../middlewares/subscription";
 
@@ -341,6 +345,57 @@ router.delete("/admin/comps/:userId", async (req, res): Promise<void> => {
     return;
   }
   clearSubscriptionCache(userId);
+  res.status(204).end();
+});
+
+router.get("/admin/community/posts", async (_req, res): Promise<void> => {
+  const posts = await db
+    .select({
+      id: communityPostsTable.id,
+      category: communityPostsTable.category,
+      body: communityPostsTable.body,
+      createdAt: communityPostsTable.createdAt,
+      hidden: communityPostsTable.hidden,
+      heartCount: sql<number>`(select count(*) from ${communityHeartsTable} where ${communityHeartsTable.postId} = ${communityPostsTable.id})`,
+    })
+    .from(communityPostsTable)
+    .orderBy(desc(communityPostsTable.createdAt), desc(communityPostsTable.id))
+    .limit(200);
+
+  res.json(
+    AdminListCommunityPostsResponse.parse({
+      posts: posts.map((p) => ({
+        id: p.id,
+        category: p.category,
+        body: p.body,
+        createdAt: p.createdAt.toISOString(),
+        hidden: p.hidden,
+        heartCount: Number(p.heartCount),
+      })),
+    }),
+  );
+});
+
+router.post("/admin/community/posts/:id/moderate", async (req, res): Promise<void> => {
+  const postId = Number(req.params.id);
+  if (!Number.isInteger(postId)) {
+    res.status(404).json({ error: "Post not found" });
+    return;
+  }
+  const body = ModerateCommunityPostBody.safeParse(req.body);
+  if (!body.success) {
+    res.status(400).json({ error: "Invalid input" });
+    return;
+  }
+  const [updated] = await db
+    .update(communityPostsTable)
+    .set({ hidden: body.data.hidden })
+    .where(eq(communityPostsTable.id, postId))
+    .returning({ id: communityPostsTable.id });
+  if (!updated) {
+    res.status(404).json({ error: "Post not found" });
+    return;
+  }
   res.status(204).end();
 });
 

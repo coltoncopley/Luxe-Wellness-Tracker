@@ -998,6 +998,98 @@ export const UpsertMindCheckinResponse = zod.object({
 
 
 /**
+ * @summary Anonymous community wins feed (newest first)
+ */
+export const GetCommunityPostsResponse = zod.object({
+  "posts": zod.array(zod.object({
+  "id": zod.number(),
+  "category": zod.enum(['weight_loss', 'glow', 'skin', 'recipe', 'motivation', 'other']),
+  "body": zod.string(),
+  "createdAt": zod.string().describe('ISO timestamp'),
+  "heartCount": zod.number(),
+  "heartedByMe": zod.boolean(),
+  "mine": zod.boolean().describe('True if the current user wrote this post')
+}))
+})
+
+
+/**
+ * @summary Share an anonymous win with the community
+ */
+export const createCommunityPostBodyBodyMin = 10;
+export const createCommunityPostBodyBodyMax = 500;
+
+
+
+export const CreateCommunityPostBody = zod.object({
+  "category": zod.enum(['weight_loss', 'glow', 'skin', 'recipe', 'motivation', 'other']),
+  "body": zod.string().min(createCommunityPostBodyBodyMin).max(createCommunityPostBodyBodyMax)
+})
+
+export const CreateCommunityPostResponse = zod.object({
+  "id": zod.number(),
+  "category": zod.enum(['weight_loss', 'glow', 'skin', 'recipe', 'motivation', 'other']),
+  "body": zod.string(),
+  "createdAt": zod.string().describe('ISO timestamp'),
+  "heartCount": zod.number(),
+  "heartedByMe": zod.boolean(),
+  "mine": zod.boolean().describe('True if the current user wrote this post')
+})
+
+
+/**
+ * @summary Delete your own community post
+ */
+export const DeleteCommunityPostParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DeleteCommunityPostResponse = zod.void()
+
+
+/**
+ * @summary Heart or un-heart a community post
+ */
+export const ToggleCommunityHeartParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ToggleCommunityHeartResponse = zod.object({
+  "hearted": zod.boolean(),
+  "heartCount": zod.number()
+})
+
+
+/**
+ * @summary All community posts for moderation (anonymous — no author identity)
+ */
+export const AdminListCommunityPostsResponse = zod.object({
+  "posts": zod.array(zod.object({
+  "id": zod.number(),
+  "category": zod.string(),
+  "body": zod.string(),
+  "createdAt": zod.string(),
+  "hidden": zod.boolean(),
+  "heartCount": zod.number()
+}))
+})
+
+
+/**
+ * @summary Hide or unhide a community post
+ */
+export const ModerateCommunityPostParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const ModerateCommunityPostBody = zod.object({
+  "hidden": zod.boolean()
+})
+
+export const ModerateCommunityPostResponse = zod.void()
+
+
+/**
  * @summary Points balance, earning history, and reward catalog
  */
 export const GetRewardsSummaryResponse = zod.object({

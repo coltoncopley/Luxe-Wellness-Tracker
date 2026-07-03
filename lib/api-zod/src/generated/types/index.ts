@@ -6,6 +6,8 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './adminCommunityPost';
+export * from './adminListCommunityPosts200';
 export * from './adminRedemption';
 export * from './analyzeIngredientsInput';
 export * from './analyzeSkinScanInput';
@@ -23,7 +25,11 @@ export * from './cheerItem';
 export * from './cheerList';
 export * from './claimReferralInput';
 export * from './claimReferralResult';
+export * from './communityPost';
+export * from './communityPostCategory';
 export * from './compAccess';
+export * from './createCommunityPostInput';
+export * from './createCommunityPostInputCategory';
 export * from './createPassportEntryInput';
 export * from './createPassportEntryInputEntryType';
 export * from './createProgressPhotoInput';
@@ -42,6 +48,7 @@ export * from './foodLog';
 export * from './foodLogInput';
 export * from './friendJourney';
 export * from './friendJourneysResponse';
+export * from './getCommunityPosts200';
 export * from './getDailySummaryParams';
 export * from './getMindSummary200';
 export * from './getMindSummary200HistoryItem';
@@ -73,6 +80,7 @@ export * from './meRole';
 export * from './mindCheckin';
 export * from './mission';
 export * from './missionsResponse';
+export * from './moderateCommunityPostInput';
 export * from './openaiConversation';
 export * from './openaiConversationInput';
 export * from './openaiConversationWithMessages';
@@ -110,6 +118,7 @@ export * from './staffAccessInput';
 export * from './staffMember';
 export * from './tierInfo';
 export * from './tierInfoName';
+export * from './toggleCommunityHeart200';
 export * from './updatePassportProfileInput';
 export * from './uploadUrlRequest';
 export * from './uploadUrlResponse';

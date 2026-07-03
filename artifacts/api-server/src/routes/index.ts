@@ -15,6 +15,7 @@ import skinRouter from "./skin";
 import ingredientsRouter from "./ingredients";
 import passportRouter from "./passport";
 import mindRouter from "./mind";
+import communityRouter from "./community";
 import storageRouter from "./storage";
 import referralsRouter from "./referrals";
 import socialRouter from "./social";
@@ -52,6 +53,7 @@ router.use(requireAuth, requireActiveSubscription, requirePatient, mindRouter);
 router.use(requireAuth, requireActiveSubscription, storageRouter);
 router.use(requireAuth, requireActiveSubscription, referralsRouter);
 router.use(requireAuth, requireActiveSubscription, requirePatient, socialRouter);
+router.use(requireAuth, requireActiveSubscription, requirePatient, communityRouter);
 
 // Staff-only management routes
 router.use(requireAuth, requireStaff, adminRouter);

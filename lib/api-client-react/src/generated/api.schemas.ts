@@ -592,6 +592,64 @@ export interface UpsertMindCheckinInput {
   journal?: string | null;
 }
 
+export type CommunityPostCategory = typeof CommunityPostCategory[keyof typeof CommunityPostCategory];
+
+
+export const CommunityPostCategory = {
+  weight_loss: 'weight_loss',
+  glow: 'glow',
+  skin: 'skin',
+  recipe: 'recipe',
+  motivation: 'motivation',
+  other: 'other',
+} as const;
+
+export interface CommunityPost {
+  id: number;
+  category: CommunityPostCategory;
+  body: string;
+  /** ISO timestamp */
+  createdAt: string;
+  heartCount: number;
+  heartedByMe: boolean;
+  /** True if the current user wrote this post */
+  mine: boolean;
+}
+
+export type CreateCommunityPostInputCategory = typeof CreateCommunityPostInputCategory[keyof typeof CreateCommunityPostInputCategory];
+
+
+export const CreateCommunityPostInputCategory = {
+  weight_loss: 'weight_loss',
+  glow: 'glow',
+  skin: 'skin',
+  recipe: 'recipe',
+  motivation: 'motivation',
+  other: 'other',
+} as const;
+
+export interface CreateCommunityPostInput {
+  category: CreateCommunityPostInputCategory;
+  /**
+     * @minLength 10
+     * @maxLength 500
+     */
+  body: string;
+}
+
+export interface ModerateCommunityPostInput {
+  hidden: boolean;
+}
+
+export interface AdminCommunityPost {
+  id: number;
+  category: string;
+  body: string;
+  createdAt: string;
+  hidden: boolean;
+  heartCount: number;
+}
+
 export type PassportEntryEntryType = typeof PassportEntryEntryType[keyof typeof PassportEntryEntryType];
 
 
@@ -1102,5 +1160,18 @@ export type GetMindSummary200 = {
   today: MindCheckin | null;
   streakDays: number;
   history: GetMindSummary200HistoryItem[];
+};
+
+export type GetCommunityPosts200 = {
+  posts: CommunityPost[];
+};
+
+export type ToggleCommunityHeart200 = {
+  hearted: boolean;
+  heartCount: number;
+};
+
+export type AdminListCommunityPosts200 = {
+  posts: AdminCommunityPost[];
 };
 

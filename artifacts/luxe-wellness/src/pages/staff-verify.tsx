@@ -29,6 +29,9 @@ import {
   getAdminListCompsQueryKey,
   useAdminGrantComp,
   useAdminRevokeComp,
+  useAdminListCommunityPosts,
+  getAdminListCommunityPostsQueryKey,
+  useModerateCommunityPost,
   type CompAccess,
   type RedemptionDetail,
   type Service,
@@ -67,6 +70,7 @@ import {
   ChevronDown,
   ChevronUp,
   HeartHandshake,
+  Megaphone,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -1328,6 +1332,84 @@ function FreeAccessTab() {
 
 /* ---------- Page ---------- */
 
+function CommunityModerationTab() {
+  const queryClient = useQueryClient();
+  const { data, isLoading } = useAdminListCommunityPosts({
+    query: { queryKey: getAdminListCommunityPostsQueryKey() },
+  });
+  const posts = data?.posts ?? [];
+  const moderate = useModerateCommunityPost();
+
+  const setHidden = (id: number, hidden: boolean) => {
+    moderate.mutate(
+      { id, data: { hidden } },
+      {
+        onSuccess: () => {
+          void queryClient.invalidateQueries({ queryKey: getAdminListCommunityPostsQueryKey() });
+          toast.success(hidden ? "Post hidden from patients." : "Post restored.");
+        },
+        onError: () => toast.error("Couldn't update the post. Please try again."),
+      },
+    );
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Community moderation</CardTitle>
+        <CardDescription>
+          Anonymous community posts. You can hide anything inappropriate — authors are never shown,
+          even to staff.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {isLoading ? (
+          <p className="text-sm text-muted-foreground">Loading…</p>
+        ) : posts.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No community posts yet.</p>
+        ) : (
+          <div className="space-y-3">
+            {posts.map((post) => (
+              <div
+                key={post.id}
+                className={`rounded-lg border p-3 ${post.hidden ? "opacity-60" : ""}`}
+              >
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 space-y-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Badge variant="secondary" className="text-xs">
+                        {post.category.replace("_", " ")}
+                      </Badge>
+                      {post.hidden && (
+                        <Badge variant="destructive" className="text-xs">
+                          Hidden
+                        </Badge>
+                      )}
+                      <span className="text-xs text-muted-foreground">
+                        {new Date(post.createdAt).toLocaleDateString()} · {post.heartCount} hearts
+                      </span>
+                    </div>
+                    <p className="whitespace-pre-wrap text-sm">{post.body}</p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant={post.hidden ? "outline" : "destructive"}
+                    className="shrink-0"
+                    disabled={moderate.isPending}
+                    onClick={() => setHidden(post.id, !post.hidden)}
+                  >
+                    {post.hidden ? "Restore" : "Hide"}
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function StaffVerify() {
   const { data: me, isLoading } = useGetMe();
 
@@ -1370,6 +1452,9 @@ export default function StaffVerify() {
           <TabsTrigger value="freeaccess">
             <HeartHandshake className="h-4 w-4 mr-1" /> Free access
           </TabsTrigger>
+          <TabsTrigger value="community">
+            <Megaphone className="h-4 w-4 mr-1" /> Community
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="verify" className="mt-6">
           <VerifyTab />
@@ -1388,6 +1473,9 @@ export default function StaffVerify() {
         </TabsContent>
         <TabsContent value="freeaccess" className="mt-6">
           <FreeAccessTab />
+        </TabsContent>
+        <TabsContent value="community" className="mt-6">
+          <CommunityModerationTab />
         </TabsContent>
       </Tabs>
     </div>
