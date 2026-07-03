@@ -317,9 +317,9 @@ export default function ChatScreen() {
           }}
         >
           {isSending ? (
-            <ActivityIndicator size="small" color="#0F1729" />
+            <ActivityIndicator size="small" color={c.accentForeground} />
           ) : (
-            <Feather name="arrow-up" size={20} color="#0F1729" />
+            <Feather name="arrow-up" size={20} color={c.accentForeground} />
           )}
         </Pressable>
       </View>

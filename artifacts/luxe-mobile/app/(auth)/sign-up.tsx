@@ -14,12 +14,12 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const NAVY = "#0F1729";
-const GOLD = "#E6C566";
-const CREAM = "#FAF8F4";
-const MUTED = "#94A3B8";
-const FIELD = "#152032";
-const BORDER = "#242F42";
+const NAVY = "#0A0A0A";
+const GOLD = "#FFFFFF";
+const CREAM = "#FAFAFA";
+const MUTED = "#A3A3A3";
+const FIELD = "#161616";
+const BORDER = "#262626";
 
 export default function SignUpScreen() {
   const { signUp, errors, fetchStatus } = useSignUp();

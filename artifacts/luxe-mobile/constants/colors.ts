@@ -1,71 +1,69 @@
 /**
  * LUXE Wellness & Aesthetics design tokens.
  * Synced from artifacts/luxe-wellness/src/index.css (HSL -> hex).
- * Warm cream light mode, deep navy dark mode, gold accent.
+ * Monochrome black & white palette matching the LUXE logo.
  */
-
-const gold = "#E6C566";
 
 const colors = {
   light: {
     // Legacy aliases
-    text: "#0F1729",
-    tint: "#B98E2F",
+    text: "#111111",
+    tint: "#111111",
 
-    background: "#FAF8F4",
-    foreground: "#0F1729",
+    background: "#FAFAFA",
+    foreground: "#111111",
 
     card: "#FFFFFF",
-    cardForeground: "#0F1729",
+    cardForeground: "#111111",
 
-    primary: "#0F1729",
+    primary: "#111111",
     primaryForeground: "#FFFFFF",
 
-    secondary: "#EFEBE1",
-    secondaryForeground: "#0F1729",
+    secondary: "#F0F0F0",
+    secondaryForeground: "#111111",
 
-    muted: "#EFEBE1",
-    mutedForeground: "#64748B",
+    muted: "#F0F0F0",
+    mutedForeground: "#6B6B6B",
 
-    accent: gold,
-    accentForeground: "#5C4708",
+    accent: "#111111",
+    accentForeground: "#FFFFFF",
 
     destructive: "#EF4444",
     destructiveForeground: "#FFFFFF",
 
-    border: "#E9E5DD",
-    input: "#E9E5DD",
+    border: "#E6E6E6",
+    input: "#E6E6E6",
 
     success: "#16A34A",
   },
 
   dark: {
-    text: "#FAF8F4",
-    tint: gold,
+    text: "#FAFAFA",
+    tint: "#FFFFFF",
 
-    background: "#0F1729",
-    foreground: "#FAF8F4",
+    background: "#0A0A0A",
+    foreground: "#FAFAFA",
 
-    card: "#152032",
-    cardForeground: "#FAF8F4",
+    card: "#161616",
+    cardForeground: "#FAFAFA",
 
-    primary: "#FAF8F4",
-    primaryForeground: "#0F1729",
+    primary: "#FAFAFA",
+    primaryForeground: "#0A0A0A",
 
-    secondary: "#242F42",
-    secondaryForeground: "#FAF8F4",
+    secondary: "#262626",
+    secondaryForeground: "#FAFAFA",
 
-    muted: "#242F42",
-    mutedForeground: "#94A3B8",
+    muted: "#262626",
+    mutedForeground: "#A3A3A3",
 
-    accent: gold,
-    accentForeground: "#0F1729",
+    accent: "#FFFFFF",
+    accentForeground: "#0A0A0A",
 
     destructive: "#DC2626",
-    destructiveForeground: "#FAF8F4",
+    destructiveForeground: "#FAFAFA",
 
-    border: "#242F42",
-    input: "#242F42",
+    border: "#262626",
+    input: "#262626",
 
     success: "#4ADE80",
   },
