@@ -21,6 +21,7 @@ import type {
 
 import type {
   AdminRedemption,
+  AnalyzeSkinScanInput,
   Appointment,
   AppointmentInput,
   AppointmentUpdate,
@@ -84,6 +85,8 @@ import type {
   ServiceInput,
   ServiceUpdate,
   SharingSettings,
+  SkinScanHistory,
+  SkinScanResult,
   StaffAccessInput,
   StaffMember,
   UploadUrlRequest,
@@ -3033,6 +3036,153 @@ export const useDeleteProgressPhoto = <TError = ErrorType<OpenaiError>,
         TContext
       > => {
       return useMutation(getDeleteProgressPhotoMutationOptions(options));
+    }
+
+export const getGetSkinScanHistoryUrl = () => {
+
+
+
+
+  return `/api/skin-scan`
+}
+
+/**
+ * @summary Weekly skin scan history for the requesting user
+ */
+export const getSkinScanHistory = async ( options?: RequestInit): Promise<SkinScanHistory> => {
+
+  return customFetch<SkinScanHistory>(getGetSkinScanHistoryUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetSkinScanHistoryQueryKey = () => {
+    return [
+    `/api/skin-scan`
+    ] as const;
+    }
+
+
+export const getGetSkinScanHistoryQueryOptions = <TData = Awaited<ReturnType<typeof getSkinScanHistory>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSkinScanHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetSkinScanHistoryQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getSkinScanHistory>>> = ({ signal }) => getSkinScanHistory({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getSkinScanHistory>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetSkinScanHistoryQueryResult = NonNullable<Awaited<ReturnType<typeof getSkinScanHistory>>>
+export type GetSkinScanHistoryQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Weekly skin scan history for the requesting user
+ */
+
+export function useGetSkinScanHistory<TData = Awaited<ReturnType<typeof getSkinScanHistory>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getSkinScanHistory>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetSkinScanHistoryQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAnalyzeSkinScanUrl = () => {
+
+
+
+
+  return `/api/skin-scan/analyze`
+}
+
+/**
+ * @summary Analyze a selfie with AI and save this week's skin scan
+ */
+export const analyzeSkinScan = async (analyzeSkinScanInput: AnalyzeSkinScanInput, options?: RequestInit): Promise<SkinScanResult> => {
+
+  return customFetch<SkinScanResult>(getAnalyzeSkinScanUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(analyzeSkinScanInput)
+  }
+);}
+
+
+
+
+export const getAnalyzeSkinScanMutationOptions = <TError = ErrorType<OpenaiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof analyzeSkinScan>>, TError,{data: BodyType<AnalyzeSkinScanInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof analyzeSkinScan>>, TError,{data: BodyType<AnalyzeSkinScanInput>}, TContext> => {
+
+const mutationKey = ['analyzeSkinScan'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof analyzeSkinScan>>, {data: BodyType<AnalyzeSkinScanInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  analyzeSkinScan(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AnalyzeSkinScanMutationResult = NonNullable<Awaited<ReturnType<typeof analyzeSkinScan>>>
+    export type AnalyzeSkinScanMutationBody = BodyType<AnalyzeSkinScanInput>
+    export type AnalyzeSkinScanMutationError = ErrorType<OpenaiError>
+
+    /**
+ * @summary Analyze a selfie with AI and save this week's skin scan
+ */
+export const useAnalyzeSkinScan = <TError = ErrorType<OpenaiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof analyzeSkinScan>>, TError,{data: BodyType<AnalyzeSkinScanInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof analyzeSkinScan>>,
+        TError,
+        {data: BodyType<AnalyzeSkinScanInput>},
+        TContext
+      > => {
+      return useMutation(getAnalyzeSkinScanMutationOptions(options));
     }
 
 export const getGetRewardsSummaryUrl = () => {

@@ -7,6 +7,7 @@
  */
 
 export * from './adminRedemption';
+export * from './analyzeSkinScanInput';
 export * from './appointment';
 export * from './appointmentInput';
 export * from './appointmentUpdate';
@@ -89,6 +90,8 @@ export * from './service';
 export * from './serviceInput';
 export * from './serviceUpdate';
 export * from './sharingSettings';
+export * from './skinScanHistory';
+export * from './skinScanResult';
 export * from './staffAccessInput';
 export * from './staffMember';
 export * from './tierInfo';

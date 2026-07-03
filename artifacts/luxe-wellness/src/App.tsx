@@ -23,6 +23,7 @@ import Bhrt from "@/pages/bhrt";
 import Rewards from "@/pages/rewards";
 import Friends from "@/pages/friends";
 import Photos from "@/pages/photos";
+import Skin from "@/pages/skin";
 import StaffVerify from "@/pages/staff-verify";
 import Privacy from "@/pages/privacy";
 import Terms from "@/pages/terms";
@@ -272,6 +273,7 @@ function ClerkProviderWithRoutes() {
             <Route path="/rewards">{() => <Protected component={Rewards} />}</Route>
             <Route path="/friends">{() => <Protected component={Friends} />}</Route>
             <Route path="/photos">{() => <Protected component={Photos} />}</Route>
+            <Route path="/skin">{() => <Protected component={Skin} />}</Route>
             <Route path="/staff">{() => <Protected component={StaffVerify} />}</Route>
             <Route path="/privacy">{() => <PublicPage component={Privacy} />}</Route>
             <Route path="/terms">{() => <PublicPage component={Terms} />}</Route>

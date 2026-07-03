@@ -529,6 +529,41 @@ export interface Mission {
   rewardPoints: number;
 }
 
+export interface AnalyzeSkinScanInput {
+  /**
+     * Base64 data URL of the selfie (JPEG/PNG/WebP, downscaled client-side)
+     * @minLength 1
+     */
+  imageDataUrl: string;
+}
+
+export interface SkinScanResult {
+  id: number;
+  /** Monday of the scan week (YYYY-MM-DD) */
+  weekStart: string;
+  /** Date the scan was taken (YYYY-MM-DD) */
+  scannedOn: string;
+  /** Overall skin score 0-100 */
+  overall: number;
+  hydration: number;
+  smoothness: number;
+  evenness: number;
+  clarity: number;
+  radiance: number;
+  summary: string;
+  tips: string[];
+  /** Optional single LUXE treatment suggestion (soft-sell) */
+  suggestion?: string | null;
+}
+
+export interface SkinScanHistory {
+  /** Past scans, oldest first */
+  scans: SkinScanResult[];
+  /** Monday of the current week (YYYY-MM-DD) */
+  weekStart: string;
+  currentWeekScanned: boolean;
+}
+
 export interface UploadUrlRequest {
   /** @minLength 1 */
   name: string;

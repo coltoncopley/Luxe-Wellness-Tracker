@@ -657,6 +657,48 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/OpenaiError"
+  /skin-scan:
+    get:
+      operationId: getSkinScanHistory
+      tags: [skin]
+      summary: Weekly skin scan history for the requesting user
+      responses:
+        "200":
+          description: Skin scan history
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SkinScanHistory"
+  /skin-scan/analyze:
+    post:
+      operationId: analyzeSkinScan
+      tags: [skin]
+      summary: Analyze a selfie with AI and save this week's skin scan
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AnalyzeSkinScanInput"
+      responses:
+        "200":
+          description: Scan analyzed and saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SkinScanResult"
+        "400":
+          description: Invalid input
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenaiError"
+        "422":
+          description: The photo could not be analyzed (not a clear face photo)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenaiError"
   /rewards/summary:
     get:
       operationId: getRewardsSummary
@@ -1996,6 +2038,64 @@ components:
         rewardPoints:
           type: integer
           description: Bonus points awarded on completion
+    AnalyzeSkinScanInput:
+      type: object
+      required: [imageDataUrl]
+      properties:
+        imageDataUrl:
+          type: string
+          minLength: 1
+          description: Base64 data URL of the selfie (JPEG/PNG/WebP, downscaled client-side)
+    SkinScanResult:
+      type: object
+      required:
+        [id, weekStart, scannedOn, overall, hydration, smoothness, evenness, clarity, radiance, summary, tips]
+      properties:
+        id:
+          type: integer
+        weekStart:
+          type: string
+          description: Monday of the scan week (YYYY-MM-DD)
+        scannedOn:
+          type: string
+          description: Date the scan was taken (YYYY-MM-DD)
+        overall:
+          type: integer
+          description: Overall skin score 0-100
+        hydration:
+          type: integer
+        smoothness:
+          type: integer
+        evenness:
+          type: integer
+        clarity:
+          type: integer
+        radiance:
+          type: integer
+        summary:
+          type: string
+        tips:
+          type: array
+          items:
+            type: string
+        suggestion:
+          type: string
+          nullable: true
+          description: Optional single LUXE treatment suggestion (soft-sell)
+    SkinScanHistory:
+      type: object
+      required: [scans, weekStart, currentWeekScanned]
+      properties:
+        scans:
+          type: array
+          description: Past scans, oldest first
+          items:
+            $ref: "#/components/schemas/SkinScanResult"
+        weekStart:
+          type: string
+          description: Monday of the current week (YYYY-MM-DD)
+        currentWeekScanned:
+          type: boolean
     UploadUrlRequest:
       type: object
       required: [name, size, contentType]

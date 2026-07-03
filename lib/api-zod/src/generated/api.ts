@@ -715,6 +715,55 @@ export const DeleteProgressPhotoResponse = zod.void()
 
 
 /**
+ * @summary Weekly skin scan history for the requesting user
+ */
+export const GetSkinScanHistoryResponse = zod.object({
+  "scans": zod.array(zod.object({
+  "id": zod.number(),
+  "weekStart": zod.string().describe('Monday of the scan week (YYYY-MM-DD)'),
+  "scannedOn": zod.string().describe('Date the scan was taken (YYYY-MM-DD)'),
+  "overall": zod.number().describe('Overall skin score 0-100'),
+  "hydration": zod.number(),
+  "smoothness": zod.number(),
+  "evenness": zod.number(),
+  "clarity": zod.number(),
+  "radiance": zod.number(),
+  "summary": zod.string(),
+  "tips": zod.array(zod.string()),
+  "suggestion": zod.string().nullish().describe('Optional single LUXE treatment suggestion (soft-sell)')
+})).describe('Past scans, oldest first'),
+  "weekStart": zod.string().describe('Monday of the current week (YYYY-MM-DD)'),
+  "currentWeekScanned": zod.boolean()
+})
+
+
+/**
+ * @summary Analyze a selfie with AI and save this week's skin scan
+ */
+
+
+
+export const AnalyzeSkinScanBody = zod.object({
+  "imageDataUrl": zod.string().min(1).describe('Base64 data URL of the selfie (JPEG\/PNG\/WebP, downscaled client-side)')
+})
+
+export const AnalyzeSkinScanResponse = zod.object({
+  "id": zod.number(),
+  "weekStart": zod.string().describe('Monday of the scan week (YYYY-MM-DD)'),
+  "scannedOn": zod.string().describe('Date the scan was taken (YYYY-MM-DD)'),
+  "overall": zod.number().describe('Overall skin score 0-100'),
+  "hydration": zod.number(),
+  "smoothness": zod.number(),
+  "evenness": zod.number(),
+  "clarity": zod.number(),
+  "radiance": zod.number(),
+  "summary": zod.string(),
+  "tips": zod.array(zod.string()),
+  "suggestion": zod.string().nullish().describe('Optional single LUXE treatment suggestion (soft-sell)')
+})
+
+
+/**
  * @summary Points balance, earning history, and reward catalog
  */
 export const GetRewardsSummaryResponse = zod.object({
