@@ -1,16 +1,34 @@
 import { Feather } from "@expo/vector-icons";
+import { useQueryClient } from "@tanstack/react-query";
 import React, { useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Linking, Pressable, Text, View } from "react-native";
 
 import {
+  getListRestaurantsQueryKey,
+  useCreateCustomRestaurant,
+  useDeleteCustomRestaurant,
   useListMenuItems,
   useListRestaurants,
   type MenuItem,
   type Restaurant,
 } from "@workspace/api-client-react";
 
-import { Card, EmptyState, ErrorView, LoadingView, Segmented, StackScreen } from "@/components/ui";
+import {
+  Card,
+  EmptyState,
+  ErrorView,
+  LoadingView,
+  LuxeButton,
+  LuxeInput,
+  Segmented,
+  StackScreen,
+} from "@/components/ui";
 import { useColors } from "@/hooks/useColors";
+import { Alert } from "@/lib/alert";
+
+function openDoorDash(name: string) {
+  void Linking.openURL(`https://www.doordash.com/search/store/${encodeURIComponent(name)}`);
+}
 
 export default function RestaurantsScreen() {
   const restaurants = useListRestaurants();
@@ -24,6 +42,7 @@ export default function RestaurantsScreen() {
   return (
     <StackScreen refreshing={restaurants.isRefetching} onRefresh={() => void restaurants.refetch()}>
       <IntroCard />
+      <AddRestaurantCard />
       {restaurants.data && restaurants.data.length > 0 ? (
         restaurants.data.map((r) => <RestaurantCard key={r.id} restaurant={r} />)
       ) : (
@@ -56,9 +75,122 @@ function IntroCard() {
   );
 }
 
+function AddRestaurantCard() {
+  const c = useColors();
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState("");
+  const [cuisine, setCuisine] = useState("");
+  const queryClient = useQueryClient();
+  const createMutation = useCreateCustomRestaurant();
+
+  const submit = () => {
+    const trimmed = name.trim();
+    if (trimmed.length < 2) {
+      Alert.alert("Add a restaurant", "Please enter a restaurant name.");
+      return;
+    }
+    createMutation.mutate(
+      { data: { name: trimmed, ...(cuisine.trim() ? { cuisine: cuisine.trim() } : {}) } },
+      {
+        onSuccess: () => {
+          void queryClient.invalidateQueries({ queryKey: getListRestaurantsQueryKey() });
+          setName("");
+          setCuisine("");
+          setOpen(false);
+          Alert.alert("Added!", `${trimmed} is now in your dining guide with healthy picks.`);
+        },
+        onError: (err) => {
+          const { status, data } = err as { status?: number; data?: { error?: string } | null };
+          const message =
+            status === 409
+              ? "That restaurant is already in your list."
+              : status === 422
+                ? "That doesn't look like a restaurant name — try again."
+                : status === 429
+                  ? (data?.error ??
+                    "You've hit today's limit for adding restaurants — try again tomorrow.")
+                  : "Couldn't add that restaurant. Please try again.";
+          Alert.alert("Add a restaurant", message);
+        },
+      },
+    );
+  };
+
+  return (
+    <Card style={{ marginTop: 14 }}>
+      {open ? (
+        <View style={{ gap: 10 }}>
+          <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 16, color: c.foreground }}>
+            Add a restaurant
+          </Text>
+          <Text style={{ fontFamily: "Inter_400Regular", fontSize: 13, color: c.mutedForeground }}>
+            Tell us where you like to eat and we'll build a typical menu with healthy picks — just
+            for you. Only you can see restaurants you add.
+          </Text>
+          <LuxeInput
+            placeholder="Restaurant name (e.g. Casa Grande)"
+            value={name}
+            onChangeText={setName}
+            maxLength={80}
+            editable={!createMutation.isPending}
+          />
+          <LuxeInput
+            placeholder="Type of food (optional, e.g. Mexican)"
+            value={cuisine}
+            onChangeText={setCuisine}
+            maxLength={40}
+            editable={!createMutation.isPending}
+          />
+          {createMutation.isPending ? (
+            <Text style={{ fontFamily: "Inter_400Regular", fontSize: 13, color: c.mutedForeground }}>
+              Building the menu and healthy picks — this takes about 20 seconds...
+            </Text>
+          ) : null}
+          <LuxeButton
+            label={createMutation.isPending ? "Building menu..." : "Add restaurant"}
+            icon="plus"
+            onPress={submit}
+            loading={createMutation.isPending}
+          />
+          {!createMutation.isPending ? (
+            <LuxeButton label="Cancel" variant="ghost" small onPress={() => setOpen(false)} />
+          ) : null}
+          <Text style={{ fontFamily: "Inter_400Regular", fontSize: 11, color: c.mutedForeground }}>
+            Menus and nutrition are AI estimates — actual items and values vary by location.
+          </Text>
+        </View>
+      ) : (
+        <LuxeButton label="Add a restaurant" icon="plus" variant="outline" onPress={() => setOpen(true)} />
+      )}
+    </Card>
+  );
+}
+
 function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
   const c = useColors();
   const [expanded, setExpanded] = useState(false);
+  const queryClient = useQueryClient();
+  const deleteMutation = useDeleteCustomRestaurant();
+
+  const removeRestaurant = () => {
+    Alert.alert("Remove restaurant", `Remove ${restaurant.name} from your list?`, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Remove",
+        style: "destructive",
+        onPress: () =>
+          deleteMutation.mutate(
+            { id: restaurant.id },
+            {
+              onSuccess: () => {
+                void queryClient.invalidateQueries({ queryKey: getListRestaurantsQueryKey() });
+              },
+              onError: () => Alert.alert("Remove restaurant", "Couldn't remove it. Please try again."),
+            },
+          ),
+      },
+    ]);
+  };
 
   return (
     <Card style={{ marginTop: 14, padding: 0, overflow: "hidden" }}>
@@ -67,18 +199,33 @@ function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
         style={{ padding: 16, flexDirection: "row", alignItems: "center" }}
       >
         <View style={{ flex: 1 }}>
-          <Text
-            style={{
-              fontFamily: "Inter_600SemiBold",
-              fontSize: 11,
-              color: c.accentForeground,
-              textTransform: "uppercase",
-              letterSpacing: 0.5,
-              marginBottom: 2,
-            }}
-          >
-            {restaurant.cuisine}
-          </Text>
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 2 }}>
+            <Text
+              style={{
+                fontFamily: "Inter_600SemiBold",
+                fontSize: 11,
+                color: c.accentForeground,
+                textTransform: "uppercase",
+                letterSpacing: 0.5,
+              }}
+            >
+              {restaurant.cuisine}
+            </Text>
+            {restaurant.isMine ? (
+              <View
+                style={{
+                  backgroundColor: c.secondary,
+                  borderRadius: 8,
+                  paddingHorizontal: 8,
+                  paddingVertical: 2,
+                }}
+              >
+                <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 10, color: c.foreground }}>
+                  YOURS
+                </Text>
+              </View>
+            ) : null}
+          </View>
           <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 17, color: c.foreground }}>
             {restaurant.name}
           </Text>
@@ -97,6 +244,32 @@ function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
         </View>
         <Feather name={expanded ? "chevron-up" : "chevron-down"} size={20} color={c.mutedForeground} />
       </Pressable>
+      {expanded ? (
+        <View style={{ paddingHorizontal: 16, paddingBottom: 12, gap: 8 }}>
+          <LuxeButton
+            label="Order on DoorDash"
+            icon="external-link"
+            variant="outline"
+            small
+            onPress={() => openDoorDash(restaurant.name)}
+          />
+          {restaurant.isMine ? (
+            <>
+              <Text style={{ fontFamily: "Inter_400Regular", fontSize: 11, color: c.mutedForeground }}>
+                Menu and nutrition are AI estimates — actual items vary by location.
+              </Text>
+              <LuxeButton
+                label="Remove from my list"
+                icon="trash-2"
+                variant="ghost"
+                small
+                onPress={removeRestaurant}
+                loading={deleteMutation.isPending}
+              />
+            </>
+          ) : null}
+        </View>
+      ) : null}
       {expanded ? <RestaurantMenu restaurantId={restaurant.id} /> : null}
     </Card>
   );

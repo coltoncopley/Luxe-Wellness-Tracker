@@ -311,7 +311,8 @@ export const ListRestaurantsResponseItem = zod.object({
   "id": zod.number(),
   "name": zod.string(),
   "cuisine": zod.string(),
-  "description": zod.string().nullish()
+  "description": zod.string().nullish(),
+  "isMine": zod.boolean()
 })
 export const ListRestaurantsResponse = zod.array(ListRestaurantsResponseItem)
 
@@ -358,6 +359,40 @@ export const ListHealthyPicksResponseItem = zod.object({
   "orderingTip": zod.string().nullish()
 })
 export const ListHealthyPicksResponse = zod.array(ListHealthyPicksResponseItem)
+
+
+/**
+ * @summary Add a personal restaurant — AI generates a typical menu with healthy picks (private to this patient)
+ */
+export const createCustomRestaurantBodyNameMin = 2;
+export const createCustomRestaurantBodyNameMax = 80;
+
+export const createCustomRestaurantBodyCuisineMax = 40;
+
+
+
+export const CreateCustomRestaurantBody = zod.object({
+  "name": zod.string().min(createCustomRestaurantBodyNameMin).max(createCustomRestaurantBodyNameMax),
+  "cuisine": zod.string().max(createCustomRestaurantBodyCuisineMax).optional()
+})
+
+export const CreateCustomRestaurantResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "cuisine": zod.string(),
+  "description": zod.string().nullish(),
+  "isMine": zod.boolean()
+})
+
+
+/**
+ * @summary Remove a restaurant you added (curated restaurants cannot be removed)
+ */
+export const DeleteCustomRestaurantParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DeleteCustomRestaurantResponse = zod.void()
 
 
 /**
@@ -1603,7 +1638,8 @@ export const AdminCreateRestaurantResponse = zod.object({
   "id": zod.number(),
   "name": zod.string(),
   "cuisine": zod.string(),
-  "description": zod.string().nullish()
+  "description": zod.string().nullish(),
+  "isMine": zod.boolean()
 })
 
 

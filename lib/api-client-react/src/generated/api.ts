@@ -47,6 +47,7 @@ import type {
   CompAccess,
   CreateAnnouncementInput,
   CreateCommunityPostInput,
+  CreateCustomRestaurantInput,
   CreateMembershipCodeInput,
   CreatePassportEntryInput,
   CreateProgressPhotoInput,
@@ -1873,6 +1874,146 @@ export function useListHealthyPicks<TData = Awaited<ReturnType<typeof listHealth
 
 
 
+
+export const getCreateCustomRestaurantUrl = () => {
+
+
+
+
+  return `/api/restaurants/custom`
+}
+
+/**
+ * @summary Add a personal restaurant — AI generates a typical menu with healthy picks (private to this patient)
+ */
+export const createCustomRestaurant = async (createCustomRestaurantInput: CreateCustomRestaurantInput, options?: RequestInit): Promise<Restaurant> => {
+
+  return customFetch<Restaurant>(getCreateCustomRestaurantUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(createCustomRestaurantInput)
+  }
+);}
+
+
+
+
+export const getCreateCustomRestaurantMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCustomRestaurant>>, TError,{data: BodyType<CreateCustomRestaurantInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createCustomRestaurant>>, TError,{data: BodyType<CreateCustomRestaurantInput>}, TContext> => {
+
+const mutationKey = ['createCustomRestaurant'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createCustomRestaurant>>, {data: BodyType<CreateCustomRestaurantInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createCustomRestaurant(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateCustomRestaurantMutationResult = NonNullable<Awaited<ReturnType<typeof createCustomRestaurant>>>
+    export type CreateCustomRestaurantMutationBody = BodyType<CreateCustomRestaurantInput>
+    export type CreateCustomRestaurantMutationError = ErrorType<void>
+
+    /**
+ * @summary Add a personal restaurant — AI generates a typical menu with healthy picks (private to this patient)
+ */
+export const useCreateCustomRestaurant = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCustomRestaurant>>, TError,{data: BodyType<CreateCustomRestaurantInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createCustomRestaurant>>,
+        TError,
+        {data: BodyType<CreateCustomRestaurantInput>},
+        TContext
+      > => {
+      return useMutation(getCreateCustomRestaurantMutationOptions(options));
+    }
+
+export const getDeleteCustomRestaurantUrl = (id: number,) => {
+
+
+
+
+  return `/api/restaurants/${id}`
+}
+
+/**
+ * @summary Remove a restaurant you added (curated restaurants cannot be removed)
+ */
+export const deleteCustomRestaurant = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteCustomRestaurantUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteCustomRestaurantMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCustomRestaurant>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteCustomRestaurant>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteCustomRestaurant'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteCustomRestaurant>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteCustomRestaurant(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteCustomRestaurantMutationResult = NonNullable<Awaited<ReturnType<typeof deleteCustomRestaurant>>>
+
+    export type DeleteCustomRestaurantMutationError = ErrorType<void>
+
+    /**
+ * @summary Remove a restaurant you added (curated restaurants cannot be removed)
+ */
+export const useDeleteCustomRestaurant = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCustomRestaurant>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteCustomRestaurant>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteCustomRestaurantMutationOptions(options));
+    }
 
 export const getSearchMenuItemsUrl = (params: SearchMenuItemsParams,) => {
   const normalizedParams = new URLSearchParams();

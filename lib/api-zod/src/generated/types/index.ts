@@ -47,6 +47,7 @@ export * from './compAccess';
 export * from './createAnnouncementInput';
 export * from './createCommunityPostInput';
 export * from './createCommunityPostInputCategory';
+export * from './createCustomRestaurantInput';
 export * from './createMembershipCodeInput';
 export * from './createMembershipCodeInputKind';
 export * from './createPassportEntryInput';

@@ -637,6 +637,7 @@ export interface Restaurant {
   cuisine: string;
   /** @nullable */
   description?: string | null;
+  isMine: boolean;
 }
 
 export interface RestaurantInput {
@@ -645,6 +646,16 @@ export interface RestaurantInput {
   /** @minLength 1 */
   cuisine: string;
   description?: string;
+}
+
+export interface CreateCustomRestaurantInput {
+  /**
+     * @minLength 2
+     * @maxLength 80
+     */
+  name: string;
+  /** @maxLength 40 */
+  cuisine?: string;
 }
 
 export interface MenuItemInput {

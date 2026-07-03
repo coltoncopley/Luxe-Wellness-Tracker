@@ -152,7 +152,7 @@ router.post("/admin/restaurants", async (req, res): Promise<void> => {
     return;
   }
   const [row] = await db.insert(restaurantsTable).values(body.data).returning();
-  res.status(201).json(AdminCreateRestaurantResponse.parse(row));
+  res.status(201).json(AdminCreateRestaurantResponse.parse({ ...row, isMine: false }));
 });
 
 router.delete("/admin/restaurants/:id", async (req, res): Promise<void> => {
@@ -162,6 +162,11 @@ router.delete("/admin/restaurants/:id", async (req, res): Promise<void> => {
     return;
   }
   const deleted = await db.transaction(async (tx) => {
+    const [target] = await tx
+      .select({ id: restaurantsTable.id })
+      .from(restaurantsTable)
+      .where(and(eq(restaurantsTable.id, id), isNull(restaurantsTable.ownerUserId)));
+    if (!target) return [];
     await tx.delete(menuItemsTable).where(eq(menuItemsTable.restaurantId, id));
     return tx.delete(restaurantsTable).where(eq(restaurantsTable.id, id)).returning();
   });
@@ -186,7 +191,7 @@ router.post("/admin/restaurants/:id/menu-items", async (req, res): Promise<void>
   const [restaurant] = await db
     .select()
     .from(restaurantsTable)
-    .where(eq(restaurantsTable.id, id));
+    .where(and(eq(restaurantsTable.id, id), isNull(restaurantsTable.ownerUserId)));
   if (!restaurant) {
     res.status(404).json({ error: "Restaurant not found" });
     return;
@@ -206,7 +211,15 @@ router.delete("/admin/menu-items/:id", async (req, res): Promise<void> => {
     res.status(400).json({ error: "Invalid id" });
     return;
   }
-  const [row] = await db.delete(menuItemsTable).where(eq(menuItemsTable.id, id)).returning();
+  const [row] = await db
+    .delete(menuItemsTable)
+    .where(
+      and(
+        eq(menuItemsTable.id, id),
+        sql`${menuItemsTable.restaurantId} IN (SELECT ${restaurantsTable.id} FROM ${restaurantsTable} WHERE ${restaurantsTable.ownerUserId} IS NULL)`,
+      ),
+    )
+    .returning();
   if (!row) {
     res.status(404).json({ error: "Menu item not found" });
     return;

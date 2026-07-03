@@ -6,11 +6,12 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface Restaurant {
-  id: number;
+export interface CreateCustomRestaurantInput {
+  /**
+     * @minLength 2
+     * @maxLength 80
+     */
   name: string;
-  cuisine: string;
-  /** @nullable */
-  description?: string | null;
-  isMine: boolean;
+  /** @maxLength 40 */
+  cuisine?: string;
 }

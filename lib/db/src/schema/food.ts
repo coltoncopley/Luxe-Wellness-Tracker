@@ -1,14 +1,26 @@
-import { pgTable, text, serial, date, real, integer, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, date, real, integer, boolean, uniqueIndex } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { usersTable } from "./users";
 
-export const restaurantsTable = pgTable("restaurants", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull(),
-  cuisine: text("cuisine").notNull(),
-  description: text("description"),
-});
+export const restaurantsTable = pgTable(
+  "restaurants",
+  {
+    id: serial("id").primaryKey(),
+    name: text("name").notNull(),
+    cuisine: text("cuisine").notNull(),
+    description: text("description"),
+    // NULL = curated/global (staff-managed). Set = patient-private custom restaurant,
+    // visible only to that patient — staff must never see or touch these rows.
+    ownerUserId: text("owner_user_id").references(() => usersTable.id),
+  },
+  (t) => [
+    uniqueIndex("restaurants_owner_lower_name_unique")
+      .on(t.ownerUserId, sql`lower(${t.name})`)
+      .where(sql`${t.ownerUserId} IS NOT NULL`),
+  ],
+);
 
 export const insertRestaurantSchema = createInsertSchema(restaurantsTable).omit({ id: true });
 export type InsertRestaurant = z.infer<typeof insertRestaurantSchema>;

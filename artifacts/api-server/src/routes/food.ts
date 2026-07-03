@@ -1,13 +1,16 @@
-import { Router, type IRouter } from "express";
-import { eq, asc, ilike, and, desc } from "drizzle-orm";
+import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
+import { eq, asc, ilike, and, desc, or, isNull, sql } from "drizzle-orm";
 import { db, restaurantsTable, menuItemsTable, foodLogsTable, goalsTable } from "@workspace/db";
 import { openai } from "@workspace/integrations-openai-ai-server";
 import { z } from "zod/v4";
 import { awardWithDailyCap, POINTS, FOOD_LOG_DAILY_CAP } from "../lib/rewards";
-import { userIdOf } from "../middlewares/auth";
+import { userIdOf, requirePatient } from "../middlewares/auth";
 import {
   AnalyzeMealPhotoBody,
   AnalyzeMealPhotoResponse,
+  CreateCustomRestaurantBody,
+  CreateCustomRestaurantResponse,
+  DeleteCustomRestaurantParams,
   ListRestaurantsResponse,
   ListMenuItemsParams,
   ListMenuItemsResponse,
@@ -39,9 +42,22 @@ const menuItemSelect = {
   orderingTip: menuItemsTable.orderingTip,
 };
 
+function visibleRestaurants(userId: string) {
+  return or(isNull(restaurantsTable.ownerUserId), eq(restaurantsTable.ownerUserId, userId));
+}
+
 router.get("/restaurants", async (_req, res): Promise<void> => {
-  const rows = await db.select().from(restaurantsTable).orderBy(asc(restaurantsTable.name));
-  res.json(ListRestaurantsResponse.parse(rows));
+  const userId = userIdOf(res);
+  const rows = await db
+    .select()
+    .from(restaurantsTable)
+    .where(visibleRestaurants(userId))
+    .orderBy(asc(restaurantsTable.name));
+  res.json(
+    ListRestaurantsResponse.parse(
+      rows.map((r) => ({ ...r, isMine: r.ownerUserId === userId })),
+    ),
+  );
 });
 
 router.get("/restaurants/:id/menu-items", async (req, res): Promise<void> => {
@@ -54,7 +70,7 @@ router.get("/restaurants/:id/menu-items", async (req, res): Promise<void> => {
     .select(menuItemSelect)
     .from(menuItemsTable)
     .innerJoin(restaurantsTable, eq(menuItemsTable.restaurantId, restaurantsTable.id))
-    .where(eq(menuItemsTable.restaurantId, params.data.id))
+    .where(and(eq(menuItemsTable.restaurantId, params.data.id), visibleRestaurants(userIdOf(res))))
     .orderBy(asc(menuItemsTable.calories));
   res.json(ListMenuItemsResponse.parse(rows));
 });
@@ -73,6 +89,7 @@ router.get("/restaurants/:id/healthy-picks", async (req, res): Promise<void> => 
       and(
         eq(menuItemsTable.restaurantId, params.data.id),
         eq(menuItemsTable.isHealthyPick, true),
+        visibleRestaurants(userIdOf(res)),
       ),
     )
     .orderBy(asc(menuItemsTable.calories));
@@ -89,10 +106,201 @@ router.get("/menu-items/search", async (req, res): Promise<void> => {
     .select(menuItemSelect)
     .from(menuItemsTable)
     .innerJoin(restaurantsTable, eq(menuItemsTable.restaurantId, restaurantsTable.id))
-    .where(ilike(menuItemsTable.name, `%${query.data.q}%`))
+    .where(and(ilike(menuItemsTable.name, `%${query.data.q}%`), visibleRestaurants(userIdOf(res))))
     .orderBy(asc(menuItemsTable.calories))
     .limit(50);
   res.json(SearchMenuItemsResponse.parse(rows));
+});
+
+const MAX_CUSTOM_RESTAURANTS = 30;
+const CUSTOM_RESTAURANT_DAILY_LIMIT = 5;
+const customRestaurantAttempts = new Map<string, { count: number; resetAt: number }>();
+
+function rateLimitCustomRestaurants(_req: Request, res: Response, next: NextFunction): void {
+  const userId = userIdOf(res);
+  const now = Date.now();
+  const entry = customRestaurantAttempts.get(userId);
+  if (!entry || now >= entry.resetAt) {
+    customRestaurantAttempts.set(userId, { count: 1, resetAt: now + 24 * 60 * 60 * 1000 });
+    next();
+    return;
+  }
+  if (entry.count >= CUSTOM_RESTAURANT_DAILY_LIMIT) {
+    res.status(429).json({ error: "Daily limit reached — you can add more restaurants tomorrow" });
+    return;
+  }
+  entry.count += 1;
+  next();
+}
+
+const aiMenuSchema = z.object({
+  looksLikeRestaurant: z.boolean(),
+  cuisine: z.string(),
+  description: z.string(),
+  menuItems: z
+    .array(
+      z.object({
+        name: z.string().min(1),
+        calories: z.number(),
+        proteinG: z.number(),
+        carbsG: z.number(),
+        fatG: z.number(),
+        isHealthyPick: z.boolean(),
+        orderingTip: z.string().nullable(),
+      }),
+    )
+    .min(3)
+    .max(20),
+});
+
+const clampInt = (n: number, max: number) => Math.min(Math.max(0, Math.round(n)), max);
+const clampMacro = (n: number) => Math.min(Math.max(0, Math.round(n * 10) / 10), 500);
+
+router.post(
+  "/restaurants/custom",
+  requirePatient,
+  rateLimitCustomRestaurants,
+  async (req, res): Promise<void> => {
+    const body = CreateCustomRestaurantBody.safeParse(req.body);
+    if (!body.success) {
+      res.status(400).json({ error: body.error.message });
+      return;
+    }
+    const userId = userIdOf(res);
+    const name = body.data.name.trim();
+    if (name.length < 2) {
+      res.status(400).json({ error: "Please enter a restaurant name" });
+      return;
+    }
+
+    const [existing] = await db
+      .select({ id: restaurantsTable.id })
+      .from(restaurantsTable)
+      .where(
+        and(visibleRestaurants(userId), sql`lower(${restaurantsTable.name}) = lower(${name})`),
+      );
+    if (existing) {
+      res.status(409).json({ error: "That restaurant is already in your list" });
+      return;
+    }
+
+    const mine = await db
+      .select({ id: restaurantsTable.id })
+      .from(restaurantsTable)
+      .where(eq(restaurantsTable.ownerUserId, userId));
+    if (mine.length >= MAX_CUSTOM_RESTAURANTS) {
+      res.status(429).json({
+        error: "You've reached the limit of 30 added restaurants — remove one to add another",
+      });
+      return;
+    }
+
+    const completion = await openai.chat.completions.create({
+      model: "gpt-5.4",
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are a nutrition assistant for a wellness app. The patient wants to add a restaurant to their dining guide. " +
+            "Given the restaurant name (and optional cuisine hint), produce a typical menu with estimated nutrition. " +
+            "Respond ONLY with JSON: " +
+            '{"looksLikeRestaurant": boolean, "cuisine": string, "description": string, "menuItems": [{"name": string, "calories": number, "proteinG": number, "carbsG": number, "fatG": number, "isHealthyPick": boolean, "orderingTip": string|null}]}. ' +
+            "Set looksLikeRestaurant to false ONLY if the name clearly is not a restaurant or food establishment (e.g. random letters, an object, a person). " +
+            "If it's a known chain, base items on their real typical menu; if it's a local or unfamiliar spot, generate 8-12 items typical for that kind of restaurant. " +
+            "Mark the 3-4 lightest, highest-protein choices as isHealthyPick with a short practical orderingTip (e.g. 'Ask for dressing on the side'). " +
+            "Nutrition numbers are estimates for one serving. Keep the description to one sentence about the restaurant. " +
+            "Use educational, non-medical language. Never mention medications, dosing, or medical conditions.",
+        },
+        {
+          role: "user",
+          content: body.data.cuisine
+            ? `Restaurant: ${name}\nCuisine hint: ${body.data.cuisine.trim()}`
+            : `Restaurant: ${name}`,
+        },
+      ],
+      response_format: { type: "json_object" },
+    });
+
+    const raw = completion.choices[0]?.message?.content;
+    let menu: z.infer<typeof aiMenuSchema>;
+    try {
+      menu = aiMenuSchema.parse(JSON.parse(raw ?? ""));
+    } catch {
+      req.log.warn({ raw }, "Unparseable custom restaurant menu from model");
+      res.status(422).json({ error: "We couldn't build a menu for that — please try again" });
+      return;
+    }
+    if (!menu.looksLikeRestaurant) {
+      res.status(422).json({ error: "That doesn't look like a restaurant name — try again" });
+      return;
+    }
+
+    const items = menu.menuItems.slice(0, 15).map((m) => ({
+      name: m.name.slice(0, 120),
+      calories: clampInt(m.calories, 5000),
+      proteinG: clampMacro(m.proteinG),
+      carbsG: clampMacro(m.carbsG),
+      fatG: clampMacro(m.fatG),
+      isHealthyPick: m.isHealthyPick,
+      orderingTip: m.orderingTip ? m.orderingTip.slice(0, 300) : null,
+    }));
+
+    try {
+      const restaurant = await db.transaction(async (tx) => {
+        const [row] = await tx
+          .insert(restaurantsTable)
+          .values({
+            name,
+            cuisine: (body.data.cuisine?.trim() || menu.cuisine || "Restaurant").slice(0, 40),
+            description: menu.description ? menu.description.slice(0, 500) : null,
+            ownerUserId: userId,
+          })
+          .returning();
+        await tx
+          .insert(menuItemsTable)
+          .values(items.map((m) => ({ ...m, restaurantId: row.id })));
+        return row;
+      });
+      res
+        .status(201)
+        .json(CreateCustomRestaurantResponse.parse({ ...restaurant, isMine: true }));
+    } catch (err) {
+      if (err instanceof Error && "code" in err && (err as { code?: string }).code === "23505") {
+        res.status(409).json({ error: "That restaurant is already in your list" });
+        return;
+      }
+      throw err;
+    }
+  },
+);
+
+router.delete("/restaurants/:id", requirePatient, async (req, res): Promise<void> => {
+  const params = DeleteCustomRestaurantParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+  const userId = userIdOf(res);
+  const deleted = await db.transaction(async (tx) => {
+    const [row] = await tx
+      .select({ id: restaurantsTable.id })
+      .from(restaurantsTable)
+      .where(
+        and(eq(restaurantsTable.id, params.data.id), eq(restaurantsTable.ownerUserId, userId)),
+      );
+    if (!row) return null;
+    await tx.delete(menuItemsTable).where(eq(menuItemsTable.restaurantId, row.id));
+    const [gone] = await tx
+      .delete(restaurantsTable)
+      .where(eq(restaurantsTable.id, row.id))
+      .returning();
+    return gone;
+  });
+  if (!deleted) {
+    res.status(404).json({ error: "Restaurant not found" });
+    return;
+  }
+  res.sendStatus(204);
 });
 
 router.get("/food-logs", async (req, res): Promise<void> => {
