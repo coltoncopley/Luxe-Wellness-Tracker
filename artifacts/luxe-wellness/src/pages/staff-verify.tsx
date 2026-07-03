@@ -2720,7 +2720,7 @@ export default function StaffVerify() {
       </div>
 
       <Tabs defaultValue="verify">
-        <TabsList className="flex-wrap">
+        <TabsList className="flex h-auto w-full flex-wrap justify-start gap-1">
           <TabsTrigger value="verify">
             <Ticket className="h-4 w-4 mr-1" /> Verify codes
           </TabsTrigger>
