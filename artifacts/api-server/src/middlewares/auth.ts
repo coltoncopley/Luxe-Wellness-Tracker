@@ -121,3 +121,12 @@ export function userIdOf(res: Response): string {
   if (!userId) throw new Error("userIdOf called without requireAuth");
   return userId;
 }
+
+/**
+ * Drop a user from the in-memory "already upserted" cache. Called on account
+ * deletion so a stale cache entry can never suppress a future upsert (and leave
+ * a signed-in user without a row).
+ */
+export function forgetUser(userId: string): void {
+  knownUserIds.delete(userId);
+}

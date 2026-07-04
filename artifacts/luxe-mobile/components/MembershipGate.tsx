@@ -10,6 +10,7 @@ import {
 } from "@workspace/api-client-react";
 
 import { Card, LuxeButton, LuxeInput } from "@/components/ui";
+import { DeleteAccountButton } from "@/components/DeleteAccountButton";
 import { useColors } from "@/hooks/useColors";
 
 export function MembershipGate() {
@@ -96,6 +97,7 @@ export function MembershipGate() {
           )}
 
           <LuxeButton label="Sign out" variant="ghost" onPress={() => void signOut()} />
+          <DeleteAccountButton variant="ghost" label="Delete my account" />
         </View>
       </ScrollView>
     </View>

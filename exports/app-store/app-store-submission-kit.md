@@ -1,6 +1,14 @@
 # LUXE Wellness & Aesthetics — App Store Submission Kit
 
-Everything prepared for an Apple App Store listing, plus a checklist of what's still needed.
+Everything needed to submit the LUXE **mobile app** (`artifacts/luxe-mobile`, Expo / React Native) to the Apple App Store, plus the exact steps you still need to run.
+
+**Current status (2026-07):**
+- ✅ Native iOS app exists (Expo/React Native, reuses the deployed backend)
+- ✅ Backend deployed & healthy at `https://luxewellnessapp.com`
+- ✅ Patient accounts + per-patient private data (Clerk auth)
+- ✅ In-app **Delete Account** (Settings → Account) — satisfies Apple 5.1.1(v)
+- ✅ Bundle identifier `com.luxewellnessapp.luxe`, `eas.json` build/submit profiles configured
+- ⏳ You need: a paid Apple Developer account, an Expo account, and to run the EAS build/submit + create the App Store Connect listing (steps in §7)
 
 ---
 
@@ -33,7 +41,7 @@ Everything prepared for an Apple App Store listing, plus a checklist of what's s
 >
 > YOUR DAILY GLOW SCORE
 > • One simple 0–100 score for your whole day: water, sleep, stress, movement, protein, and skincare
-> • Build streaks and watch your 14-day trend
+> • Build streaks and watch your trend over time
 >
 > EARN REAL REWARDS
 > • Get points for weigh-ins, meal logs, and daily check-ins
@@ -43,13 +51,16 @@ Everything prepared for an Apple App Store listing, plus a checklist of what's s
 > • A 24/7 wellness assistant that knows our services and team
 > • Ask about treatments, skincare, or GLP-1 lifestyle tips anytime
 >
+> PRIVATE BY DESIGN
+> • Your health and tracking data is yours alone — the LUXE office cannot see it
+>
 > BOOK IN SECONDS
 > • Browse our full service menu and meet our team
 > • Book online through our secure scheduling portal
 >
 > LUXE Wellness and Aesthetics is a physician-owned med spa led by Dr. Copley in South Point, OH.
 >
-> This app is a wellness companion, not a medical device. It does not provide medical advice, diagnosis, or treatment. Always consult your healthcare provider about medical questions.
+> Full access to premium features is part of the LUXE Membership ($4.99/month), managed on our website. This app is a wellness companion, not a medical device. It does not provide medical advice, diagnosis, or treatment. Always consult your healthcare provider about medical questions.
 
 **Keywords** (100 char max)
 > med spa,wellness,GLP-1,weight tracker,glow,skincare,botox,aesthetics,food log,rewards,South Point
@@ -58,73 +69,120 @@ Everything prepared for an Apple App Store listing, plus a checklist of what's s
 > Primary: Health & Fitness · Secondary: Lifestyle
 
 **Age Rating**
-> 17+ (unrestricted web access via booking links; wellness content). Answer "None" for all objectionable-content questions; answer YES to "Unrestricted Web Access" only if the in-app booking link opens inside the app rather than Safari.
+> 17+ (wellness content; booking links open our external scheduling site). Answer "None" to all objectionable-content questions.
 
 ---
 
-## 2. Required URLs
+## 2. Required URLs (live now)
 
-These pages are now live inside the app and will be public once the app is published:
+The backend is deployed, so these are already public:
 
-| Requirement | URL (after publishing) |
+| Requirement | URL |
 |---|---|
-| Privacy Policy URL (required) | `https://<your-published-domain>/privacy` |
-| Support URL (required) | `https://<your-published-domain>/support` |
-| Terms of Use / EULA (optional) | `https://<your-published-domain>/terms` |
-| Marketing URL (optional) | `https://<your-published-domain>/` |
+| Privacy Policy URL (required) | `https://luxewellnessapp.com/privacy` |
+| Support URL (required) | `https://luxewellnessapp.com/support` |
+| Terms of Use / EULA (optional) | `https://luxewellnessapp.com/terms` |
+| Marketing URL (optional) | `https://luxewellnessapp.com/` |
 
-**Action needed:** publish the app so these URLs are live on a real domain, then paste the final URLs into App Store Connect.
+Confirm each opens correctly, then paste into App Store Connect.
 
 ---
 
 ## 3. Apple Privacy "Nutrition Label" answers
 
-In App Store Connect → App Privacy, declare:
+The app **has accounts**, so most data is *linked to the user*. In App Store Connect → App Privacy, declare:
 
-**Data collected and linked to the user:** None (the app has no accounts/login).
-
-**Data collected but NOT linked to identity:**
-- Health & Fitness → Fitness (weight, measurements, habit check-ins) — App Functionality
-- Health & Fitness → Nutrition-adjacent (food logs) — declare under "Other Usage Data" or Fitness — App Functionality
-- User Content → Photos (meal photos, processed for analysis, not stored) — App Functionality
-- User Content → Other User Content (AI chat messages) — App Functionality
+**Data collected and linked to the user** (all "App Functionality", none for tracking):
+- Contact Info → Email address (sign-in / account)
+- Identifiers → User ID
+- Health & Fitness → Fitness & health data (weight, measurements, activity, sleep, habit/mood check-ins)
+- User Content → Photos (progress photos are stored; meal/skin/ingredient photos are processed for AI analysis)
+- User Content → Other User Content (AI chat messages, journal/gratitude notes)
+- Purchases → Purchase history (LUXE Membership subscription; payment itself is handled on the website via Stripe)
 
 **Data used for tracking:** None. No advertising, no third-party analytics, no data sold or shared for marketing.
 
-**Photo permission string (Info.plist / Expo config):**
-> NSCameraUsageDescription: "LUXE uses your camera to photograph meals so AI can estimate nutrition."
-> NSPhotoLibraryUsageDescription: "LUXE lets you pick a meal photo so AI can estimate nutrition."
+**Data used to track you across apps/websites:** No.
+
+**Permission strings** (already set in `app.json` via the expo-image-picker plugin):
+> NSCameraUsageDescription: "LUXE uses your camera to take progress photos and photograph meals or product labels so AI can analyze them."
+> NSPhotoLibraryUsageDescription: "LUXE lets you choose photos so AI can analyze meals or product labels, and to save your progress photos."
 
 ---
 
-## 4. Screenshots (captured, in `screenshots/appstore/`)
+## 4. Account deletion (Apple 5.1.1(v)) — satisfied
+
+Apple requires any app with account creation to offer in-app account deletion.
+
+- **Where:** Settings → Account → "Delete account" (mobile and web).
+- **What it does:** permanently deletes the Clerk login and **all** of the patient's data (weigh-ins, measurements, food logs, photos and their stored image files, glow/mind check-ins, activity/sleep, rewards, passport, friends/social, community posts, etc.), and cancels any active LUXE Membership in Stripe. It cannot be undone.
+- **For review notes:** "Account deletion is available in-app at Settings → Delete account. It fully removes the account and all associated data and cancels any active subscription."
+
+---
+
+## 5. Screenshots
+
+Captured drafts live in `screenshots/appstore/`:
 
 | File | Shows |
 |---|---|
-| 01-dashboard.jpg | Welcome dashboard: weight goal, calories, streak, next appointment |
+| 01-dashboard.jpg | Home: weight goal, calories, streak, morning briefing |
 | 02-weight.jpg | Weight & measurements with goal progress |
-| 03-glow.jpg | Daily Glow Score 87 with 9-day streak and trend chart |
-| 04-food.jpg | Daily food log with macros and meal scanner button |
+| 03-glow.jpg | Daily Glow Score with streak and trend |
+| 04-food.jpg | Daily food log with macros and meal scanner |
 | 05-rewards.jpg | LUXE Rewards points and earning guide |
 | 06-book.jpg | Booking & appointments |
 
-**Important:** Apple requires exact pixel sizes — 1290 × 2796 px for the 6.7" iPhone (required) and 2048 × 2732 px for 12.9" iPad (if iPad is supported). These captures (430 × 932 css-px) are the right aspect ratio for iPhone but must be re-exported at full resolution from the final native app, or upscaled/framed with a tool like AppLaunchpad, Screenshots.pro, or Figma device frames. Apple also rejects screenshots that don't come from the actual app UI, so retake them from the native build before submitting.
+**Required sizes:** 1290 × 2796 px for the 6.7" iPhone (required). If you support iPad, also 2048 × 2732 px. Apple rejects screenshots that don't come from the actual app UI and off-spec dimensions — **retake these from the native build** (run the app on an iPhone 15 Pro Max simulator and capture) before submitting.
 
 ---
 
-## 5. App Review notes (paste into "Notes for Review")
+## 6. App Review notes (paste into "Notes for Review")
 
-> This is a wellness companion app for patients of LUXE Wellness and Aesthetics, a physician-owned medical spa in South Point, Ohio. The app is for self-tracking of lifestyle habits (weight, meals, hydration, sleep) and does not provide medical advice, diagnosis, or treatment — disclaimers appear in-app and in our Terms of Use. AI features (meal photo nutrition estimates and a wellness chat assistant) include disclaimers that outputs are estimates and not medical advice. Appointment booking links out to our existing scheduling provider (Aesthetic Record); no purchases occur in the app, so no in-app purchase entitlement is used. The rewards program redeems points for in-office perks only (no cash value). No account is required to use the app.
+> This is a wellness companion app for patients of LUXE Wellness and Aesthetics, a physician-owned medical spa in South Point, Ohio. It is for self-tracking of lifestyle habits (weight, meals, hydration, sleep, mood) and does not provide medical advice, diagnosis, or treatment — disclaimers appear in-app and in our Terms of Use. AI features (meal-photo nutrition estimates, skin/ingredient scans, and a wellness chat assistant) state that outputs are estimates and not medical advice.
+>
+> Accounts: sign-in is required; a patient's health/tracking data is private to them and is never visible to spa staff. Account deletion is available in-app at Settings → Delete account (removes the account and all data and cancels any active subscription).
+>
+> Membership: premium features are part of the LUXE Membership ($4.99/month) which is purchased and managed on our website (luxewellnessapp.com). No purchases occur inside the app and no external purchase links are shown in the app; members can unlock access in-app by redeeming a membership access code. Appointment booking links out to our existing scheduling provider (Aesthetic Record).
+>
+> A demo account is provided below for review.
+
+**Provide a demo account:** create a test patient with an active membership (or a comp/access code redeemed) so reviewers can see premium features, and paste its email + password into the review notes.
 
 ---
 
-## 6. Remaining checklist — what you still need
+## 7. What you still need to do — step by step
 
-1. **A native iOS build — the big one.** The App Store only accepts native apps, and the current app is a web app. Apple's guideline 4.2 rejects apps that are "just a website in a wrapper." The good news: this app's feature set (camera meal scanner, daily check-ins, rewards) justifies a native version. I can build an iOS/Android version (Expo/React Native) that reuses the same backend — just ask.
-   - *Alternative with zero Apple involvement:* publish as a **web app** and patients "Add to Home Screen" — it looks and feels like an app, no App Store review, live today.
-2. **Apple Developer account** — $99/year, enroll at developer.apple.com (as the business, which requires a D-U-N-S number, or as an individual).
-3. **Publish this app** so the Privacy/Support/Terms URLs are live (I can start that anytime).
-4. **App icon** — 1024 × 1024 px, no transparency, no rounded corners. The LUXE logo can be adapted; I can generate this.
-5. **Retake screenshots at full resolution** from the native build (see section 4).
-6. **Add patient logins before distributing to multiple patients — effectively required.** Right now the app has no accounts, so everyone using the same installation sees the same data. That's fine for a single-user pilot, but an App Store app used by many patients needs login + per-patient data separation before launch (the privacy policy now states this plainly). Once accounts exist, Apple also requires an in-app "Delete Account" option. This connects to the login decision we discussed earlier — say the word and I'll build it.
-7. **Optional but wise for a health app:** run the listing past your attorney, since LUXE is a medical practice — the disclaimers in Privacy/Terms are a solid start but aren't legal advice.
+### A. Accounts (one-time)
+1. **Apple Developer Program** — $99/year at developer.apple.com. Enroll as the business (needs a D-U-N-S number) or as an individual. Requires an Apple ID with two-factor auth.
+2. **Expo account** — free at expo.dev (EAS builds the native binary in the cloud so you don't need a Mac with Xcode).
+
+### B. Build & upload the iOS app (run from `artifacts/luxe-mobile`)
+```bash
+npm install -g eas-cli
+eas login                       # your Expo account
+eas init                        # links the project, writes the EAS projectId
+eas build -p ios --profile production
+# EAS will prompt to create/manage your Apple signing credentials.
+# Sign in with your Apple Developer account when asked (it can auto-manage certs & provisioning).
+eas submit -p ios --profile production
+# Uploads the finished build to App Store Connect.
+```
+Notes:
+- `eas.json` is already set up with a `production` profile (auto-increments the build number, points the app at `https://luxewellnessapp.com`, and injects the production Clerk key/proxy).
+- The bundle identifier is `com.luxewellnessapp.luxe` — use the same when App Store Connect asks.
+
+### C. Create the App Store Connect listing
+1. At appstoreconnect.apple.com → **My Apps → +** → New App. Platform iOS, bundle id `com.luxewellnessapp.luxe`.
+2. Paste the listing copy from §1, the URLs from §2, and complete App Privacy from §3.
+3. Upload screenshots (§5), the 1024×1024 app icon (already in the app), and select the build you submitted with EAS.
+4. Paste the App Review notes from §6 and the demo account.
+5. **Submit for Review.**
+
+---
+
+## 8. Heads-up: the membership model & Apple guideline 3.1.1
+
+The app deliberately uses the "reader / Netflix" model: the $4.99/month membership is **not** sold through in-app purchase, no purchase links appear in the app, and access is unlocked either by subscribing on the website or by redeeming an access code. This is designed to comply with Apple's rules.
+
+There is still some review risk: Apple sometimes asks apps that gate features behind an external paid subscription to either add In-App Purchase (Apple takes 15–30%) or qualify as a "reader" app. If the reviewer pushes back on 3.1.1, the two paths are (a) add Apple In-App Purchase for the membership, or (b) argue the reader-app exemption. No action needed now — just be aware this is the most likely reason for a first-submission rejection, and it's resolvable.

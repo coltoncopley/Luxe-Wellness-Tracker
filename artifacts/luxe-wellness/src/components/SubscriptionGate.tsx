@@ -8,8 +8,10 @@ import {
   useRedeemMembershipCode,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useClerk } from "@clerk/react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { DeleteAccountButton } from "@/components/DeleteAccountButton";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
@@ -130,6 +132,7 @@ function RedeemCodeSection() {
 
 export function SubscriptionGate({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
+  const { signOut } = useClerk();
   const [billingParam] = useState<string | null>(() => readBillingParam());
   const [activationStart] = useState(() => Date.now());
   const [activationTimedOut, setActivationTimedOut] = useState(false);
@@ -316,6 +319,22 @@ export function SubscriptionGate({ children }: { children: React.ReactNode }) {
               </Button>
             ) : null}
             {!isPastDue ? <RedeemCodeSection /> : null}
+          </div>
+
+          <div className="mt-6 flex flex-col gap-1 border-t border-border pt-4">
+            <Button
+              variant="ghost"
+              className="w-full text-xs text-muted-foreground"
+              onClick={() =>
+                void signOut({ redirectUrl: import.meta.env.BASE_URL.replace(/\/$/, "") || "/" })
+              }
+              data-testid="button-gate-sign-out"
+            >
+              Sign out
+            </Button>
+            <DeleteAccountButton variant="ghost" className="w-full text-xs text-muted-foreground">
+              Delete my account
+            </DeleteAccountButton>
           </div>
 
           <p className="mt-4 text-center text-[11px] text-muted-foreground">

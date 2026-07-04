@@ -21,6 +21,7 @@ import {
 } from "@workspace/api-client-react";
 
 import { Card, LuxeButton, LuxeInput, SectionTitle } from "@/components/ui";
+import { DeleteAccountButton } from "@/components/DeleteAccountButton";
 import { useColors } from "@/hooks/useColors";
 import { webUrl } from "@/lib/luxe";
 
@@ -454,6 +455,33 @@ function BirthdaySection() {
   );
 }
 
+function DangerZone() {
+  const c = useColors();
+  return (
+    <>
+      <SectionTitle>Account</SectionTitle>
+      <Card>
+        <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 15, color: c.foreground }}>
+          Delete account
+        </Text>
+        <Text
+          style={{
+            fontFamily: "Inter_400Regular",
+            fontSize: 13,
+            color: c.mutedForeground,
+            marginTop: 4,
+            marginBottom: 14,
+          }}
+        >
+          Permanently delete your account and all of your data. Your membership will be canceled.
+          This cannot be undone.
+        </Text>
+        <DeleteAccountButton />
+      </Card>
+    </>
+  );
+}
+
 export default function SettingsScreen() {
   const c = useColors();
   const insets = useSafeAreaInsets();
@@ -539,6 +567,8 @@ export default function SettingsScreen() {
             </Pressable>
           ))}
         </Card>
+
+        <DangerZone />
 
         <View style={{ marginTop: 28 }}>
           <LuxeButton

@@ -26,7 +26,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "sonner";
-import { Bell, Mail, Smartphone, Loader2, Send, Cake } from "lucide-react";
+import { DeleteAccountButton } from "@/components/DeleteAccountButton";
+import { Bell, Mail, Smartphone, Loader2, Send, Cake, Trash2 } from "lucide-react";
 
 const MONTHS = [
   "January",
@@ -158,6 +159,26 @@ function BirthdayCard() {
             ? "Your birthday is saved. It's only used for your in-app treat — never shared."
             : "Optional — only the month and day, never the year."}
         </p>
+      </CardContent>
+    </Card>
+  );
+}
+
+function DangerZoneCard() {
+  return (
+    <Card className="border-destructive/40">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-lg text-destructive">
+          <Trash2 className="h-5 w-5" />
+          Delete account
+        </CardTitle>
+        <CardDescription>
+          Permanently delete your account and all of your data — weigh-ins, food logs, photos,
+          rewards, and everything else. Your LUXE membership will be canceled. This cannot be undone.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <DeleteAccountButton>Delete account</DeleteAccountButton>
       </CardContent>
     </Card>
   );
@@ -502,6 +523,8 @@ export default function Settings() {
       </Card>
 
       <BirthdayCard />
+
+      <DangerZoneCard />
 
       <p className="text-xs text-muted-foreground">
         Notifications never include your private health details — just friendly nudges and spa

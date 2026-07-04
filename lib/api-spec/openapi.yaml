@@ -1788,6 +1788,25 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/OpenaiError"
+    delete:
+      operationId: deleteMe
+      tags: [me]
+      summary: Permanently delete the current user's account and all associated data
+      responses:
+        "204":
+          description: Account and all associated data deleted
+        "409":
+          description: Cannot delete the last remaining admin account
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenaiError"
+        "502":
+          description: Could not cancel the active membership; try again
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenaiError"
   /me/staff-access:
     post:
       operationId: activateStaffAccess

@@ -7399,6 +7399,76 @@ export function useGetMe<TData = Awaited<ReturnType<typeof getMe>>, TError = Err
 
 
 
+export const getDeleteMeUrl = () => {
+
+
+
+
+  return `/api/me`
+}
+
+/**
+ * @summary Permanently delete the current user's account and all associated data
+ */
+export const deleteMe = async ( options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteMeUrl(),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteMeMutationOptions = <TError = ErrorType<OpenaiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteMe>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteMe>>, TError,void, TContext> => {
+
+const mutationKey = ['deleteMe'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteMe>>, void> = () => {
+
+
+          return  deleteMe(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteMeMutationResult = NonNullable<Awaited<ReturnType<typeof deleteMe>>>
+
+    export type DeleteMeMutationError = ErrorType<OpenaiError>
+
+    /**
+ * @summary Permanently delete the current user's account and all associated data
+ */
+export const useDeleteMe = <TError = ErrorType<OpenaiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteMe>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteMe>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getDeleteMeMutationOptions(options));
+    }
+
 export const getActivateStaffAccessUrl = () => {
 
 

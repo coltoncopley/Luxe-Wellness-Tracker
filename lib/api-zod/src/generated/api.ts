@@ -1961,6 +1961,12 @@ export const GetMeResponse = zod.object({
 
 
 /**
+ * @summary Permanently delete the current user's account and all associated data
+ */
+export const DeleteMeResponse = zod.void()
+
+
+/**
  * @summary Unlock staff role with an access code
  */
 

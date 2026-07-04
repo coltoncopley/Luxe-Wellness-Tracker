@@ -1,0 +1,29 @@
+{
+  "cli": {
+    "version": ">= 12.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "preview": {
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_DOMAIN": "luxewellnessapp.com",
+        "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_live_Y2xlcmsubHV4ZS13ZWxsbmVzcy10cmFja2VyLnJlcGxpdC5hcHAk",
+        "EXPO_PUBLIC_CLERK_PROXY_URL": "https://luxewellnessapp.com/api/__clerk"
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_DOMAIN": "luxewellnessapp.com",
+        "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY": "pk_live_Y2xlcmsubHV4ZS13ZWxsbmVzcy10cmFja2VyLnJlcGxpdC5hcHAk",
+        "EXPO_PUBLIC_CLERK_PROXY_URL": "https://luxewellnessapp.com/api/__clerk"
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {}
+    }
+  }
+}

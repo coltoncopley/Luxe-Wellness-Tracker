@@ -1,6 +1,42 @@
 import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
-import { eq } from "drizzle-orm";
-import { db, usersTable, appSettingsTable } from "@workspace/db";
+import { eq, or, inArray } from "drizzle-orm";
+import { clerkClient } from "@clerk/express";
+import {
+  db,
+  usersTable,
+  appSettingsTable,
+  activitiesTable,
+  sleepEntriesTable,
+  deviceConnectionsTable,
+  appointmentsTable,
+  communityPostsTable,
+  communityHeartsTable,
+  conversations,
+  restaurantsTable,
+  menuItemsTable,
+  foodLogsTable,
+  glowCheckinsTable,
+  ingredientScansTable,
+  mindCheckinsTable,
+  notificationPrefsTable,
+  pushSubscriptionsTable,
+  notificationSendsTable,
+  passportEntriesTable,
+  passportProfilesTable,
+  progressPhotosTable,
+  rewardEventsTable,
+  redemptionsTable,
+  referralsTable,
+  skinScansTable,
+  followsTable,
+  shareSettingsTable,
+  cheersTable,
+  weightEntriesTable,
+  measurementsTable,
+  goalsTable,
+  offerClaimsTable,
+  membershipCodesTable,
+} from "@workspace/db";
 import {
   GetMeResponse,
   ActivateStaffAccessBody,
@@ -9,7 +45,10 @@ import {
   UpdateBirthdayBody,
   UpdateBirthdayResponse,
 } from "@workspace/api-zod";
-import { userIdOf } from "../middlewares/auth";
+import { userIdOf, forgetUser } from "../middlewares/auth";
+import { getUncachableStripeClient } from "../lib/stripeClient";
+import { clearSubscriptionCache } from "../middlewares/subscription";
+import { ObjectStorageService } from "../lib/objectStorage";
 
 const router: IRouter = Router();
 
@@ -136,6 +175,178 @@ router.post("/me/staff-access", rateLimitActivation, async (req, res): Promise<v
       role: user.role,
     }),
   );
+});
+
+/**
+ * Permanently delete the signed-in user's account and ALL associated data.
+ * Available to every role (Apple App Store guideline 5.1.1(v) requires in-app
+ * account deletion). Order of operations is deliberate:
+ *   1. Guard against removing the last admin.
+ *   2. Cancel the Stripe customer FIRST and fail hard if it errors — deleting
+ *      the users row would otherwise orphan the billing link and bill forever.
+ *   3. Delete every user-scoped row in FK-safe order inside one transaction.
+ *   4. Best-effort external cleanup (storage objects, Clerk user) AFTER commit.
+ */
+router.delete("/me", async (req, res, next): Promise<void> => {
+  try {
+    const userId = userIdOf(res);
+    const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+    if (!user) {
+      // Nothing to delete — succeed idempotently and clear the upsert cache.
+      forgetUser(userId);
+      res.status(204).end();
+      return;
+    }
+
+    // Never strand the app with no admin.
+    if (user.role === "admin") {
+      const admins = await db
+        .select({ id: usersTable.id })
+        .from(usersTable)
+        .where(eq(usersTable.role, "admin"));
+      if (admins.length <= 1) {
+        res.status(409).json({
+          error: "You're the last admin. Make another account an admin before deleting yours.",
+        });
+        return;
+      }
+    }
+
+    // Cancel any membership before touching the database. Deleting the Stripe
+    // customer cancels all active subscriptions and erases Stripe-side PII;
+    // invoices are retained as financial records.
+    if (user.stripeCustomerId) {
+      try {
+        const stripe = await getUncachableStripeClient();
+        await stripe.customers.del(user.stripeCustomerId);
+      } catch (err) {
+        // If a previous attempt already deleted the Stripe customer but the DB
+        // transaction then failed, a retry hits "resource_missing" — treat that
+        // as success so the user is never permanently stuck unable to delete.
+        const code = (err as { code?: string } | null)?.code;
+        if (code !== "resource_missing") {
+          req.log.error(
+            { err, userId },
+            "Failed to cancel Stripe customer during account deletion",
+          );
+          res.status(502).json({
+            error: "We couldn't cancel your membership just now. Please try again in a moment.",
+          });
+          return;
+        }
+      }
+    }
+
+    // Capture storage object paths before their rows disappear.
+    const photos = await db
+      .select({ objectPath: progressPhotosTable.objectPath })
+      .from(progressPhotosTable)
+      .where(eq(progressPhotosTable.userId, userId));
+
+    await db.transaction(async (tx) => {
+      // Children before parents: no FK uses ON DELETE CASCADE except
+      // messages -> conversations, so every reference must be cleared by hand.
+      const myRestaurants = tx
+        .select({ id: restaurantsTable.id })
+        .from(restaurantsTable)
+        .where(eq(restaurantsTable.ownerUserId, userId));
+      await tx.delete(menuItemsTable).where(inArray(menuItemsTable.restaurantId, myRestaurants));
+
+      const myPosts = tx
+        .select({ id: communityPostsTable.id })
+        .from(communityPostsTable)
+        .where(eq(communityPostsTable.userId, userId));
+      // Hearts by me OR hearts by anyone on my posts (latter would orphan a FK).
+      await tx
+        .delete(communityHeartsTable)
+        .where(
+          or(
+            eq(communityHeartsTable.userId, userId),
+            inArray(communityHeartsTable.postId, myPosts),
+          ),
+        );
+      await tx.delete(communityPostsTable).where(eq(communityPostsTable.userId, userId));
+
+      await tx.delete(restaurantsTable).where(eq(restaurantsTable.ownerUserId, userId));
+      // messages cascade from conversations.
+      await tx.delete(conversations).where(eq(conversations.userId, userId));
+
+      await tx.delete(activitiesTable).where(eq(activitiesTable.userId, userId));
+      await tx.delete(sleepEntriesTable).where(eq(sleepEntriesTable.userId, userId));
+      await tx.delete(deviceConnectionsTable).where(eq(deviceConnectionsTable.userId, userId));
+      await tx.delete(appointmentsTable).where(eq(appointmentsTable.userId, userId));
+      await tx.delete(foodLogsTable).where(eq(foodLogsTable.userId, userId));
+      await tx.delete(glowCheckinsTable).where(eq(glowCheckinsTable.userId, userId));
+      await tx.delete(ingredientScansTable).where(eq(ingredientScansTable.userId, userId));
+      await tx.delete(mindCheckinsTable).where(eq(mindCheckinsTable.userId, userId));
+      await tx.delete(notificationPrefsTable).where(eq(notificationPrefsTable.userId, userId));
+      await tx.delete(pushSubscriptionsTable).where(eq(pushSubscriptionsTable.userId, userId));
+      await tx.delete(notificationSendsTable).where(eq(notificationSendsTable.userId, userId));
+      await tx.delete(passportEntriesTable).where(eq(passportEntriesTable.userId, userId));
+      await tx.delete(passportProfilesTable).where(eq(passportProfilesTable.userId, userId));
+      await tx.delete(progressPhotosTable).where(eq(progressPhotosTable.userId, userId));
+      await tx.delete(rewardEventsTable).where(eq(rewardEventsTable.userId, userId));
+      await tx.delete(redemptionsTable).where(eq(redemptionsTable.userId, userId));
+      await tx.delete(skinScansTable).where(eq(skinScansTable.userId, userId));
+      await tx.delete(shareSettingsTable).where(eq(shareSettingsTable.userId, userId));
+      await tx.delete(weightEntriesTable).where(eq(weightEntriesTable.userId, userId));
+      await tx.delete(measurementsTable).where(eq(measurementsTable.userId, userId));
+      await tx.delete(goalsTable).where(eq(goalsTable.userId, userId));
+
+      await tx
+        .delete(referralsTable)
+        .where(
+          or(
+            eq(referralsTable.referrerUserId, userId),
+            eq(referralsTable.referredUserId, userId),
+          ),
+        );
+      await tx
+        .delete(followsTable)
+        .where(
+          or(eq(followsTable.followerUserId, userId), eq(followsTable.followeeUserId, userId)),
+        );
+      await tx
+        .delete(cheersTable)
+        .where(or(eq(cheersTable.fromUserId, userId), eq(cheersTable.toUserId, userId)));
+
+      // No FK to users, but personal — scrub the caller's own rows.
+      await tx.delete(offerClaimsTable).where(eq(offerClaimsTable.userId, userId));
+      await tx.delete(membershipCodesTable).where(eq(membershipCodesTable.redeemedBy, userId));
+
+      await tx.delete(usersTable).where(eq(usersTable.id, userId));
+    });
+
+    // Best-effort external cleanup now that the DB is consistent.
+    const storage = new ObjectStorageService();
+    for (const { objectPath } of photos) {
+      try {
+        const file = await storage.getObjectEntityFile(objectPath);
+        await file.delete({ ignoreNotFound: true });
+      } catch (err) {
+        req.log.warn(
+          { err, userId },
+          "Failed to delete a progress photo object during account deletion",
+        );
+      }
+    }
+
+    try {
+      await clerkClient.users.deleteUser(userId);
+    } catch (err) {
+      req.log.error(
+        { err, userId },
+        "Failed to delete Clerk user during account deletion (app data already removed)",
+      );
+    }
+
+    forgetUser(userId);
+    clearSubscriptionCache(userId);
+    req.log.info({ userId }, "account deleted");
+    res.status(204).end();
+  } catch (err) {
+    next(err);
+  }
 });
 
 export default router;
