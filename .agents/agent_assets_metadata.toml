@@ -6,6 +6,12 @@ uri = "file://artifacts/luxe-mobile/assets/images/icon.png"
 type = "image"
 title = "LUXE app icon"
 
+[[generated]]
+id = "LMw7MqRPuTno0S8Cakebn"
+uri = "file://attached_assets/generated_images/test_selfie.png"
+type = "image"
+title = "generated_image"
+
 [[outputs]]
 id = "sJscGYG0bTqmu-VWlL30y"
 uri = "file://attached_assets/stock_images/test_meal_photo.jpg"
@@ -59,3 +65,15 @@ id = "yAmAqMQvBh46Nik-7yzo8"
 uri = "file://exports/code-review-bundle.md"
 type = "text"
 title = "Code bundle for ChatGPT review"
+
+[[outputs]]
+id = "uc_RxaLD0Wi_SssUxTaO1"
+uri = "file://attached_assets/stock_images/test_meal.jpg"
+type = "image"
+title = "healthy balanced meal plate grilled salmon vegetables quinoa top down"
+
+[[outputs]]
+id = "rHKtXUFz7nQdE5Iu_Hf4B"
+uri = "file://attached_assets/stock_images/test_face.jpg"
+type = "image"
+title = "clear front facing portrait of a person's face, natural light, no makeup, plain background"

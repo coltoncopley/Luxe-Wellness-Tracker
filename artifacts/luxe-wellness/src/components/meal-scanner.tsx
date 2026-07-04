@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { apiErrorMessage } from "@/lib/utils";
 import { useAnalyzeMealPhoto } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -66,11 +67,7 @@ export function MealScanner({
       const result = await analyze.mutateAsync({ data: { imageDataUrl: dataUrl } });
       setAnalysis(result);
     } catch (err) {
-      const message =
-        err && typeof err === "object" && "error" in err && typeof err.error === "string"
-          ? err.error
-          : "Couldn't analyze that photo. Please try again.";
-      toast.error(message);
+      toast.error(apiErrorMessage(err, "Couldn't analyze that photo. Please try again."));
       setPreview(null);
     }
   }

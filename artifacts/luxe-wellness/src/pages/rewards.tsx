@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { apiErrorMessage } from "@/lib/utils";
 import {
   useGetRewardsSummary,
   useRedeemReward,
@@ -209,11 +210,7 @@ export default function Rewards() {
       await queryClient.invalidateQueries({ queryKey: getGetRewardsSummaryQueryKey() });
       setRedemption({ code: result.code, title });
     } catch (err) {
-      const message =
-        err && typeof err === "object" && "error" in err && typeof err.error === "string"
-          ? err.error
-          : "Couldn't redeem right now. Please try again.";
-      toast.error(message);
+      toast.error(apiErrorMessage(err, "Couldn't redeem right now. Please try again."));
     }
   }
 

@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { apiErrorMessage } from "@/lib/utils";
 import {
   useGetSkinScanHistory,
   getGetSkinScanHistoryQueryKey,
@@ -58,6 +59,7 @@ export default function Skin() {
   const analyze = useAnalyzeSkinScan();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [scanning, setScanning] = useState(false);
+  const [scanError, setScanError] = useState<string | null>(null);
 
   const scans = history?.scans ?? [];
   const latest = scans.length > 0 ? scans[scans.length - 1]! : null;
@@ -65,6 +67,7 @@ export default function Skin() {
 
   async function handleFile(file: File) {
     setScanning(true);
+    setScanError(null);
     try {
       const imageDataUrl = await fileToDataUrl(file);
       await analyze.mutateAsync({ data: { imageDataUrl } });
@@ -74,10 +77,8 @@ export default function Skin() {
       ]);
       toast.success("Skin scan complete! (+25 pts for this week's scan)");
     } catch (err) {
-      const message =
-        err && typeof err === "object" && "error" in err && typeof err.error === "string"
-          ? err.error
-          : "Couldn't analyze the photo. Please try again.";
+      const message = apiErrorMessage(err, "Couldn't analyze the photo. Please try again.");
+      setScanError(message);
       toast.error(message);
     } finally {
       setScanning(false);
@@ -146,6 +147,15 @@ export default function Skin() {
           </Button>
         </CardContent>
       </Card>
+
+      {scanError ? (
+        <div
+          role="alert"
+          className="rounded-lg border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive"
+        >
+          {scanError}
+        </div>
+      ) : null}
 
       {isLoading ? (
         <div className="text-muted-foreground">Loading your scans...</div>

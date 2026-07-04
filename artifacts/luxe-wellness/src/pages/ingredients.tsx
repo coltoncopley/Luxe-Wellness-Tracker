@@ -1,4 +1,5 @@
 import { useRef, useState } from "react";
+import { apiErrorMessage } from "@/lib/utils";
 import {
   useListIngredientScans,
   getListIngredientScansQueryKey,
@@ -139,11 +140,7 @@ export default function Ingredients() {
       ]);
       toast.success("Ingredient check complete!");
     } catch (err) {
-      const message =
-        err && typeof err === "object" && "error" in err && typeof err.error === "string"
-          ? err.error
-          : "Couldn't analyze the photo. Please try again.";
-      toast.error(message);
+      toast.error(apiErrorMessage(err, "Couldn't analyze the photo. Please try again."));
     } finally {
       setScanning(false);
       if (fileInputRef.current) fileInputRef.current.value = "";
