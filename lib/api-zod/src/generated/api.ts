@@ -433,6 +433,32 @@ export const CreateCustomRestaurantResponse = zod.object({
 
 
 /**
+ * @summary Find real restaurants near a typed location via web search and add them to this patient's private list
+ */
+export const discoverRestaurantsBodyLocationMin = 2;
+export const discoverRestaurantsBodyLocationMax = 80;
+
+
+
+export const DiscoverRestaurantsBody = zod.object({
+  "location": zod.string().min(discoverRestaurantsBodyLocationMin).max(discoverRestaurantsBodyLocationMax)
+})
+
+export const DiscoverRestaurantsResponse = zod.object({
+  "added": zod.number(),
+  "skipped": zod.number(),
+  "restaurants": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "cuisine": zod.string(),
+  "description": zod.string().nullish(),
+  "menuSource": zod.string().nullish(),
+  "isMine": zod.boolean()
+}))
+})
+
+
+/**
  * @summary Remove a restaurant you added (curated restaurants cannot be removed)
  */
 export const DeleteCustomRestaurantParams = zod.object({

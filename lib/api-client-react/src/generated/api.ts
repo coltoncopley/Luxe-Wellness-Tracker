@@ -61,6 +61,8 @@ import type {
   Device,
   DeviceList,
   DisconnectOuraParams,
+  DiscoverRestaurantsInput,
+  DiscoverRestaurantsResult,
   DoctorTip,
   DoctorTipInput,
   DoctorTipUpdate,
@@ -2030,6 +2032,76 @@ export const useCreateCustomRestaurant = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getCreateCustomRestaurantMutationOptions(options));
+    }
+
+export const getDiscoverRestaurantsUrl = () => {
+
+
+
+
+  return `/api/restaurants/discover`
+}
+
+/**
+ * @summary Find real restaurants near a typed location via web search and add them to this patient's private list
+ */
+export const discoverRestaurants = async (discoverRestaurantsInput: DiscoverRestaurantsInput, options?: RequestInit): Promise<DiscoverRestaurantsResult> => {
+
+  return customFetch<DiscoverRestaurantsResult>(getDiscoverRestaurantsUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(discoverRestaurantsInput)
+  }
+);}
+
+
+
+
+export const getDiscoverRestaurantsMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof discoverRestaurants>>, TError,{data: BodyType<DiscoverRestaurantsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof discoverRestaurants>>, TError,{data: BodyType<DiscoverRestaurantsInput>}, TContext> => {
+
+const mutationKey = ['discoverRestaurants'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof discoverRestaurants>>, {data: BodyType<DiscoverRestaurantsInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  discoverRestaurants(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DiscoverRestaurantsMutationResult = NonNullable<Awaited<ReturnType<typeof discoverRestaurants>>>
+    export type DiscoverRestaurantsMutationBody = BodyType<DiscoverRestaurantsInput>
+    export type DiscoverRestaurantsMutationError = ErrorType<void>
+
+    /**
+ * @summary Find real restaurants near a typed location via web search and add them to this patient's private list
+ */
+export const useDiscoverRestaurants = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof discoverRestaurants>>, TError,{data: BodyType<DiscoverRestaurantsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof discoverRestaurants>>,
+        TError,
+        {data: BodyType<DiscoverRestaurantsInput>},
+        TContext
+      > => {
+      return useMutation(getDiscoverRestaurantsMutationOptions(options));
     }
 
 export const getDeleteCustomRestaurantUrl = (id: number,) => {

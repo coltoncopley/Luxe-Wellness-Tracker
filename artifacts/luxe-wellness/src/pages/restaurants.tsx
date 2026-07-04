@@ -2,6 +2,7 @@ import {
   useListRestaurants,
   useListMenuItems,
   useCreateCustomRestaurant,
+  useDiscoverRestaurants,
   useDeleteCustomRestaurant,
   useCreateMyMenuItem,
   useUpdateMyMenuItem,
@@ -51,13 +52,15 @@ export default function Restaurants() {
         <div>
           <h1 className="text-4xl mb-2 text-primary">Local Dining Guide</h1>
           <p className="text-muted-foreground text-lg">
-            Curated healthy options for dining out in South Point.
+            Curated healthy picks for eating out — or find real spots near you.
           </p>
         </div>
         <Button onClick={() => setAddOpen(true)} className="shrink-0" data-testid="button-add-restaurant">
           <Plus className="w-4 h-4 mr-2" /> Add a restaurant
         </Button>
       </div>
+
+      <FindNearbyCard />
 
       {isLoadingRestaurants ? (
         <div className="py-8 text-center text-muted-foreground">Loading restaurants...</div>
@@ -89,7 +92,7 @@ export default function Restaurants() {
               </CardHeader>
               <CardContent className="pt-4 flex-1 flex flex-col">
                 <p className="text-sm text-muted-foreground line-clamp-2 mb-4">
-                  {restaurant.description || "Local favorite in South Point."}
+                  {restaurant.description || "A local favorite."}
                 </p>
                 <div className="mt-auto space-y-3">
                   <div className="flex items-center justify-between text-sm font-medium text-primary group-hover:underline">
@@ -130,6 +133,103 @@ export default function Restaurants() {
         menuSource={selected?.menuSource ?? null}
       />
     </div>
+  );
+}
+
+function FindNearbyCard() {
+  const [location, setLocation] = useState("");
+  const queryClient = useQueryClient();
+  const discoverMutation = useDiscoverRestaurants();
+
+  const submit = () => {
+    const trimmed = location.trim();
+    if (trimmed.length < 2) {
+      toast.error("Type a city or area first (e.g. Columbus OH)");
+      return;
+    }
+    discoverMutation.mutate(
+      { data: { location: trimmed } },
+      {
+        onSuccess: (result) => {
+          void queryClient.invalidateQueries({ queryKey: getListRestaurantsQueryKey() });
+          if (result.added > 0) {
+            toast.success(
+              `Added ${result.added} spot${result.added === 1 ? "" : "s"} near ${trimmed} — scroll down to see them.`,
+            );
+            setLocation("");
+          } else {
+            toast.info("Those spots are already in your dining guide.");
+          }
+        },
+        onError: (err) => {
+          if (err.status === 422) {
+            toast.error(
+              "We couldn't find restaurants near there — try a nearby city or a larger town.",
+            );
+          } else if (err.status === 429) {
+            const serverMessage = (err.data as { error?: string } | null)?.error;
+            toast.error(
+              serverMessage ?? "You've searched a few times already — try again in a little while.",
+            );
+          } else {
+            toast.error("Couldn't search right now. Please try again.");
+          }
+        },
+      },
+    );
+  };
+
+  return (
+    <Card className="border-primary/20 bg-primary/5">
+      <CardContent className="p-5 space-y-3">
+        <div className="flex items-center gap-2">
+          <MapPin className="w-5 h-5 text-primary" />
+          <h2 className="font-serif text-xl text-primary">Find restaurants near you</h2>
+        </div>
+        <p className="text-sm text-muted-foreground">
+          Traveling or eating somewhere new? Type a city or area and we'll look up real restaurants
+          there and add them to your private guide with healthy picks.
+        </p>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Input
+            placeholder="City or area (e.g. Columbus OH)"
+            value={location}
+            onChange={(e) => setLocation(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && submit()}
+            maxLength={80}
+            disabled={discoverMutation.isPending}
+            data-testid="input-discover-location"
+          />
+          <Button
+            onClick={submit}
+            disabled={discoverMutation.isPending}
+            className="shrink-0"
+            data-testid="button-discover"
+          >
+            {discoverMutation.isPending ? (
+              <>
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" /> Searching...
+              </>
+            ) : (
+              <>
+                <MapPin className="w-4 h-4 mr-2" /> Find restaurants near me
+              </>
+            )}
+          </Button>
+        </div>
+        {discoverMutation.isPending && (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground bg-secondary/40 rounded-lg p-3">
+            <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+            Searching the web for real restaurants near {location.trim()} — this can take up to a
+            minute...
+          </div>
+        )}
+        <p className="text-xs text-muted-foreground">
+          We only add real places we can find online. Nutrition is always an AI estimate — actual
+          values vary by location and portion.
+        </p>
+      </CardContent>
+    </Card>
   );
 }
 

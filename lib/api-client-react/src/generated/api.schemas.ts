@@ -662,6 +662,20 @@ export interface CreateCustomRestaurantInput {
   location?: string;
 }
 
+export interface DiscoverRestaurantsInput {
+  /**
+     * @minLength 2
+     * @maxLength 80
+     */
+  location: string;
+}
+
+export interface DiscoverRestaurantsResult {
+  added: number;
+  skipped: number;
+  restaurants: Restaurant[];
+}
+
 export interface MenuItemInput {
   /** @minLength 1 */
   name: string;

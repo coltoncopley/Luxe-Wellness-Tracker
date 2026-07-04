@@ -444,6 +444,30 @@ paths:
           description: Could not generate a menu for this restaurant
         "429":
           description: Daily limit reached
+  /restaurants/discover:
+    post:
+      operationId: discoverRestaurants
+      tags: [food]
+      summary: Find real restaurants near a typed location via web search and add them to this patient's private list
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DiscoverRestaurantsInput"
+      responses:
+        "201":
+          description: Restaurants discovered and added
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DiscoverRestaurantsResult"
+        "400":
+          description: Invalid input
+        "422":
+          description: Could not find restaurants near that location
+        "429":
+          description: Rate limit reached
   /restaurants/{id}:
     delete:
       operationId: deleteCustomRestaurant
@@ -3425,6 +3449,21 @@ components:
         name: { type: string, minLength: 2, maxLength: 80 }
         cuisine: { type: string, maxLength: 40 }
         location: { type: string, maxLength: 80 }
+    DiscoverRestaurantsInput:
+      type: object
+      required: [location]
+      properties:
+        location: { type: string, minLength: 2, maxLength: 80 }
+    DiscoverRestaurantsResult:
+      type: object
+      required: [added, skipped, restaurants]
+      properties:
+        added: { type: integer }
+        skipped: { type: integer }
+        restaurants:
+          type: array
+          items:
+            $ref: "#/components/schemas/Restaurant"
     MenuItemInput:
       type: object
       required: [name, calories]

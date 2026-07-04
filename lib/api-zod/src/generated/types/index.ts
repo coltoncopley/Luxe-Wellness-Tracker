@@ -73,6 +73,8 @@ export * from './deviceLastSyncStatus';
 export * from './deviceList';
 export * from './deviceProvider';
 export * from './disconnectOuraParams';
+export * from './discoverRestaurantsInput';
+export * from './discoverRestaurantsResult';
 export * from './doctorTip';
 export * from './doctorTipInput';
 export * from './doctorTipSource';

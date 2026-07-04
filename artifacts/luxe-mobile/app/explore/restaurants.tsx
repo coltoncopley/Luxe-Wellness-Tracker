@@ -6,6 +6,7 @@ import { Linking, Pressable, Text, View } from "react-native";
 import {
   getListRestaurantsQueryKey,
   useCreateCustomRestaurant,
+  useDiscoverRestaurants,
   useDeleteCustomRestaurant,
   useListMenuItems,
   useListRestaurants,
@@ -42,6 +43,7 @@ export default function RestaurantsScreen() {
   return (
     <StackScreen refreshing={restaurants.isRefetching} onRefresh={() => void restaurants.refetch()}>
       <IntroCard />
+      <FindNearbyCard />
       <AddRestaurantCard />
       {restaurants.data && restaurants.data.length > 0 ? (
         restaurants.data.map((r) => <RestaurantCard key={r.id} restaurant={r} />)
@@ -69,9 +71,103 @@ function IntroCard() {
         Local Dining Guide
       </Text>
       <Text style={{ fontFamily: "Inter_400Regular", fontSize: 14, color: c.mutedForeground }}>
-        Curated healthy options for dining out in South Point.
+        Curated healthy picks for eating out — or find real spots near you.
       </Text>
     </View>
+  );
+}
+
+function FindNearbyCard() {
+  const c = useColors();
+  const [open, setOpen] = useState(false);
+  const [location, setLocation] = useState("");
+  const queryClient = useQueryClient();
+  const discoverMutation = useDiscoverRestaurants();
+
+  const submit = () => {
+    const trimmed = location.trim();
+    if (trimmed.length < 2) {
+      Alert.alert("Find restaurants", "Type a city or area first (e.g. Columbus OH).");
+      return;
+    }
+    discoverMutation.mutate(
+      { data: { location: trimmed } },
+      {
+        onSuccess: (result) => {
+          void queryClient.invalidateQueries({ queryKey: getListRestaurantsQueryKey() });
+          if (result.added > 0) {
+            setLocation("");
+            setOpen(false);
+            Alert.alert(
+              "Added!",
+              `Added ${result.added} spot${result.added === 1 ? "" : "s"} near ${trimmed} to your dining guide.`,
+            );
+          } else {
+            Alert.alert("Already added", "Those spots are already in your dining guide.");
+          }
+        },
+        onError: (err) => {
+          const { status, data } = err as { status?: number; data?: { error?: string } | null };
+          const message =
+            status === 422
+              ? "We couldn't find restaurants near there — try a nearby city or a larger town."
+              : status === 429
+                ? (data?.error ??
+                  "You've searched a few times already — try again in a little while.")
+                : "Couldn't search right now. Please try again.";
+          Alert.alert("Find restaurants", message);
+        },
+      },
+    );
+  };
+
+  return (
+    <Card style={{ marginTop: 14 }}>
+      {open ? (
+        <View style={{ gap: 10 }}>
+          <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 16, color: c.foreground }}>
+            Find restaurants near you
+          </Text>
+          <Text style={{ fontFamily: "Inter_400Regular", fontSize: 13, color: c.mutedForeground }}>
+            Traveling or eating somewhere new? Type a city or area and we'll look up real restaurants
+            there and add them to your private guide with healthy picks.
+          </Text>
+          <LuxeInput
+            placeholder="City or area (e.g. Columbus OH)"
+            value={location}
+            onChangeText={setLocation}
+            maxLength={80}
+            editable={!discoverMutation.isPending}
+          />
+          {discoverMutation.isPending ? (
+            <Text style={{ fontFamily: "Inter_400Regular", fontSize: 13, color: c.mutedForeground }}>
+              Searching the web for real restaurants near {location.trim()} — this can take up to a
+              minute...
+            </Text>
+          ) : null}
+          <LuxeButton
+            label={discoverMutation.isPending ? "Searching..." : "Find restaurants near me"}
+            icon="map-pin"
+            onPress={submit}
+            loading={discoverMutation.isPending}
+          />
+          {!discoverMutation.isPending ? (
+            <LuxeButton label="Cancel" variant="ghost" small onPress={() => setOpen(false)} />
+          ) : null}
+          <Text style={{ fontFamily: "Inter_400Regular", fontSize: 11, color: c.mutedForeground }}>
+            We only add real places we can find online. Nutrition is always an AI estimate — actual
+            values vary by location and portion.
+          </Text>
+        </View>
+      ) : (
+        <LuxeButton
+          label="Find restaurants near me"
+          icon="map-pin"
+          variant="outline"
+          onPress={() => setOpen(true)}
+        />
+      )}
+    </Card>
   );
 }
 
