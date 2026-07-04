@@ -369,6 +369,35 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/MenuItem"
+    post:
+      operationId: createMyMenuItem
+      tags: [food]
+      summary: Add a menu item to a restaurant you added (owner-only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MenuItemInput"
+      responses:
+        "201":
+          description: Menu item created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MenuItem"
+        "400":
+          description: Invalid input
+        "404":
+          description: Not found
+        "429":
+          description: Menu item limit reached for this restaurant
   /restaurants/{id}/healthy-picks:
     get:
       operationId: listHealthyPicks
@@ -420,6 +449,49 @@ paths:
       operationId: deleteCustomRestaurant
       tags: [food]
       summary: Remove a restaurant you added (curated restaurants cannot be removed)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+  /menu-items/{id}:
+    patch:
+      operationId: updateMyMenuItem
+      tags: [food]
+      summary: Edit a menu item on a restaurant you added (owner-only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MenuItemUpdate"
+      responses:
+        "200":
+          description: Updated menu item
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MenuItem"
+        "400":
+          description: Invalid input
+        "404":
+          description: Not found
+    delete:
+      operationId: deleteMyMenuItem
+      tags: [food]
+      summary: Remove a menu item from a restaurant you added (owner-only)
       parameters:
         - name: id
           in: path
@@ -3312,6 +3384,7 @@ components:
         name: { type: string }
         cuisine: { type: string }
         description: { type: ["string", "null"] }
+        menuSource: { type: ["string", "null"] }
         isMine: { type: boolean }
     RestaurantInput:
       type: object
@@ -3326,6 +3399,7 @@ components:
       properties:
         name: { type: string, minLength: 2, maxLength: 80 }
         cuisine: { type: string, maxLength: 40 }
+        location: { type: string, maxLength: 80 }
     MenuItemInput:
       type: object
       required: [name, calories]
@@ -3337,6 +3411,16 @@ components:
         fatG: { type: number, minimum: 0 }
         isHealthyPick: { type: boolean }
         orderingTip: { type: string }
+    MenuItemUpdate:
+      type: object
+      properties:
+        name: { type: string, minLength: 1 }
+        calories: { type: integer, minimum: 0 }
+        proteinG: { type: ["number", "null"], minimum: 0 }
+        carbsG: { type: ["number", "null"], minimum: 0 }
+        fatG: { type: ["number", "null"], minimum: 0 }
+        isHealthyPick: { type: boolean }
+        orderingTip: { type: ["string", "null"] }
     MenuItem:
       type: object
       required: [id, restaurantId, restaurantName, name, calories, isHealthyPick]

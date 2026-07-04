@@ -637,6 +637,8 @@ export interface Restaurant {
   cuisine: string;
   /** @nullable */
   description?: string | null;
+  /** @nullable */
+  menuSource?: string | null;
   isMine: boolean;
 }
 
@@ -656,6 +658,8 @@ export interface CreateCustomRestaurantInput {
   name: string;
   /** @maxLength 40 */
   cuisine?: string;
+  /** @maxLength 80 */
+  location?: string;
 }
 
 export interface MenuItemInput {
@@ -671,6 +675,31 @@ export interface MenuItemInput {
   fatG?: number;
   isHealthyPick?: boolean;
   orderingTip?: string;
+}
+
+export interface MenuItemUpdate {
+  /** @minLength 1 */
+  name?: string;
+  /** @minimum 0 */
+  calories?: number;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  proteinG?: number | null;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  carbsG?: number | null;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  fatG?: number | null;
+  isHealthyPick?: boolean;
+  /** @nullable */
+  orderingTip?: string | null;
 }
 
 export interface MenuItem {

@@ -312,6 +312,7 @@ export const ListRestaurantsResponseItem = zod.object({
   "name": zod.string(),
   "cuisine": zod.string(),
   "description": zod.string().nullish(),
+  "menuSource": zod.string().nullish(),
   "isMine": zod.boolean()
 })
 export const ListRestaurantsResponse = zod.array(ListRestaurantsResponseItem)
@@ -337,6 +338,48 @@ export const ListMenuItemsResponseItem = zod.object({
   "orderingTip": zod.string().nullish()
 })
 export const ListMenuItemsResponse = zod.array(ListMenuItemsResponseItem)
+
+
+/**
+ * @summary Add a menu item to a restaurant you added (owner-only)
+ */
+export const CreateMyMenuItemParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+export const createMyMenuItemBodyCaloriesMin = 0;
+
+export const createMyMenuItemBodyProteinGMin = 0;
+
+export const createMyMenuItemBodyCarbsGMin = 0;
+
+export const createMyMenuItemBodyFatGMin = 0;
+
+
+
+export const CreateMyMenuItemBody = zod.object({
+  "name": zod.string().min(1),
+  "calories": zod.number().min(createMyMenuItemBodyCaloriesMin),
+  "proteinG": zod.number().min(createMyMenuItemBodyProteinGMin).optional(),
+  "carbsG": zod.number().min(createMyMenuItemBodyCarbsGMin).optional(),
+  "fatG": zod.number().min(createMyMenuItemBodyFatGMin).optional(),
+  "isHealthyPick": zod.boolean().optional(),
+  "orderingTip": zod.string().optional()
+})
+
+export const CreateMyMenuItemResponse = zod.object({
+  "id": zod.number(),
+  "restaurantId": zod.number(),
+  "restaurantName": zod.string(),
+  "name": zod.string(),
+  "calories": zod.number(),
+  "proteinG": zod.number().nullish(),
+  "carbsG": zod.number().nullish(),
+  "fatG": zod.number().nullish(),
+  "isHealthyPick": zod.boolean(),
+  "orderingTip": zod.string().nullish()
+})
 
 
 /**
@@ -369,11 +412,14 @@ export const createCustomRestaurantBodyNameMax = 80;
 
 export const createCustomRestaurantBodyCuisineMax = 40;
 
+export const createCustomRestaurantBodyLocationMax = 80;
+
 
 
 export const CreateCustomRestaurantBody = zod.object({
   "name": zod.string().min(createCustomRestaurantBodyNameMin).max(createCustomRestaurantBodyNameMax),
-  "cuisine": zod.string().max(createCustomRestaurantBodyCuisineMax).optional()
+  "cuisine": zod.string().max(createCustomRestaurantBodyCuisineMax).optional(),
+  "location": zod.string().max(createCustomRestaurantBodyLocationMax).optional()
 })
 
 export const CreateCustomRestaurantResponse = zod.object({
@@ -381,6 +427,7 @@ export const CreateCustomRestaurantResponse = zod.object({
   "name": zod.string(),
   "cuisine": zod.string(),
   "description": zod.string().nullish(),
+  "menuSource": zod.string().nullish(),
   "isMine": zod.boolean()
 })
 
@@ -393,6 +440,58 @@ export const DeleteCustomRestaurantParams = zod.object({
 })
 
 export const DeleteCustomRestaurantResponse = zod.void()
+
+
+/**
+ * @summary Edit a menu item on a restaurant you added (owner-only)
+ */
+export const UpdateMyMenuItemParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+
+export const updateMyMenuItemBodyCaloriesMin = 0;
+
+export const updateMyMenuItemBodyProteinGMin = 0;
+
+export const updateMyMenuItemBodyCarbsGMin = 0;
+
+export const updateMyMenuItemBodyFatGMin = 0;
+
+
+
+export const UpdateMyMenuItemBody = zod.object({
+  "name": zod.string().min(1).optional(),
+  "calories": zod.number().min(updateMyMenuItemBodyCaloriesMin).optional(),
+  "proteinG": zod.number().min(updateMyMenuItemBodyProteinGMin).nullish(),
+  "carbsG": zod.number().min(updateMyMenuItemBodyCarbsGMin).nullish(),
+  "fatG": zod.number().min(updateMyMenuItemBodyFatGMin).nullish(),
+  "isHealthyPick": zod.boolean().optional(),
+  "orderingTip": zod.string().nullish()
+})
+
+export const UpdateMyMenuItemResponse = zod.object({
+  "id": zod.number(),
+  "restaurantId": zod.number(),
+  "restaurantName": zod.string(),
+  "name": zod.string(),
+  "calories": zod.number(),
+  "proteinG": zod.number().nullish(),
+  "carbsG": zod.number().nullish(),
+  "fatG": zod.number().nullish(),
+  "isHealthyPick": zod.boolean(),
+  "orderingTip": zod.string().nullish()
+})
+
+
+/**
+ * @summary Remove a menu item from a restaurant you added (owner-only)
+ */
+export const DeleteMyMenuItemParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DeleteMyMenuItemResponse = zod.void()
 
 
 /**
@@ -1892,6 +1991,7 @@ export const AdminCreateRestaurantResponse = zod.object({
   "name": zod.string(),
   "cuisine": zod.string(),
   "description": zod.string().nullish(),
+  "menuSource": zod.string().nullish(),
   "isMine": zod.boolean()
 })
 

@@ -126,6 +126,7 @@ export * from './membershipCodeKind';
 export * from './membershipCodeStatus';
 export * from './menuItem';
 export * from './menuItemInput';
+export * from './menuItemUpdate';
 export * from './meRole';
 export * from './mindCheckin';
 export * from './mission';

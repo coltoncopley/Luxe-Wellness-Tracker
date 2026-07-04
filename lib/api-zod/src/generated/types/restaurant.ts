@@ -12,5 +12,7 @@ export interface Restaurant {
   cuisine: string;
   /** @nullable */
   description?: string | null;
+  /** @nullable */
+  menuSource?: string | null;
   isMine: boolean;
 }

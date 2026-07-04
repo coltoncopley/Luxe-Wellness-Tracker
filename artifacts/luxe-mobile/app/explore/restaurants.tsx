@@ -80,6 +80,7 @@ function AddRestaurantCard() {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [cuisine, setCuisine] = useState("");
+  const [location, setLocation] = useState("");
   const queryClient = useQueryClient();
   const createMutation = useCreateCustomRestaurant();
 
@@ -90,12 +91,19 @@ function AddRestaurantCard() {
       return;
     }
     createMutation.mutate(
-      { data: { name: trimmed, ...(cuisine.trim() ? { cuisine: cuisine.trim() } : {}) } },
+      {
+        data: {
+          name: trimmed,
+          ...(cuisine.trim() ? { cuisine: cuisine.trim() } : {}),
+          ...(location.trim() ? { location: location.trim() } : {}),
+        },
+      },
       {
         onSuccess: () => {
           void queryClient.invalidateQueries({ queryKey: getListRestaurantsQueryKey() });
           setName("");
           setCuisine("");
+          setLocation("");
           setOpen(false);
           Alert.alert("Added!", `${trimmed} is now in your dining guide with healthy picks.`);
         },
@@ -124,8 +132,8 @@ function AddRestaurantCard() {
             Add a restaurant
           </Text>
           <Text style={{ fontFamily: "Inter_400Regular", fontSize: 13, color: c.mutedForeground }}>
-            Tell us where you like to eat and we'll build a typical menu with healthy picks — just
-            for you. Only you can see restaurants you add.
+            Tell us where you like to eat and we'll look up their real menu online, then add
+            healthy picks — just for you. Only you can see restaurants you add.
           </Text>
           <LuxeInput
             placeholder="Restaurant name (e.g. Casa Grande)"
@@ -141,9 +149,16 @@ function AddRestaurantCard() {
             maxLength={40}
             editable={!createMutation.isPending}
           />
+          <LuxeInput
+            placeholder="City or area (optional, e.g. Huntington WV)"
+            value={location}
+            onChangeText={setLocation}
+            maxLength={80}
+            editable={!createMutation.isPending}
+          />
           {createMutation.isPending ? (
             <Text style={{ fontFamily: "Inter_400Regular", fontSize: 13, color: c.mutedForeground }}>
-              Building the menu and healthy picks — this takes about 20 seconds...
+              Finding the real menu and picking healthy options — this can take up to a minute...
             </Text>
           ) : null}
           <LuxeButton
@@ -156,7 +171,8 @@ function AddRestaurantCard() {
             <LuxeButton label="Cancel" variant="ghost" small onPress={() => setOpen(false)} />
           ) : null}
           <Text style={{ fontFamily: "Inter_400Regular", fontSize: 11, color: c.mutedForeground }}>
-            Menus and nutrition are AI estimates — actual items and values vary by location.
+            Dish names come from the restaurant's menu when we can find it online. Nutrition is
+            always an AI estimate — actual values vary by location and portion.
           </Text>
         </View>
       ) : (
@@ -255,8 +271,13 @@ function RestaurantCard({ restaurant }: { restaurant: Restaurant }) {
           />
           {restaurant.isMine ? (
             <>
+              {restaurant.menuSource ? (
+                <Text style={{ fontFamily: "Inter_400Regular", fontSize: 11, color: c.mutedForeground }}>
+                  Dish names from {restaurant.menuSource}
+                </Text>
+              ) : null}
               <Text style={{ fontFamily: "Inter_400Regular", fontSize: 11, color: c.mutedForeground }}>
-                Menu and nutrition are AI estimates — actual items vary by location.
+                Nutrition values are AI estimates — actual items vary by location.
               </Text>
               <LuxeButton
                 label="Remove from my list"

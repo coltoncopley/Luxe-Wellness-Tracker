@@ -99,6 +99,7 @@ import type {
   MembershipCode,
   MenuItem,
   MenuItemInput,
+  MenuItemUpdate,
   MindCheckin,
   MissionsResponse,
   ModerateCommunityPostInput,
@@ -1812,6 +1813,77 @@ export function useListMenuItems<TData = Awaited<ReturnType<typeof listMenuItems
 
 
 
+export const getCreateMyMenuItemUrl = (id: number,) => {
+
+
+
+
+  return `/api/restaurants/${id}/menu-items`
+}
+
+/**
+ * @summary Add a menu item to a restaurant you added (owner-only)
+ */
+export const createMyMenuItem = async (id: number,
+    menuItemInput: MenuItemInput, options?: RequestInit): Promise<MenuItem> => {
+
+  return customFetch<MenuItem>(getCreateMyMenuItemUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(menuItemInput)
+  }
+);}
+
+
+
+
+export const getCreateMyMenuItemMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createMyMenuItem>>, TError,{id: number;data: BodyType<MenuItemInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createMyMenuItem>>, TError,{id: number;data: BodyType<MenuItemInput>}, TContext> => {
+
+const mutationKey = ['createMyMenuItem'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createMyMenuItem>>, {id: number;data: BodyType<MenuItemInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  createMyMenuItem(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateMyMenuItemMutationResult = NonNullable<Awaited<ReturnType<typeof createMyMenuItem>>>
+    export type CreateMyMenuItemMutationBody = BodyType<MenuItemInput>
+    export type CreateMyMenuItemMutationError = ErrorType<void>
+
+    /**
+ * @summary Add a menu item to a restaurant you added (owner-only)
+ */
+export const useCreateMyMenuItem = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createMyMenuItem>>, TError,{id: number;data: BodyType<MenuItemInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createMyMenuItem>>,
+        TError,
+        {id: number;data: BodyType<MenuItemInput>},
+        TContext
+      > => {
+      return useMutation(getCreateMyMenuItemMutationOptions(options));
+    }
+
 export const getListHealthyPicksUrl = (id: number,) => {
 
 
@@ -2027,6 +2099,147 @@ export const useDeleteCustomRestaurant = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getDeleteCustomRestaurantMutationOptions(options));
+    }
+
+export const getUpdateMyMenuItemUrl = (id: number,) => {
+
+
+
+
+  return `/api/menu-items/${id}`
+}
+
+/**
+ * @summary Edit a menu item on a restaurant you added (owner-only)
+ */
+export const updateMyMenuItem = async (id: number,
+    menuItemUpdate: MenuItemUpdate, options?: RequestInit): Promise<MenuItem> => {
+
+  return customFetch<MenuItem>(getUpdateMyMenuItemUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(menuItemUpdate)
+  }
+);}
+
+
+
+
+export const getUpdateMyMenuItemMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMyMenuItem>>, TError,{id: number;data: BodyType<MenuItemUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateMyMenuItem>>, TError,{id: number;data: BodyType<MenuItemUpdate>}, TContext> => {
+
+const mutationKey = ['updateMyMenuItem'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateMyMenuItem>>, {id: number;data: BodyType<MenuItemUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateMyMenuItem(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateMyMenuItemMutationResult = NonNullable<Awaited<ReturnType<typeof updateMyMenuItem>>>
+    export type UpdateMyMenuItemMutationBody = BodyType<MenuItemUpdate>
+    export type UpdateMyMenuItemMutationError = ErrorType<void>
+
+    /**
+ * @summary Edit a menu item on a restaurant you added (owner-only)
+ */
+export const useUpdateMyMenuItem = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMyMenuItem>>, TError,{id: number;data: BodyType<MenuItemUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateMyMenuItem>>,
+        TError,
+        {id: number;data: BodyType<MenuItemUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateMyMenuItemMutationOptions(options));
+    }
+
+export const getDeleteMyMenuItemUrl = (id: number,) => {
+
+
+
+
+  return `/api/menu-items/${id}`
+}
+
+/**
+ * @summary Remove a menu item from a restaurant you added (owner-only)
+ */
+export const deleteMyMenuItem = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteMyMenuItemUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteMyMenuItemMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteMyMenuItem>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteMyMenuItem>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteMyMenuItem'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteMyMenuItem>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteMyMenuItem(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteMyMenuItemMutationResult = NonNullable<Awaited<ReturnType<typeof deleteMyMenuItem>>>
+
+    export type DeleteMyMenuItemMutationError = ErrorType<void>
+
+    /**
+ * @summary Remove a menu item from a restaurant you added (owner-only)
+ */
+export const useDeleteMyMenuItem = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteMyMenuItem>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteMyMenuItem>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteMyMenuItemMutationOptions(options));
     }
 
 export const getSearchMenuItemsUrl = (params: SearchMenuItemsParams,) => {

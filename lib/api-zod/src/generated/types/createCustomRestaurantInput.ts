@@ -14,4 +14,6 @@ export interface CreateCustomRestaurantInput {
   name: string;
   /** @maxLength 40 */
   cuisine?: string;
+  /** @maxLength 80 */
+  location?: string;
 }

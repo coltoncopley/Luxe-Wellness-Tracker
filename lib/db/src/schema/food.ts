@@ -11,6 +11,8 @@ export const restaurantsTable = pgTable(
     name: text("name").notNull(),
     cuisine: text("cuisine").notNull(),
     description: text("description"),
+    // Domain of the website the menu was sourced from (patient-added restaurants only).
+    menuSource: text("menu_source"),
     // NULL = curated/global (staff-managed). Set = patient-private custom restaurant,
     // visible only to that patient — staff must never see or touch these rows.
     ownerUserId: text("owner_user_id").references(() => usersTable.id),
