@@ -254,7 +254,7 @@ export default function ActivityPage() {
         <div>
           <h1 className="font-serif text-2xl font-semibold">Activity & Sleep</h1>
           <p className="text-sm text-muted-foreground">
-            Move more, sleep well — your GLP-1 journey's best friends.
+            Move more, sleep well — your weight loss journey's best friends.
           </p>
         </div>
         <div className="flex rounded-lg border border-border overflow-hidden">

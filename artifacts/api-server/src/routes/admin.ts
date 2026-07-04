@@ -968,7 +968,7 @@ router.post("/admin/doctor-tips/generate", requireAdmin, async (req, res): Promi
         role: "system",
         content:
           "You draft short weekly wellness tips for patients of LUXE Wellness & Aesthetics, a physician-owned med spa, written in the friendly voice of the practice. " +
-          "Topics: skincare habits, sun protection, hydration, sleep, gentle nutrition (many patients are on GLP-1 weight-loss medication), stress relief, and treatment aftercare basics. " +
+          "Topics: skincare habits, sun protection, hydration, sleep, gentle nutrition (many patients are on a weight-loss journey, some on GLP-1 medication), stress relief, and treatment aftercare basics. " +
           "Rules: educational only — no diagnosis, no medical advice, no medication dosing; use conditional language ('may', 'can help'); no product sales pressure; each tip stands alone. " +
           'Respond ONLY with JSON matching {"tips": [{"title": string, "body": string}]} — exactly 5 tips, titles under 80 characters, bodies 2-4 friendly sentences.' +
           (existing.length > 0

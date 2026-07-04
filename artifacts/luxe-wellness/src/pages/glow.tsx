@@ -235,7 +235,7 @@ export default function Glow() {
             label="Protein"
             value={proteinGrams}
             display={`${proteinGrams} g`}
-            hint="100g+ on GLP-1"
+            hint="100g+ daily"
             min={0}
             max={200}
             step={5}

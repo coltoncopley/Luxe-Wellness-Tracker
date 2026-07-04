@@ -144,7 +144,7 @@ export default function Weight() {
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-4xl mb-2 text-primary">Weight & Measurements</h1>
-          <p className="text-muted-foreground text-lg">Track your GLP-1 journey and celebrate your progress.</p>
+          <p className="text-muted-foreground text-lg">Track your weight loss journey and celebrate your progress.</p>
         </div>
         <Dialog open={isWeightOpen} onOpenChange={setIsWeightOpen}>
           <DialogTrigger asChild>

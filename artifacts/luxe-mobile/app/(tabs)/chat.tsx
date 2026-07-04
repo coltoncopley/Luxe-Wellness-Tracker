@@ -31,7 +31,7 @@ type Bubble = { key: string; role: "user" | "assistant"; content: string };
 const STARTERS = [
   "How am I doing this week?",
   "Am I hitting my protein goal?",
-  "What helps with nausea on semaglutide?",
+  "Tips to break a weight-loss plateau?",
   "What's the difference between Botox and filler?",
 ];
 
@@ -190,7 +190,7 @@ export default function ChatScreen() {
                 marginTop: 4,
               }}
             >
-              GLP-1 coaching, treatment questions, or a check on your week.
+              Weight loss coaching, treatment questions, or a check on your week.
             </Text>
           </View>
           <View style={{ gap: 8 }}>

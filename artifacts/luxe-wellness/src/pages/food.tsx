@@ -126,7 +126,7 @@ export default function Food() {
     <div className="space-y-8 pb-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div>
         <h1 className="text-4xl mb-2 text-primary">Daily Food Log</h1>
-        <p className="text-muted-foreground text-lg">Track your meals to support your GLP-1 progress.</p>
+        <p className="text-muted-foreground text-lg">Track your meals to support your weight loss progress.</p>
       </div>
 
       <div className="flex items-center justify-between bg-card p-4 rounded-2xl border border-border shadow-sm">

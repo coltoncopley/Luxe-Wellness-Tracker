@@ -15,7 +15,7 @@ import luxeLogo from "@assets/brand/luxe_logo.jpeg";
 const features = [
   {
     icon: Activity,
-    title: "GLP-1 Progress Tracking",
+    title: "Weight Loss Progress Tracking",
     description: "Daily weigh-ins, body measurements, and goal tracking designed for your weight-loss journey.",
   },
   {
@@ -26,7 +26,7 @@ const features = [
   {
     icon: Sparkles,
     title: "Luxe AI Assistant",
-    description: "24/7 answers on treatments, skincare, and GLP-1 side effects — grounded in LUXE's real services.",
+    description: "24/7 answers on treatments, skincare, and weight loss support — grounded in LUXE's real services.",
   },
   {
     icon: Sun,
@@ -74,7 +74,7 @@ export default function Landing() {
             <span className="italic">beautifully</span> supported.
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto mb-8">
-            The LUXE Wellness &amp; Aesthetics patient companion — track your GLP-1 progress,
+            The LUXE Wellness &amp; Aesthetics patient companion — track your weight loss progress,
             build glowing habits, earn rewards, and get expert answers any time of day.
           </p>
           <div className="flex items-center justify-center gap-3">

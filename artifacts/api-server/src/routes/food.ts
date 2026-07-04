@@ -633,7 +633,7 @@ router.post("/food/analyze-photo", async (req, res): Promise<void> => {
           "Respond ONLY with JSON matching this shape: " +
           '{"isFood": boolean, "name": string, "calories": number, "proteinG": number, "carbsG": number, "fatG": number, "confidence": "low"|"medium"|"high", "notes": string}. ' +
           "If the image does not contain food or drink, set isFood to false. " +
-          "Keep name short (e.g. 'Grilled chicken salad'). In notes, give one brief GLP-1-friendly observation (e.g. protein content, portion tip).",
+          "Keep name short (e.g. 'Grilled chicken salad'). In notes, give one brief weight-loss-friendly observation (e.g. protein content, portion tip).",
       },
       {
         role: "user",

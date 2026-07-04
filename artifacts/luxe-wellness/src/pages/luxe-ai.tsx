@@ -119,7 +119,7 @@ export default function LuxeAI() {
   const starterPrompts = [
     "How am I doing this week?",
     "Am I hitting my protein goal?",
-    "What helps with nausea on semaglutide?",
+    "Tips to break a weight-loss plateau?",
     "What's the difference between Botox and filler?",
   ];
 
@@ -151,7 +151,7 @@ export default function LuxeAI() {
             <div>
               <h2 className="font-serif text-xl font-semibold mb-1">Hi, I'm Luxe AI</h2>
               <p className="text-muted-foreground max-w-md">
-                Ask me anything about skincare, treatments, GLP-1 weight loss, nutrition, or
+                Ask me anything about skincare, treatments, weight loss, nutrition, or
                 wellness. I can see your own logs — weight, meals, Glow check-ins — so ask me how
                 you're doing. Your data stays private to you and is never shared with LUXE staff.
               </p>
@@ -209,7 +209,7 @@ export default function LuxeAI() {
               void handleSend();
             }
           }}
-          placeholder="Ask about treatments, GLP-1 tips, nutrition..."
+          placeholder="Ask about treatments, weight loss, nutrition..."
           className="resize-none rounded-xl min-h-[52px] max-h-40"
           rows={1}
           disabled={isSending}

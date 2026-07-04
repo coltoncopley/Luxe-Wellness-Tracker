@@ -26,7 +26,7 @@ import {
 import logoUrl from "@assets/brand/luxe_logo.jpeg";
 
 const FEATURES = [
-  { icon: TrendingDown, label: "GLP-1 weight & measurement tracking" },
+  { icon: TrendingDown, label: "Weight & measurement tracking" },
   { icon: Camera, label: "AI meal scanner & food logging" },
   { icon: Sun, label: "Daily Glow Score & habit streaks" },
   { icon: MessageCircle, label: "Luxe AI — 24/7 wellness assistant" },

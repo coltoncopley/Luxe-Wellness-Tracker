@@ -132,7 +132,7 @@ export default function Community() {
                   id="post-body"
                   value={body}
                   onChange={(e) => setBody(e.target.value.slice(0, 500))}
-                  placeholder="Down 12 lbs since starting my GLP-1 journey — the food tracker made all the difference!"
+                  placeholder="Down 12 lbs since starting my weight loss journey — the food tracker made all the difference!"
                   rows={4}
                 />
                 <p className="text-right text-xs text-muted-foreground">{body.length}/500</p>
