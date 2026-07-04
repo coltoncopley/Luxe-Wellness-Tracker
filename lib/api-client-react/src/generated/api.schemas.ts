@@ -1662,6 +1662,7 @@ export const ActivitySource = {
   manual: 'manual',
   oura: 'oura',
   phone: 'phone',
+  apple_health: 'apple_health',
 } as const;
 
 export interface Activity {
@@ -1750,12 +1751,93 @@ export interface ImportResult {
   imported: number;
 }
 
+export type AppleHealthImportInputActivitiesItemType = typeof AppleHealthImportInputActivitiesItemType[keyof typeof AppleHealthImportInputActivitiesItemType];
+
+
+export const AppleHealthImportInputActivitiesItemType = {
+  walk: 'walk',
+  run: 'run',
+  strength: 'strength',
+  yoga: 'yoga',
+  swim: 'swim',
+  cycle: 'cycle',
+  steps: 'steps',
+  other: 'other',
+} as const;
+
+export type AppleHealthImportInputActivitiesItem = {
+  /** @pattern ^\d{4}-\d{2}-\d{2}$ */
+  date: string;
+  type: AppleHealthImportInputActivitiesItemType;
+  /**
+     * @minimum 0
+     * @maximum 1440
+     */
+  durationMin: number;
+  /**
+     * @minimum 0
+     * @maximum 200000
+     * @nullable
+     */
+  steps?: number | null;
+  /**
+     * @minimum 0
+     * @maximum 10000
+     * @nullable
+     */
+  calories?: number | null;
+  /**
+     * @minimum 0
+     * @maximum 200
+     * @nullable
+     */
+  distanceMi?: number | null;
+  /**
+     * @maxLength 120
+     * @pattern ^apple:[A-Za-z0-9:_-]+$
+     */
+  externalId: string;
+};
+
+export type AppleHealthImportInputSleepItem = {
+  /** @pattern ^\d{4}-\d{2}-\d{2}$ */
+  date: string;
+  /**
+     * @minimum 1
+     * @maximum 1440
+     */
+  durationMin: number;
+  /**
+     * @nullable
+     * @pattern ^\d{2}:\d{2}$
+     */
+  bedtime?: string | null;
+  /**
+     * @nullable
+     * @pattern ^\d{2}:\d{2}$
+     */
+  wakeTime?: string | null;
+  /**
+     * @maxLength 120
+     * @pattern ^apple:[A-Za-z0-9:_-]+$
+     */
+  externalId: string;
+};
+
+export interface AppleHealthImportInput {
+  /** @maxItems 60 */
+  activities: AppleHealthImportInputActivitiesItem[];
+  /** @maxItems 30 */
+  sleep: AppleHealthImportInputSleepItem[];
+}
+
 export type SleepEntrySource = typeof SleepEntrySource[keyof typeof SleepEntrySource];
 
 
 export const SleepEntrySource = {
   manual: 'manual',
   oura: 'oura',
+  apple_health: 'apple_health',
 } as const;
 
 export interface SleepEntry {

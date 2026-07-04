@@ -36,6 +36,7 @@ import type {
   AnalyzeIngredientsInput,
   AnalyzeSkinScanInput,
   Announcement,
+  AppleHealthImportInput,
   Appointment,
   AppointmentInput,
   AppointmentUpdate,
@@ -4250,6 +4251,146 @@ export const useImportPhoneSteps = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getImportPhoneStepsMutationOptions(options));
+    }
+
+export const getImportAppleHealthUrl = () => {
+
+
+
+
+  return `/api/activities/apple-health`
+}
+
+/**
+ * @summary Import activity and sleep read from Apple Health on the patient's iPhone
+ */
+export const importAppleHealth = async (appleHealthImportInput: AppleHealthImportInput, options?: RequestInit): Promise<SyncResult> => {
+
+  return customFetch<SyncResult>(getImportAppleHealthUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(appleHealthImportInput)
+  }
+);}
+
+
+
+
+export const getImportAppleHealthMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importAppleHealth>>, TError,{data: BodyType<AppleHealthImportInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof importAppleHealth>>, TError,{data: BodyType<AppleHealthImportInput>}, TContext> => {
+
+const mutationKey = ['importAppleHealth'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof importAppleHealth>>, {data: BodyType<AppleHealthImportInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  importAppleHealth(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ImportAppleHealthMutationResult = NonNullable<Awaited<ReturnType<typeof importAppleHealth>>>
+    export type ImportAppleHealthMutationBody = BodyType<AppleHealthImportInput>
+    export type ImportAppleHealthMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Import activity and sleep read from Apple Health on the patient's iPhone
+ */
+export const useImportAppleHealth = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof importAppleHealth>>, TError,{data: BodyType<AppleHealthImportInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof importAppleHealth>>,
+        TError,
+        {data: BodyType<AppleHealthImportInput>},
+        TContext
+      > => {
+      return useMutation(getImportAppleHealthMutationOptions(options));
+    }
+
+export const getDeleteAppleHealthDataUrl = () => {
+
+
+
+
+  return `/api/activities/apple-health`
+}
+
+/**
+ * @summary Remove all previously imported Apple Health activity and sleep data
+ */
+export const deleteAppleHealthData = async ( options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteAppleHealthDataUrl(),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteAppleHealthDataMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAppleHealthData>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteAppleHealthData>>, TError,void, TContext> => {
+
+const mutationKey = ['deleteAppleHealthData'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteAppleHealthData>>, void> = () => {
+
+
+          return  deleteAppleHealthData(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteAppleHealthDataMutationResult = NonNullable<Awaited<ReturnType<typeof deleteAppleHealthData>>>
+
+    export type DeleteAppleHealthDataMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Remove all previously imported Apple Health activity and sleep data
+ */
+export const useDeleteAppleHealthData = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteAppleHealthData>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteAppleHealthData>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getDeleteAppleHealthDataMutationOptions(options));
     }
 
 export const getListSleepEntriesUrl = () => {

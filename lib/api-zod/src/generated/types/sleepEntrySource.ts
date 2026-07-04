@@ -12,4 +12,5 @@ export type SleepEntrySource = typeof SleepEntrySource[keyof typeof SleepEntrySo
 export const SleepEntrySource = {
   manual: 'manual',
   oura: 'oura',
+  apple_health: 'apple_health',
 } as const;

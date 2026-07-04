@@ -13,4 +13,5 @@ export const ActivitySource = {
   manual: 'manual',
   oura: 'oura',
   phone: 'phone',
+  apple_health: 'apple_health',
 } as const;

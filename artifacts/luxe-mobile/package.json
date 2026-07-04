@@ -61,8 +61,10 @@
     "zod-validation-error": "^3.4.0"
   },
   "dependencies": {
+    "@kingstinct/react-native-healthkit": "14.0.2",
     "expo-clipboard": "~8.0.8",
     "expo-contacts": "~15.0.11",
-    "expo-sensors": "~15.0.8"
+    "expo-sensors": "~15.0.8",
+    "react-native-nitro-modules": "0.36.1"
   }
 }

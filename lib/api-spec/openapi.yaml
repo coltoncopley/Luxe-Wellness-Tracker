@@ -996,6 +996,31 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ImportResult"
+  /activities/apple-health:
+    post:
+      operationId: importAppleHealth
+      tags: [activity]
+      summary: Import activity and sleep read from Apple Health on the patient's iPhone
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AppleHealthImportInput"
+      responses:
+        "200":
+          description: Import result
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SyncResult"
+    delete:
+      operationId: deleteAppleHealthData
+      tags: [activity]
+      summary: Remove all previously imported Apple Health activity and sleep data
+      responses:
+        "204":
+          description: Deleted
   /sleep-entries:
     get:
       operationId: listSleepEntries
@@ -4524,7 +4549,7 @@ components:
         notes: { type: ["string", "null"] }
         source:
           type: string
-          enum: [manual, oura, phone]
+          enum: [manual, oura, phone, apple_health]
     ActivityInput:
       type: object
       required: [date, type, durationMin]
@@ -4557,6 +4582,38 @@ components:
       required: [imported]
       properties:
         imported: { type: integer }
+    AppleHealthImportInput:
+      type: object
+      required: [activities, sleep]
+      properties:
+        activities:
+          type: array
+          maxItems: 60
+          items:
+            type: object
+            required: [date, type, durationMin, externalId]
+            properties:
+              date: { type: string, pattern: '^\d{4}-\d{2}-\d{2}$' }
+              type:
+                type: string
+                enum: [walk, run, strength, yoga, swim, cycle, steps, other]
+              durationMin: { type: integer, minimum: 0, maximum: 1440 }
+              steps: { type: ["integer", "null"], minimum: 0, maximum: 200000 }
+              calories: { type: ["integer", "null"], minimum: 0, maximum: 10000 }
+              distanceMi: { type: ["number", "null"], minimum: 0, maximum: 200 }
+              externalId: { type: string, pattern: '^apple:[A-Za-z0-9:_-]+$', maxLength: 120 }
+        sleep:
+          type: array
+          maxItems: 30
+          items:
+            type: object
+            required: [date, durationMin, externalId]
+            properties:
+              date: { type: string, pattern: '^\d{4}-\d{2}-\d{2}$' }
+              durationMin: { type: integer, minimum: 1, maximum: 1440 }
+              bedtime: { type: ["string", "null"], pattern: '^\d{2}:\d{2}$' }
+              wakeTime: { type: ["string", "null"], pattern: '^\d{2}:\d{2}$' }
+              externalId: { type: string, pattern: '^apple:[A-Za-z0-9:_-]+$', maxLength: 120 }
     SleepEntry:
       type: object
       required: [id, date, durationMin, source]
@@ -4570,7 +4627,7 @@ components:
         score: { type: ["integer", "null"], description: 0-100 device score }
         source:
           type: string
-          enum: [manual, oura]
+          enum: [manual, oura, apple_health]
     SleepEntryInput:
       type: object
       required: [date, durationMin]

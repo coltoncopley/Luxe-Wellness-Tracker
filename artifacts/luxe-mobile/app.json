@@ -44,6 +44,14 @@
         {
           "contactsPermission": "LUXE uses your contacts so you can invite friends to join the app."
         }
+      ],
+      [
+        "@kingstinct/react-native-healthkit",
+        {
+          "NSHealthShareUsageDescription": "LUXE reads your steps, workouts, and sleep from Apple Health, only when you tap Sync, to add them to your private activity log.",
+          "NSHealthUpdateUsageDescription": false,
+          "background": false
+        }
       ]
     ],
     "experiments": {

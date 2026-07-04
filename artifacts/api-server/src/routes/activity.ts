@@ -19,6 +19,8 @@ import {
   CreateActivityResponse,
   ImportPhoneStepsBody,
   ImportPhoneStepsResponse,
+  ImportAppleHealthBody,
+  ImportAppleHealthResponse,
   ListSleepEntriesResponse,
   CreateSleepEntryBody,
   CreateSleepEntryResponse,
@@ -57,6 +59,10 @@ function isValidCalendarDate(value: string): boolean {
   return dt.getUTCFullYear() === y && dt.getUTCMonth() === m! - 1 && dt.getUTCDate() === d;
 }
 
+function clampInt(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, Math.round(value)));
+}
+
 // In-memory per-user rate limiter (resets on restart; acceptable for abuse damping)
 function makeLimiter(max: number, windowMs: number) {
   const hits = new Map<string, { count: number; resetAt: number }>();
@@ -74,6 +80,7 @@ function makeLimiter(max: number, windowMs: number) {
 }
 const connectLimiter = makeLimiter(5, 60 * 60 * 1000);
 const syncLimiter = makeLimiter(4, 60 * 60 * 1000);
+const appleHealthLimiter = makeLimiter(6, 60 * 60 * 1000);
 
 function toActivityResponse(a: Activity) {
   return {
@@ -190,6 +197,94 @@ router.post("/activities/phone-steps", async (req, res): Promise<void> => {
     imported += 1;
   }
   res.json(ImportPhoneStepsResponse.parse({ imported }));
+});
+
+// Apple Health (HealthKit) is on-device only — the phone pushes what the patient
+// approved. There is no server-side token or pull, so this mirrors phone-steps:
+// idempotent upsert keyed on (userId, source, externalId). No points are awarded
+// for imports (only manual logging awards) to keep the ledger ungameable.
+router.post("/activities/apple-health", async (req, res): Promise<void> => {
+  const userId = userIdOf(res);
+  if (!appleHealthLimiter(userId)) {
+    res.status(429).json({ error: "Too many syncs. Please try again later." });
+    return;
+  }
+  const body = ImportAppleHealthBody.safeParse(req.body);
+  if (!body.success) {
+    res.status(400).json({ error: "Invalid input" });
+    return;
+  }
+
+  let activitiesImported = 0;
+  let sleepImported = 0;
+
+  for (const a of body.data.activities) {
+    if (!isValidCalendarDate(a.date)) continue;
+    const durationMin = clampInt(a.durationMin, 0, 1440);
+    const steps = a.steps == null ? null : clampInt(a.steps, 0, 200000);
+    const calories = a.calories == null ? null : clampInt(a.calories, 0, 10000);
+    const distanceMi = a.distanceMi == null ? null : Math.min(200, Math.max(0, a.distanceMi));
+    await db
+      .insert(activitiesTable)
+      .values({
+        userId,
+        date: a.date,
+        type: a.type,
+        durationMin,
+        steps,
+        calories,
+        distanceMi,
+        source: "apple_health",
+        externalId: a.externalId,
+      })
+      .onConflictDoUpdate({
+        target: [activitiesTable.userId, activitiesTable.source, activitiesTable.externalId],
+        targetWhere: sql`external_id IS NOT NULL`,
+        set: { type: a.type, durationMin, steps, calories, distanceMi },
+      });
+    activitiesImported += 1;
+  }
+
+  for (const s of body.data.sleep) {
+    if (!isValidCalendarDate(s.date)) continue;
+    const values = {
+      date: s.date,
+      durationMin: clampInt(s.durationMin, 1, 1440),
+      bedtime: s.bedtime ?? null,
+      wakeTime: s.wakeTime ?? null,
+    };
+    await db
+      .insert(sleepEntriesTable)
+      .values({
+        userId,
+        ...values,
+        source: "apple_health",
+        externalId: s.externalId,
+      })
+      .onConflictDoUpdate({
+        target: [sleepEntriesTable.userId, sleepEntriesTable.source, sleepEntriesTable.externalId],
+        targetWhere: sql`external_id IS NOT NULL`,
+        set: values,
+      });
+    sleepImported += 1;
+  }
+
+  res.json(ImportAppleHealthResponse.parse({ activitiesImported, sleepImported }));
+});
+
+// "Remove imported data": since there is no device_connections row for Apple
+// Health, this purges every apple_health-sourced row. Manual rows (source
+// 'manual') are untouched. Registered before /activities/:id so the literal
+// path wins over the numeric id matcher.
+router.delete("/activities/apple-health", async (_req, res): Promise<void> => {
+  const userId = userIdOf(res);
+  await db
+    .delete(activitiesTable)
+    .where(and(eq(activitiesTable.userId, userId), eq(activitiesTable.source, "apple_health")));
+  await db
+    .delete(sleepEntriesTable)
+    .where(and(eq(sleepEntriesTable.userId, userId), eq(sleepEntriesTable.source, "apple_health")));
+  res.status(204).end();
 });
 
 router.delete("/activities/:id", async (req, res): Promise<void> => {
@@ -325,15 +420,17 @@ router.get("/activity/summary", async (req, res): Promise<void> => {
     byDate.set(dateStringDaysAgo(i), { minutes: 0, steps: 0, sleepMin: null });
   }
   let totalMinutes = 0;
-  let totalSteps = 0;
   for (const a of activities) {
     const bucket = byDate.get(a.date);
     if (!bucket) continue;
     bucket.minutes += a.durationMin;
-    bucket.steps += a.steps ?? 0;
     totalMinutes += a.durationMin;
-    totalSteps += a.steps ?? 0;
+    // Steps are the max across sources for a day (phone + Apple Health may both
+    // report the same date), never summed — mirrors the sleep max handling below.
+    if (a.steps != null) bucket.steps = Math.max(bucket.steps, a.steps);
   }
+  let totalSteps = 0;
+  for (const bucket of byDate.values()) totalSteps += bucket.steps;
   const sleepByDate = new Map<string, number>();
   for (const s of sleep) {
     sleepByDate.set(s.date, Math.max(sleepByDate.get(s.date) ?? 0, s.durationMin));

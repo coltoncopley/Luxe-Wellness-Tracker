@@ -186,7 +186,7 @@ router.get("/briefing", async (req, res): Promise<void> => {
   const nextAppointment = upcoming.find((a) => a.status !== "cancelled") ?? null;
 
   const yesterdayActiveMinutes = yesterdayActivities.reduce((s, a) => s + a.durationMin, 0);
-  const yesterdaySteps = yesterdayActivities.reduce((s, a) => s + (a.steps ?? 0), 0);
+  const yesterdaySteps = yesterdayActivities.reduce((s, a) => Math.max(s, a.steps ?? 0), 0);
   const lastNightSleepMin = lastNightSleep[0]?.durationMin ?? null;
 
   // --- Wellness score (0-100): habits today + consistency ---

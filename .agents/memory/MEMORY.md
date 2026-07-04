@@ -2,6 +2,7 @@
 - [Orval + Clerk web quirks](orval-clerk-quirks.md) — generated hooks require queryKey alongside `enabled`; web Clerk auth is cookie-based, never add Bearer/token getters.
 - [Code-based endpoint hardening](code-endpoint-hardening.md) — any endpoint accepting a guessable code (invite, claim, redemption) needs rate limiting + minimal response disclosure, and patient-data routes need explicit staff exclusion, or review will block it.
 - [Stripe sync mirror quirks](stripe-sync-quirks.md) — billing mutations (checkout, trial eligibility) must query Stripe live, mirror tables are for reads only; verify runMigrations actually created the stripe tables.
+- [Multi-source health data + native isolation](apple-health-multisource.md) — steps are MAX-per-date across sources (never summed), sleep merges overlapping intervals; the HealthKit Nitro module must only load via a guarded lazy import in lib/healthkit.ts.
 - [E2E testing quirks](e2e-testing-quirks.md) — reuse an existing comped test user, match emails with lower(), split slow AI flows from CRUD plans; harness may restart api-server mid-test; toaster absent until a toast fires.
 - [Expo dev testing quirks](expo-testing-quirks.md) — RN Alert.alert is a no-op on Expo web (use `@/lib/alert` shim); stale-Metro 404s → restart expo workflow; keep runTest plans against Expo web very short.
 - [Express router.use scoping](express-middleware-scoping.md) — unscoped gates in `router.use(mw, subRouter)` run for ALL fall-through requests; path-scope role gates or later-mounted routers 403.

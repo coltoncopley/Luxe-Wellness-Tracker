@@ -1004,7 +1004,7 @@ export const ListActivitiesResponseItem = zod.object({
   "calories": zod.number().nullish(),
   "distanceMi": zod.number().nullish(),
   "notes": zod.string().nullish(),
-  "source": zod.enum(['manual', 'oura', 'phone'])
+  "source": zod.enum(['manual', 'oura', 'phone', 'apple_health'])
 })
 export const ListActivitiesResponse = zod.array(ListActivitiesResponseItem)
 
@@ -1047,7 +1047,7 @@ export const CreateActivityResponse = zod.object({
   "calories": zod.number().nullish(),
   "distanceMi": zod.number().nullish(),
   "notes": zod.string().nullish(),
-  "source": zod.enum(['manual', 'oura', 'phone'])
+  "source": zod.enum(['manual', 'oura', 'phone', 'apple_health'])
 })
 
 
@@ -1085,6 +1085,72 @@ export const ImportPhoneStepsResponse = zod.object({
 
 
 /**
+ * @summary Import activity and sleep read from Apple Health on the patient's iPhone
+ */
+export const importAppleHealthBodyActivitiesItemDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const importAppleHealthBodyActivitiesItemDurationMinMin = 0;
+export const importAppleHealthBodyActivitiesItemDurationMinMax = 1440;
+
+export const importAppleHealthBodyActivitiesItemStepsMin = 0;
+export const importAppleHealthBodyActivitiesItemStepsMax = 200000;
+
+export const importAppleHealthBodyActivitiesItemCaloriesMin = 0;
+export const importAppleHealthBodyActivitiesItemCaloriesMax = 10000;
+
+export const importAppleHealthBodyActivitiesItemDistanceMiMin = 0;
+export const importAppleHealthBodyActivitiesItemDistanceMiMax = 200;
+
+export const importAppleHealthBodyActivitiesItemExternalIdMax = 120;
+
+
+export const importAppleHealthBodyActivitiesItemExternalIdRegExp = new RegExp('^apple:[A-Za-z0-9:_-]+$');
+export const importAppleHealthBodyActivitiesMax = 60;
+
+export const importAppleHealthBodySleepItemDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const importAppleHealthBodySleepItemDurationMinMax = 1440;
+
+export const importAppleHealthBodySleepItemBedtimeRegExp = new RegExp('^\\d{2}:\\d{2}$');
+export const importAppleHealthBodySleepItemWakeTimeRegExp = new RegExp('^\\d{2}:\\d{2}$');
+export const importAppleHealthBodySleepItemExternalIdMax = 120;
+
+
+export const importAppleHealthBodySleepItemExternalIdRegExp = new RegExp('^apple:[A-Za-z0-9:_-]+$');
+export const importAppleHealthBodySleepMax = 30;
+
+
+
+export const ImportAppleHealthBody = zod.object({
+  "activities": zod.array(zod.object({
+  "date": zod.string().regex(importAppleHealthBodyActivitiesItemDateRegExp),
+  "type": zod.enum(['walk', 'run', 'strength', 'yoga', 'swim', 'cycle', 'steps', 'other']),
+  "durationMin": zod.number().min(importAppleHealthBodyActivitiesItemDurationMinMin).max(importAppleHealthBodyActivitiesItemDurationMinMax),
+  "steps": zod.number().min(importAppleHealthBodyActivitiesItemStepsMin).max(importAppleHealthBodyActivitiesItemStepsMax).nullish(),
+  "calories": zod.number().min(importAppleHealthBodyActivitiesItemCaloriesMin).max(importAppleHealthBodyActivitiesItemCaloriesMax).nullish(),
+  "distanceMi": zod.number().min(importAppleHealthBodyActivitiesItemDistanceMiMin).max(importAppleHealthBodyActivitiesItemDistanceMiMax).nullish(),
+  "externalId": zod.string().max(importAppleHealthBodyActivitiesItemExternalIdMax).regex(importAppleHealthBodyActivitiesItemExternalIdRegExp)
+})).max(importAppleHealthBodyActivitiesMax),
+  "sleep": zod.array(zod.object({
+  "date": zod.string().regex(importAppleHealthBodySleepItemDateRegExp),
+  "durationMin": zod.number().min(1).max(importAppleHealthBodySleepItemDurationMinMax),
+  "bedtime": zod.string().regex(importAppleHealthBodySleepItemBedtimeRegExp).nullish(),
+  "wakeTime": zod.string().regex(importAppleHealthBodySleepItemWakeTimeRegExp).nullish(),
+  "externalId": zod.string().max(importAppleHealthBodySleepItemExternalIdMax).regex(importAppleHealthBodySleepItemExternalIdRegExp)
+})).max(importAppleHealthBodySleepMax)
+})
+
+export const ImportAppleHealthResponse = zod.object({
+  "activitiesImported": zod.number(),
+  "sleepImported": zod.number()
+})
+
+
+/**
+ * @summary Remove all previously imported Apple Health activity and sleep data
+ */
+export const DeleteAppleHealthDataResponse = zod.void()
+
+
+/**
  * @summary List sleep entries (newest first, last 90 days)
  */
 export const ListSleepEntriesResponseItem = zod.object({
@@ -1095,7 +1161,7 @@ export const ListSleepEntriesResponseItem = zod.object({
   "wakeTime": zod.string().nullish().describe('HH:MM'),
   "quality": zod.number().nullish().describe('1-5 self-rating'),
   "score": zod.number().nullish().describe('0-100 device score'),
-  "source": zod.enum(['manual', 'oura'])
+  "source": zod.enum(['manual', 'oura', 'apple_health'])
 })
 export const ListSleepEntriesResponse = zod.array(ListSleepEntriesResponseItem)
 
@@ -1129,7 +1195,7 @@ export const CreateSleepEntryResponse = zod.object({
   "wakeTime": zod.string().nullish().describe('HH:MM'),
   "quality": zod.number().nullish().describe('1-5 self-rating'),
   "score": zod.number().nullish().describe('0-100 device score'),
-  "source": zod.enum(['manual', 'oura'])
+  "source": zod.enum(['manual', 'oura', 'apple_health'])
 })
 
 

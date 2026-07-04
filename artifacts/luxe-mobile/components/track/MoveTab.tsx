@@ -1,7 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import { useQueryClient } from "@tanstack/react-query";
 import { Pedometer } from "expo-sensors";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Platform, Pressable, Text, View } from "react-native";
 
 import { Alert } from "@/lib/alert";
@@ -14,9 +14,11 @@ import {
   useCreateActivity,
   useCreateSleepEntry,
   useDeleteActivity,
+  useDeleteAppleHealthData,
   useDeleteSleepEntry,
   useDisconnectOura,
   useGetActivitySummary,
+  useImportAppleHealth,
   useImportPhoneSteps,
   useListActivities,
   useListDevices,
@@ -25,9 +27,30 @@ import {
   useUpdateOuraSettings,
 } from "@workspace/api-client-react";
 
+import type { AppleHealthImportInput } from "@workspace/api-client-react";
+
 import { Card, Chip, EmptyState, LuxeButton, LuxeInput, SectionTitle } from "@/components/ui";
 import { useColors } from "@/hooks/useColors";
+import {
+  clearAppleHealthLastSync,
+  collectAppleHealth,
+  getAppleHealthLastSync,
+  getHealthAvailability,
+  setAppleHealthLastSync,
+  type HealthAvailability,
+} from "@/lib/healthkit";
 import { fmtDate, todayStr } from "@/lib/luxe";
+
+function appleSummaryRows(p: AppleHealthImportInput): { label: string; value: string }[] {
+  const stepDays = p.activities.filter((a) => a.type === "steps").length;
+  const workouts = p.activities.filter((a) => a.type !== "steps").length;
+  const nights = p.sleep.length;
+  const rows: { label: string; value: string }[] = [];
+  if (stepDays > 0) rows.push({ label: "Daily steps", value: `${stepDays} day${stepDays === 1 ? "" : "s"}` });
+  if (workouts > 0) rows.push({ label: "Workouts", value: `${workouts}` });
+  if (nights > 0) rows.push({ label: "Sleep", value: `${nights} night${nights === 1 ? "" : "s"}` });
+  return rows;
+}
 
 const ACTIVITY_TYPES = [
   { key: "walk", label: "Walk" },
@@ -97,6 +120,8 @@ export function MoveTab() {
   const updateOura = useUpdateOuraSettings();
   const disconnectOura = useDisconnectOura();
   const importPhoneSteps = useImportPhoneSteps();
+  const importApple = useImportAppleHealth();
+  const deleteApple = useDeleteAppleHealthData();
 
   const [actType, setActType] = useState<string>("walk");
   const [actMinutes, setActMinutes] = useState("");
@@ -106,6 +131,23 @@ export function MoveTab() {
   const [ouraToken, setOuraToken] = useState("");
   const [phonePreview, setPhonePreview] = useState<{ date: string; steps: number }[] | null>(null);
   const [readingSteps, setReadingSteps] = useState(false);
+  const [healthAvail, setHealthAvail] = useState<HealthAvailability | null>(null);
+  const [applePreview, setApplePreview] = useState<AppleHealthImportInput | null>(null);
+  const [readingApple, setReadingApple] = useState(false);
+  const [appleLastSync, setAppleLastSync] = useState<string | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    void (async () => {
+      const [avail, last] = await Promise.all([getHealthAvailability(), getAppleHealthLastSync()]);
+      if (!alive) return;
+      setHealthAvail(avail);
+      setAppleLastSync(last);
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: getGetActivitySummaryQueryKey({ days: 7 }) });
@@ -232,6 +274,81 @@ export function MoveTab() {
         },
         onError: () => Alert.alert("Phone steps", "Import failed. Please try again."),
       },
+    );
+  };
+
+  const readAppleHealth = async () => {
+    setReadingApple(true);
+    try {
+      const res = await collectAppleHealth();
+      if (!res.ok) {
+        Alert.alert(
+          "Apple Health",
+          res.reason === "unsupported-platform"
+            ? "Apple Health is only available on iPhone."
+            : res.reason === "unavailable-build"
+              ? "Apple Health syncing works in the App Store version of LUXE."
+              : "Couldn't read Apple Health. Please try again.",
+        );
+        return;
+      }
+      const total = res.payload.activities.length + res.payload.sleep.length;
+      if (total === 0) {
+        Alert.alert(
+          "Apple Health",
+          "No steps, workouts, or sleep found for the last 14 days — or access wasn't granted. You can turn it on in Settings › Privacy & Security › Health › LUXE.",
+        );
+        return;
+      }
+      setApplePreview(res.payload);
+    } finally {
+      setReadingApple(false);
+    }
+  };
+
+  const handleImportAppleHealth = () => {
+    if (!applePreview) return;
+    importApple.mutate(
+      { data: applePreview },
+      {
+        onSuccess: (r) => {
+          setApplePreview(null);
+          const now = new Date().toISOString();
+          void setAppleHealthLastSync(now);
+          setAppleLastSync(now);
+          invalidate();
+          Alert.alert(
+            "Apple Health",
+            `Synced ${r.activitiesImported} activity day(s) and ${r.sleepImported} night(s).`,
+          );
+        },
+        onError: () => Alert.alert("Apple Health", "Sync failed. Please try again."),
+      },
+    );
+  };
+
+  const handleRemoveAppleHealth = () => {
+    Alert.alert(
+      "Remove Apple Health data?",
+      "This deletes everything LUXE imported from Apple Health. Your data stays safe in Apple Health.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Remove",
+          style: "destructive",
+          onPress: () =>
+            deleteApple.mutate(undefined, {
+              onSuccess: () => {
+                void clearAppleHealthLastSync();
+                setAppleLastSync(null);
+                setApplePreview(null);
+                invalidate();
+                Alert.alert("Apple Health", "Removed the data LUXE imported.");
+              },
+              onError: () => Alert.alert("Apple Health", "Couldn't remove it. Please try again."),
+            }),
+        },
+      ],
     );
   };
 
@@ -512,15 +629,88 @@ export function MoveTab() {
 
       <Card style={{ marginTop: 12 }}>
         <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-          <Feather name="heart" size={16} color={c.mutedForeground} />
+          <Feather
+            name="heart"
+            size={16}
+            color={healthAvail === "available" ? c.tint : c.mutedForeground}
+          />
           <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 14, color: c.foreground }}>
-            Apple Health & Google Fit
+            Apple Health
           </Text>
         </View>
-        <Text style={{ fontFamily: "Inter_400Regular", fontSize: 12, color: c.mutedForeground, marginTop: 6 }}>
-          Full Apple Health and Google Fit pairing is coming in the App Store version of LUXE. For
-          now, phone steps and Oura cover automatic tracking.
-        </Text>
+
+        {healthAvail === null ? (
+          <Text style={{ fontFamily: "Inter_400Regular", fontSize: 12, color: c.mutedForeground, marginTop: 6 }}>
+            Checking Apple Health…
+          </Text>
+        ) : healthAvail === "available" ? (
+          <View>
+            <Text style={{ fontFamily: "Inter_400Regular", fontSize: 12, color: c.mutedForeground, marginTop: 6 }}>
+              Pulls your last 14 days of steps, workouts, and sleep from Apple Health — only when you
+              tap, and only after you approve. Visible only to you, never the med spa.
+            </Text>
+            {appleLastSync ? (
+              <Text style={{ fontFamily: "Inter_400Regular", fontSize: 12, color: c.mutedForeground, marginTop: 6 }}>
+                Last synced {new Date(appleLastSync).toLocaleString()}
+              </Text>
+            ) : null}
+            {applePreview ? (
+              <View style={{ marginTop: 10 }}>
+                {appleSummaryRows(applePreview).map((row) => (
+                  <View
+                    key={row.label}
+                    style={{ flexDirection: "row", justifyContent: "space-between", paddingVertical: 4 }}
+                  >
+                    <Text style={{ fontFamily: "Inter_400Regular", fontSize: 13, color: c.mutedForeground }}>
+                      {row.label}
+                    </Text>
+                    <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 13, color: c.foreground }}>
+                      {row.value}
+                    </Text>
+                  </View>
+                ))}
+                <View style={{ flexDirection: "row", gap: 10, marginTop: 10 }}>
+                  <View style={{ flex: 1 }}>
+                    <LuxeButton
+                      label="Add to my log"
+                      onPress={handleImportAppleHealth}
+                      loading={importApple.isPending}
+                    />
+                  </View>
+                  <LuxeButton label="Cancel" variant="outline" onPress={() => setApplePreview(null)} />
+                </View>
+              </View>
+            ) : (
+              <View style={{ marginTop: 10 }}>
+                <LuxeButton
+                  label="Sync Apple Health"
+                  variant="outline"
+                  onPress={() => void readAppleHealth()}
+                  loading={readingApple}
+                />
+              </View>
+            )}
+            {appleLastSync && !applePreview ? (
+              <View style={{ marginTop: 10 }}>
+                <LuxeButton
+                  label="Remove synced data"
+                  variant="outline"
+                  onPress={handleRemoveAppleHealth}
+                />
+              </View>
+            ) : null}
+          </View>
+        ) : healthAvail === "unavailable-build" ? (
+          <Text style={{ fontFamily: "Inter_400Regular", fontSize: 12, color: c.mutedForeground, marginTop: 6 }}>
+            Apple Health syncing works in the App Store version of LUXE. For now, phone steps and Oura
+            cover automatic tracking.
+          </Text>
+        ) : (
+          <Text style={{ fontFamily: "Inter_400Regular", fontSize: 12, color: c.mutedForeground, marginTop: 6 }}>
+            Apple Health is available on iPhone. On this device, use phone steps or Oura for automatic
+            tracking.
+          </Text>
+        )}
       </Card>
 
       <SectionTitle>Recent activity</SectionTitle>
