@@ -1,5 +1,7 @@
-import { Stack } from "expo-router";
+import { Feather } from "@expo/vector-icons";
+import { router, Stack } from "expo-router";
 import React from "react";
+import { Pressable } from "react-native";
 
 import { useColors } from "@/hooks/useColors";
 
@@ -14,6 +16,27 @@ export default function ExploreLayout() {
         headerTitleStyle: { fontFamily: "Inter_600SemiBold", fontSize: 17 },
         headerShadowVisible: false,
         contentStyle: { backgroundColor: c.background },
+        headerLeft: () => (
+          <Pressable
+            onPress={() => {
+              if (router.canGoBack()) {
+                router.back();
+              } else {
+                router.replace("/(tabs)");
+              }
+            }}
+            hitSlop={12}
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+            style={({ pressed }) => ({
+              opacity: pressed ? 0.6 : 1,
+              paddingRight: 12,
+              paddingVertical: 4,
+            })}
+          >
+            <Feather name="chevron-left" size={26} color={c.foreground} />
+          </Pressable>
+        ),
       }}
     >
       <Stack.Screen name="restaurants" options={{ title: "Dining Out Guide" }} />
