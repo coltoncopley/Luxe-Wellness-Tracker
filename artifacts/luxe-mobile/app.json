@@ -33,6 +33,7 @@
       ],
       "expo-font",
       "expo-web-browser",
+      "@clerk/expo",
       [
         "expo-image-picker",
         {
