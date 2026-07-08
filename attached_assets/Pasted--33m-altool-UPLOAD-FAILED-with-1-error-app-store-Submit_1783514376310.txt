@@ -1,0 +1,26 @@
+[33m[altool] UPLOAD FAILED with 1 error
+app-store / 🚀 Submit to App Store
+
+[33m[altool] 2026-07-08 05:38:15.030 [1m[31mERROR: [altool.600002090140] Error uploading '/var/folders/5_/4knlryn57n39p2c_jw8567z00000gn/T/5094c740-5ea1-44cc-b75e-9df45eae2535.ipa'.[0m
+app-store / 🚀 Submit to App Store
+
+[33m[altool] 2026-07-08 05:38:15.030 [1m[31mERROR: [altool.600002090140] Validation failed Missing purpose string in Info.plist. Your app’s code references one or more APIs that access sensitive user data, or the app has one or more entitlements that permit such access. The Info.plist file for the “LUXEWellness.app” bundle should contain a NSHealthUpdateUsageDescription key with a user-facing purpose string explaining clearly and completely why your app needs the data. If you’re using external libraries or SDKs, they may reference APIs that require a purpose string. While your app might not use these APIs, a purpose string is still required. For details, visit: https://developer.apple.com/documentation/uikit/protecting_the_user_s_privacy/requesting_access_to_protected_resources. (ID: bc3c4786-5642-4e50-9666-71d072a5d867) (409)
+app-store / 🚀 Submit to App Store
+
+[33m[altool] NSLocalizedDescription = "Validation failed";
+app-store / 🚀 Submit to App Store
+
+[33m[altool] NSUnderlyingError = "Error Domain=IrisAPI Code=-19241 \"Validation failed\" UserInfo={status=409, detail=Missing purpose string in Info.plist. Your app\U2019s code references one or more APIs that access sensitive user data, or the app has one or more entitlements that permit such access. The Info.plist file for the \U201cLUXEWellness.app\U201d bundle should contain a NSHealthUpdateUsageDescription key with a user-facing purpose string explaining clearly and completely why your app needs the data. If you\U2019re using external libraries or SDKs, they may reference APIs that require a purpose string. While your app might not use these APIs, a purpose string is still required. For details, visit: https://developer.apple.com/documentation/uikit/protecting_the_user_s_privacy/requesting_access_to_protected_resources., id=bc3c4786-5642-4e50-9666-71d072a5d867, code=STATE_ERROR.VALIDATION_ERROR, title=Validation failed, NSLocalizedFailureReason=Missing purpose string in Info.plist. Your app\U2019s code references one or more APIs that access sensitive user data, or the app has one or more entitlements that permit such access. The Info.plist file for the \U201cLUXEWellness.app\U201d bundle should contain a NSHealthUpdateUsageDescription key with a user-facing purpose string explaining clearly and completely why your app needs the data. If you\U2019re using external libraries or SDKs, they may reference APIs that require a purpose string. While your app might not use these APIs, a purpose string is still required. For details, visit: https://developer.apple.com/documentation/uikit/protecting_the_user_s_privacy/requesting_access_to_protected_resources., NSLocalizedDescription=Validation failed}";
+app-store / 🚀 Submit to App Store
+
+[31mThe call to the altool completed with a non-zero exit status: 1. This indicates a failure.[0m
+app-store / 🚀 Submit to App Store
+
+[!] Error uploading ipa file:
+app-store / 🚀 Submit to App Store
+
+[Application Loader Error Output]: The call to the altool completed with a non-zero exit status: 1. This indicates a failure.[0m
+app-store / 🚀 Submit to App Store
+
+.../esbuild@0.27.3/node_modules/esbuild postinstall: [esbuild] Failed to find package "@esbuild/darwin-arm64" on the file system
+app-store / 📦 Install dependencies
