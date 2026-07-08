@@ -1,5 +1,5 @@
 import { useSignIn, useSSO } from "@clerk/expo";
-import { Feather } from "@expo/vector-icons";
+import { Feather, Ionicons } from "@expo/vector-icons";
 import * as AuthSession from "expo-auth-session";
 import { type Href, Link, useRouter } from "expo-router";
 import * as WebBrowser from "expo-web-browser";
@@ -49,7 +49,7 @@ export default function SignInScreen() {
   const [code, setCode] = useState("");
   const [needsEmailCode, setNeedsEmailCode] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-  const [ssoLoading, setSsoLoading] = useState(false);
+  const [ssoLoading, setSsoLoading] = useState<"google" | "apple" | null>(null);
 
   const busy = fetchStatus === "fetching";
 
@@ -102,28 +102,35 @@ export default function SignInScreen() {
     }
   };
 
-  const handleGoogle = useCallback(async () => {
-    setFormError(null);
-    setSsoLoading(true);
-    try {
-      const { createdSessionId, setActive } = await startSSOFlow({
-        strategy: "oauth_google",
-        redirectUrl: AuthSession.makeRedirectUri(),
-      });
-      if (createdSessionId && setActive) {
-        await setActive({
-          session: createdSessionId,
-          navigate: async ({ session, decorateUrl }) => {
-            navigateHome({ session, decorateUrl });
-          },
+  const handleSSO = useCallback(
+    async (provider: "google" | "apple") => {
+      setFormError(null);
+      setSsoLoading(provider);
+      try {
+        const { createdSessionId, setActive } = await startSSOFlow({
+          strategy: provider === "google" ? "oauth_google" : "oauth_apple",
+          redirectUrl: AuthSession.makeRedirectUri(),
         });
+        if (createdSessionId && setActive) {
+          await setActive({
+            session: createdSessionId,
+            navigate: async ({ session, decorateUrl }) => {
+              navigateHome({ session, decorateUrl });
+            },
+          });
+        }
+      } catch {
+        setFormError(
+          provider === "google"
+            ? "Google sign-in was cancelled or failed."
+            : "Apple sign-in was cancelled or failed.",
+        );
+      } finally {
+        setSsoLoading(null);
       }
-    } catch {
-      setFormError("Google sign-in was cancelled or failed.");
-    } finally {
-      setSsoLoading(false);
-    }
-  }, [startSSOFlow, navigateHome]);
+    },
+    [startSSOFlow, navigateHome],
+  );
 
   return (
     <KeyboardAvoidingView
@@ -167,11 +174,26 @@ export default function SignInScreen() {
             <Text style={styles.heading}>Welcome back</Text>
 
             <Pressable
-              style={[styles.googleBtn, ssoLoading && styles.disabled]}
-              onPress={handleGoogle}
-              disabled={ssoLoading}
+              style={[styles.appleBtn, ssoLoading !== null && styles.disabled]}
+              onPress={() => handleSSO("apple")}
+              disabled={ssoLoading !== null}
             >
-              {ssoLoading ? (
+              {ssoLoading === "apple" ? (
+                <ActivityIndicator color="#000000" />
+              ) : (
+                <>
+                  <Ionicons name="logo-apple" size={19} color="#000000" />
+                  <Text style={styles.appleBtnText}>Continue with Apple</Text>
+                </>
+              )}
+            </Pressable>
+
+            <Pressable
+              style={[styles.googleBtn, ssoLoading !== null && styles.disabled]}
+              onPress={() => handleSSO("google")}
+              disabled={ssoLoading !== null}
+            >
+              {ssoLoading === "google" ? (
                 <ActivityIndicator color={CREAM} />
               ) : (
                 <>
@@ -288,6 +310,21 @@ const styles = StyleSheet.create({
     color: NAVY,
     fontFamily: "Inter_600SemiBold",
     fontSize: 16,
+  },
+  appleBtn: {
+    flexDirection: "row",
+    gap: 10,
+    backgroundColor: "#FFFFFF",
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 10,
+  },
+  appleBtnText: {
+    color: "#000000",
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 15,
   },
   googleBtn: {
     flexDirection: "row",

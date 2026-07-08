@@ -20,6 +20,11 @@ CocoaPods runs fine on this Linux workspace up to and including the post-install
 2. Install ruby (nix system dep) + `gem install cocoapods --user-install` + rsync; stub `xcodebuild`/`command`/`curl` in a fakebin dir on PATH; run `pod install` with the nix curl lib on LD_LIBRARY_PATH for ethon.
 3. Afterward ALWAYS clean up: delete the generated `ios/` dir (a committed ios/ flips Expo Launch to bare workflow — it is gitignored, keep it that way) and revert prebuild's package.json edits (adds android/ios scripts + duplicate expo/react/react-native deps).
 
-# Follow-up flagged at review
+# Sign in with Apple (guideline 4.8) — DONE 2026-07
 
-App offers "Continue with Google" but no Sign in with Apple — Apple guideline 4.8 likely requires it for approval. Entitlement is already auto-added by the Clerk plugin; only the UI is missing.
+Apple SSO added to mobile sign-in via Clerk `startSSOFlow({ strategy: "oauth_apple" })` (browser flow — no `expo-apple-authentication` / `usesAppleSignIn` needed; Apple accepts web-based flows). Apple provider is active on the Replit-managed Clerk instance with managed OAuth creds (works out of the box; web `<SignIn>` shows it automatically).
+
+Deferred items:
+- Consent screen shows Replit branding until custom Apple OAuth creds are configured in the Auth pane (owner's call).
+- If a Resend sending domain is ever verified, register it with Apple Private Email Relay too, or email to `@privaterelay.appleid.com` (Hide My Email) addresses will bounce.
+- Test the Apple flow on a real device/TestFlight — Expo web preview doesn't exercise the native browser session.
