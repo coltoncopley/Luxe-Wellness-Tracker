@@ -51,7 +51,7 @@
         "@kingstinct/react-native-healthkit",
         {
           "NSHealthShareUsageDescription": "LUXE reads your steps, workouts, and sleep from Apple Health, only when you tap Sync, to add them to your private activity log.",
-          "NSHealthUpdateUsageDescription": false,
+          "NSHealthUpdateUsageDescription": "LUXE does not save or change anything in Apple Health. It only reads the data you choose to sync.",
           "background": false
         }
       ]

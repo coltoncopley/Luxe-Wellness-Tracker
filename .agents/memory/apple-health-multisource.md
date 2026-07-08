@@ -31,6 +31,21 @@ merge overlapping intervals before it ever produces a single night's duration.**
   merged spans — never raw sample durations.
 - **Why:** overlapping intervals from two devices are the same sleep, counted twice.
 
+# App Store validation requires BOTH HealthKit purpose strings
+
+Apple's upload validator (altool) rejects the binary with "Missing purpose string
+in Info.plist … NSHealthUpdateUsageDescription" whenever the HealthKit framework
+is linked — even though the app is read-only and never requests write access.
+
+- The `@kingstinct/react-native-healthkit` config plugin accepts
+  `NSHealthUpdateUsageDescription: false` to omit the key — **never use `false`**;
+  it passes local builds but fails App Store upload validation.
+- Always supply a real user-facing string for BOTH `NSHealthShareUsageDescription`
+  and `NSHealthUpdateUsageDescription` in the plugin block in app.json (the update
+  string honestly states the app doesn't write to Health).
+- **How to verify without a build:** `CI=1 npx expo config --type introspect` in
+  the mobile artifact and grep for `NSHealth` — both keys must appear.
+
 # Native HealthKit module isolation (hard rule)
 
 `@kingstinct/react-native-healthkit` (+ `react-native-nitro-modules`) initializes
