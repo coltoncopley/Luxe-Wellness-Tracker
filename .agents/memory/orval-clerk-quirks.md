@@ -19,3 +19,6 @@ description: Non-obvious typing/wiring gotchas when using generated Orval hooks 
 - Generated client fetchers return the response body directly (`Promise<Xxx200>`), NOT a `{ status, data }` wrapper. Non-2xx responses throw `ApiError` (has `.status`, `.data`).
   **Why:** the repo's `customFetch` resolves parsed JSON on success and throws on error.
   **How to apply:** read `data?.field` directly in hooks; handle specific HTTP errors (e.g. 429) in `onError` via `err.status`, never in `onSuccess`.
+- Trap: `ApiError.response` is the raw fetch `Response`, so axios-style `err.response.status` half-works but `err.response.data` is ALWAYS undefined (body already consumed). Any body-code check silently never matches.
+  **Why:** the error's parsed body lives at top-level `err.data`, not on the Response; this shipped a broken error branch once and only code review caught it.
+  **How to apply:** always read `err.status` and `err.data?.error` at the top level when branching on API error codes, on both web and Expo clients.

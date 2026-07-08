@@ -209,6 +209,49 @@ export function SubscriptionGate({ children }: { children: React.ReactNode }) {
   }
 
   if (statusQuery.isError) {
+    // The generated client throws ApiError with top-level `status` and parsed
+    // body at top-level `data` (see lib/api-client-react/src/custom-fetch.ts).
+    const err = statusQuery.error as {
+      status?: number;
+      data?: { error?: string } | null;
+    } | null;
+    const isDuplicateEmail =
+      err?.status === 403 && err?.data?.error === "email_already_registered";
+    if (isDuplicateEmail) {
+      return (
+        <div className="flex min-h-screen items-center justify-center bg-background px-4">
+          <Card className="w-full max-w-md">
+            <CardContent className="flex flex-col items-center gap-4 p-8 text-center">
+              <img
+                src={logoUrl}
+                alt="LUXE Wellness & Aesthetics"
+                className="h-14 w-14 rounded-full object-cover"
+              />
+              <h1 className="font-serif text-xl font-semibold" data-testid="text-duplicate-email">
+                This email is already registered
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                Your email already belongs to a LUXE account created with a different sign-in
+                method (for example, you may have signed up once with Google and once with a
+                password). To keep everything in one account, sign out and sign back in the way
+                you originally signed up.
+              </p>
+              <Button
+                className="w-full"
+                onClick={() =>
+                  void signOut({
+                    redirectUrl: import.meta.env.BASE_URL.replace(/\/$/, "") || "/",
+                  })
+                }
+                data-testid="button-duplicate-sign-out"
+              >
+                Sign out
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      );
+    }
     return (
       <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-background px-6 text-center">
         <p className="text-sm text-muted-foreground">

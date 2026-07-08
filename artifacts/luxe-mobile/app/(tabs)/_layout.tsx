@@ -6,7 +6,7 @@ import { Redirect, Tabs } from "expo-router";
 import { Icon, Label, NativeTabs } from "expo-router/unstable-native-tabs";
 import { SymbolView } from "expo-symbols";
 import React, { useEffect, useState } from "react";
-import { Platform, StyleSheet, View, useColorScheme } from "react-native";
+import { Platform, StyleSheet, Text, View, useColorScheme } from "react-native";
 
 import {
   setAuthTokenGetter,
@@ -16,8 +16,58 @@ import {
 
 import { MembershipGate } from "@/components/MembershipGate";
 import { PrivacyAckModal } from "@/components/PrivacyAckModal";
-import { ErrorView, LoadingView } from "@/components/ui";
+import { ErrorView, LoadingView, LuxeButton } from "@/components/ui";
 import { useColors } from "@/hooks/useColors";
+
+/** True when the API rejected the sign-in because this email already belongs
+ *  to another account (one-email-one-account guard). The generated client
+ *  throws ApiError with top-level `status` and parsed body at top-level
+ *  `data` (see lib/api-client-react/src/custom-fetch.ts). */
+function isDuplicateEmailError(err: unknown): boolean {
+  const e = err as { status?: number; data?: { error?: string } | null } | null;
+  return e?.status === 403 && e?.data?.error === "email_already_registered";
+}
+
+function DuplicateEmailView() {
+  const c = useColors();
+  const { signOut } = useAuth();
+  return (
+    <View
+      style={{
+        flex: 1,
+        alignItems: "center",
+        justifyContent: "center",
+        backgroundColor: c.background,
+        padding: 32,
+        gap: 16,
+      }}
+    >
+      <Feather name="user-x" size={32} color={c.mutedForeground} />
+      <Text
+        style={{
+          color: c.text,
+          fontFamily: "Inter_600SemiBold",
+          fontSize: 17,
+          textAlign: "center",
+        }}
+      >
+        This email is already registered
+      </Text>
+      <Text
+        style={{
+          color: c.mutedForeground,
+          fontFamily: "Inter_400Regular",
+          textAlign: "center",
+        }}
+      >
+        Your email already belongs to a LUXE account created with a different sign-in method
+        (for example, once with Google and once with a password). Sign out and sign back in
+        the way you originally signed up.
+      </Text>
+      <LuxeButton label="Sign out" onPress={() => void signOut()} variant="outline" small />
+    </View>
+  );
+}
 
 // IMPORTANT: iOS 26 uses NativeTabs for native tabs with liquid glass support.
 // NativeTabs intentionally does NOT use custom design tokens — liquid glass
@@ -162,6 +212,9 @@ function Gate({ children }: { children: React.ReactElement }) {
   const billing = useGetBillingStatus();
 
   if (me.isLoading || billing.isLoading) return <LoadingView />;
+  if (isDuplicateEmailError(me.error) || isDuplicateEmailError(billing.error)) {
+    return <DuplicateEmailView />;
+  }
   if (me.isError || !me.data) {
     return (
       <ErrorView

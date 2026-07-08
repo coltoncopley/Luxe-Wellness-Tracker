@@ -1,12 +1,20 @@
 import type { Request, Response, NextFunction } from "express";
 import { getAuth, clerkClient } from "@clerk/express";
-import { eq } from "drizzle-orm";
+import { and, eq, ne, sql } from "drizzle-orm";
 import { db, usersTable } from "@workspace/db";
 
 const knownUserIds = new Set<string>();
 
-async function ensureUserRow(userId: string): Promise<void> {
-  if (knownUserIds.has(userId)) return;
+/**
+ * Upsert the user row for a Clerk identity. Returns "duplicate_email" when
+ * this is a BRAND-NEW identity whose email already belongs to an existing
+ * account (e.g. the same person signed up once with Google and once with a
+ * password) — in that case no row is created and the request must be
+ * rejected so one email maps to exactly one account. Existing rows are
+ * never blocked, only refreshed.
+ */
+async function ensureUserRow(userId: string): Promise<"ok" | "duplicate_email"> {
+  if (knownUserIds.has(userId)) return "ok";
   let email: string | null = null;
   let firstName: string | null = null;
   try {
@@ -16,6 +24,24 @@ async function ensureUserRow(userId: string): Promise<void> {
   } catch {
     // Profile enrichment is best-effort; the row still gets created.
   }
+  const [existing] = await db
+    .select({ id: usersTable.id })
+    .from(usersTable)
+    .where(eq(usersTable.id, userId))
+    .limit(1);
+  if (!existing && email) {
+    const [duplicate] = await db
+      .select({ id: usersTable.id })
+      .from(usersTable)
+      .where(
+        and(
+          ne(usersTable.id, userId),
+          sql`lower(${usersTable.email}) = lower(${email})`,
+        ),
+      )
+      .limit(1);
+    if (duplicate) return "duplicate_email";
+  }
   await db
     .insert(usersTable)
     .values({ id: userId, email, firstName })
@@ -24,6 +50,7 @@ async function ensureUserRow(userId: string): Promise<void> {
       set: { email, firstName },
     });
   knownUserIds.add(userId);
+  return "ok";
 }
 
 export async function requireAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -33,7 +60,15 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
     return;
   }
   try {
-    await ensureUserRow(userId);
+    const result = await ensureUserRow(userId);
+    if (result === "duplicate_email") {
+      req.log.warn(
+        { blockedUserId: userId },
+        "sign-in blocked: email already registered to another account",
+      );
+      res.status(403).json({ error: "email_already_registered" });
+      return;
+    }
   } catch (err) {
     next(err);
     return;
