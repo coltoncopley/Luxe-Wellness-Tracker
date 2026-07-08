@@ -2,13 +2,16 @@
 
 Everything needed to submit the LUXE **mobile app** (`artifacts/luxe-mobile`, Expo / React Native) to the Apple App Store, plus the exact steps you still need to run.
 
-**Current status (2026-07):**
+**Current status (updated 2026-07-08):**
 - ✅ Native iOS app exists (Expo/React Native, reuses the deployed backend)
 - ✅ Backend deployed & healthy at `https://luxewellnessapp.com`
 - ✅ Patient accounts + per-patient private data (Clerk auth)
 - ✅ In-app **Delete Account** (Settings → Account) — satisfies Apple 5.1.1(v)
-- ✅ Bundle identifier `com.luxewellnessapp.luxe`, `eas.json` build/submit profiles configured
-- ⏳ You need: a paid Apple Developer account, an Expo account, and to run the EAS build/submit + create the App Store Connect listing (steps in §7)
+- ✅ **Sign in with Apple** added alongside Google — satisfies Apple 4.8
+- ✅ Apple Health privacy purpose strings fixed (this caused the first upload rejection — resolved)
+- ✅ Apple Developer account + App Store Connect app created (LUXE Wellness, ID 6788731422)
+- ✅ Builds run from Replit's **Publish pane** (App Store tab) — no command line needed
+- ⏳ Remaining: finish the App Store Connect listing (§1–§6), retake screenshots from the real app (§5), test via TestFlight, submit for review (§7)
 
 ---
 
@@ -104,9 +107,13 @@ The app **has accounts**, so most data is *linked to the user*. In App Store Con
 
 **Data used to track you across apps/websites:** No.
 
-**Permission strings** (already set in `app.json` via the expo-image-picker plugin):
-> NSCameraUsageDescription: "LUXE uses your camera to take progress photos and photograph meals or product labels so AI can analyze them."
-> NSPhotoLibraryUsageDescription: "LUXE lets you choose photos so AI can analyze meals or product labels, and to save your progress photos."
+**Permission strings** (already set in `app.json` — no action needed, listed here for reference):
+> Camera: "LUXE uses your camera to take progress photos, skin scan selfies, and photos of product labels."
+> Photo library: "LUXE uses your photo library so you can add progress photos and scan product labels."
+> Contacts: "LUXE uses your contacts so you can invite friends to join the app."
+> Motion (phone steps): "LUXE reads your step counts from the phone's motion sensor, only when you tap Import, so you can add them to your activity log."
+> Apple Health (read): "LUXE reads your steps, workouts, and sleep from Apple Health, only when you tap Sync, to add them to your private activity log."
+> Apple Health (write — required by Apple even though the app never writes): "LUXE does not save or change anything in Apple Health. It only reads the data you choose to sync."
 
 ---
 
@@ -153,31 +160,23 @@ Captured drafts live in `screenshots/appstore/`:
 
 ## 7. What you still need to do — step by step
 
-### A. Accounts (one-time)
-1. **Apple Developer Program** — $99/year at developer.apple.com. Enroll as the business (needs a D-U-N-S number) or as an individual. Requires an Apple ID with two-factor auth.
-2. **Expo account** — free at expo.dev (EAS builds the native binary in the cloud so you don't need a Mac with Xcode).
+### A. Build & upload the iOS app — done from Replit, no command line
+1. Open the project on **replit.com** in a browser.
+2. Click **Publish** (top right) → the **App Store / iOS** tab.
+3. Run the build. It builds in the cloud and uploads straight to App Store Connect (takes ~20–40 min).
+4. After upload, the build appears in App Store Connect → TestFlight (processing can take another 10–30 min). Answer the one-time encryption question ("standard encryption") when prompted.
 
-### B. Build & upload the iOS app (run from `artifacts/luxe-mobile`)
-```bash
-npm install -g eas-cli
-eas login                       # your Expo account
-eas init                        # links the project, writes the EAS projectId
-eas build -p ios --profile production
-# EAS will prompt to create/manage your Apple signing credentials.
-# Sign in with your Apple Developer account when asked (it can auto-manage certs & provisioning).
-eas submit -p ios --profile production
-# Uploads the finished build to App Store Connect.
-```
-Notes:
-- `eas.json` is already set up with a `production` profile (auto-increments the build number, points the app at `https://luxewellnessapp.com`, and injects the production Clerk key/proxy).
-- The bundle identifier is `com.luxewellnessapp.luxe` — use the same when App Store Connect asks.
+### B. Test via TestFlight (recommended before submitting)
+1. Install the **TestFlight** app on your iPhone.
+2. In App Store Connect → your app → TestFlight tab → Internal Testing, add yourself as a tester by email.
+3. Tap the invite link on your phone → Install. Verify sign-in (Apple + Google), membership unlock, and the main features.
 
-### C. Create the App Store Connect listing
-1. At appstoreconnect.apple.com → **My Apps → +** → New App. Platform iOS, bundle id `com.luxewellnessapp.luxe`.
+### C. Complete the App Store Connect listing
+1. At appstoreconnect.apple.com → **My Apps → LUXE Wellness**.
 2. Paste the listing copy from §1, the URLs from §2, and complete App Privacy from §3.
-3. Upload screenshots (§5), the 1024×1024 app icon (already in the app), and select the build you submitted with EAS.
+3. Upload screenshots (§5) and select the uploaded build.
 4. Paste the App Review notes from §6 and the demo account.
-5. **Submit for Review.**
+5. **Submit for Review.** Apple typically responds in 1–3 days.
 
 ---
 
