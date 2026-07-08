@@ -21,3 +21,24 @@ export const membershipCodesTable = pgTable("membership_codes", {
 });
 
 export type MembershipCode = typeof membershipCodesTable.$inferSelect;
+
+/**
+ * One-time staff access codes (admin-generated, one per staff member).
+ * Redeeming a code upgrades the redeemer's account to the "staff" role.
+ * A code can be redeemed exactly once; unredeemed codes can be revoked.
+ * Demoting an existing staff member is done via role management, not here.
+ */
+export const staffCodesTable = pgTable("staff_codes", {
+  id: serial("id").primaryKey(),
+  code: text("code").notNull().unique(),
+  // Optional note for whom the code was made (e.g. the staff member's name).
+  label: text("label"),
+  createdBy: text("created_by").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  redeemedBy: text("redeemed_by"),
+  redeemedAt: timestamp("redeemed_at", { withTimezone: true }),
+  revokedAt: timestamp("revoked_at", { withTimezone: true }),
+  revokedBy: text("revoked_by"),
+});
+
+export type StaffCode = typeof staffCodesTable.$inferSelect;

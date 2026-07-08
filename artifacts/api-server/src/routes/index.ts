@@ -61,18 +61,17 @@ router.use(requireAuth, requireActiveSubscription, ingredientsRouter);
 // (e.g. `router.use(requirePatient, passportRouter)`) would run it for EVERY
 // request that falls through to that layer — including staff/admin requests
 // headed for the admin router below — and reject them with a 403.
+//
+// Self-tracking routes (passport, mind, activity/sleep/devices) are NOT listed:
+// they are strictly user_id-scoped, so staff/admin using them only ever touch
+// their OWN data (owner-approved 2026-07). Social/friends/community stay
+// patient-only — those can surface data patients shared with other users.
 const patientOnlyPaths = [
-  "/passport",
-  "/mind",
   "/follows",
   "/friends",
   "/social",
   "/cheers",
   "/community",
-  "/activities",
-  "/activity",
-  "/sleep-entries",
-  "/devices",
 ];
 router.use(patientOnlyPaths, requireAuth, requirePatient);
 

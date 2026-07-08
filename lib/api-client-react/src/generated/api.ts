@@ -56,6 +56,7 @@ import type {
   CreateMembershipCodeInput,
   CreatePassportEntryInput,
   CreateProgressPhotoInput,
+  CreateStaffCodeInput,
   DailySummary,
   DashboardSummary,
   Device,
@@ -149,6 +150,7 @@ import type {
   SleepEntry,
   SleepEntryInput,
   StaffAccessInput,
+  StaffCode,
   StaffMember,
   SyncResult,
   ToggleCommunityHeart200,
@@ -8898,6 +8900,223 @@ export const useAdminRevokeMembershipCode = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getAdminRevokeMembershipCodeMutationOptions(options));
+    }
+
+export const getAdminListStaffCodesUrl = () => {
+
+
+
+
+  return `/api/admin/staff-codes`
+}
+
+/**
+ * @summary List one-time staff access codes (admin only)
+ */
+export const adminListStaffCodes = async ( options?: RequestInit): Promise<StaffCode[]> => {
+
+  return customFetch<StaffCode[]>(getAdminListStaffCodesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getAdminListStaffCodesQueryKey = () => {
+    return [
+    `/api/admin/staff-codes`
+    ] as const;
+    }
+
+
+export const getAdminListStaffCodesQueryOptions = <TData = Awaited<ReturnType<typeof adminListStaffCodes>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListStaffCodes>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getAdminListStaffCodesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof adminListStaffCodes>>> = ({ signal }) => adminListStaffCodes({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof adminListStaffCodes>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type AdminListStaffCodesQueryResult = NonNullable<Awaited<ReturnType<typeof adminListStaffCodes>>>
+export type AdminListStaffCodesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List one-time staff access codes (admin only)
+ */
+
+export function useAdminListStaffCodes<TData = Awaited<ReturnType<typeof adminListStaffCodes>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof adminListStaffCodes>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getAdminListStaffCodesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAdminCreateStaffCodeUrl = () => {
+
+
+
+
+  return `/api/admin/staff-codes`
+}
+
+/**
+ * @summary Generate a one-time staff access code (admin only)
+ */
+export const adminCreateStaffCode = async (createStaffCodeInput: CreateStaffCodeInput, options?: RequestInit): Promise<StaffCode> => {
+
+  return customFetch<StaffCode>(getAdminCreateStaffCodeUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(createStaffCodeInput)
+  }
+);}
+
+
+
+
+export const getAdminCreateStaffCodeMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminCreateStaffCode>>, TError,{data: BodyType<CreateStaffCodeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminCreateStaffCode>>, TError,{data: BodyType<CreateStaffCodeInput>}, TContext> => {
+
+const mutationKey = ['adminCreateStaffCode'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminCreateStaffCode>>, {data: BodyType<CreateStaffCodeInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  adminCreateStaffCode(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminCreateStaffCodeMutationResult = NonNullable<Awaited<ReturnType<typeof adminCreateStaffCode>>>
+    export type AdminCreateStaffCodeMutationBody = BodyType<CreateStaffCodeInput>
+    export type AdminCreateStaffCodeMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Generate a one-time staff access code (admin only)
+ */
+export const useAdminCreateStaffCode = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminCreateStaffCode>>, TError,{data: BodyType<CreateStaffCodeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminCreateStaffCode>>,
+        TError,
+        {data: BodyType<CreateStaffCodeInput>},
+        TContext
+      > => {
+      return useMutation(getAdminCreateStaffCodeMutationOptions(options));
+    }
+
+export const getAdminRevokeStaffCodeUrl = (id: number,) => {
+
+
+
+
+  return `/api/admin/staff-codes/${id}/revoke`
+}
+
+/**
+ * @summary Revoke an unredeemed staff access code (admin only)
+ */
+export const adminRevokeStaffCode = async (id: number, options?: RequestInit): Promise<StaffCode> => {
+
+  return customFetch<StaffCode>(getAdminRevokeStaffCodeUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getAdminRevokeStaffCodeMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminRevokeStaffCode>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminRevokeStaffCode>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['adminRevokeStaffCode'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminRevokeStaffCode>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  adminRevokeStaffCode(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminRevokeStaffCodeMutationResult = NonNullable<Awaited<ReturnType<typeof adminRevokeStaffCode>>>
+
+    export type AdminRevokeStaffCodeMutationError = ErrorType<void>
+
+    /**
+ * @summary Revoke an unredeemed staff access code (admin only)
+ */
+export const useAdminRevokeStaffCode = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminRevokeStaffCode>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminRevokeStaffCode>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getAdminRevokeStaffCodeMutationOptions(options));
     }
 
 export const getAdminListStaffUrl = () => {

@@ -35,6 +35,11 @@ import {
   useAdminCreateMembershipCode,
   useAdminRevokeMembershipCode,
   type MembershipCode,
+  getAdminListStaffCodesQueryKey,
+  useAdminListStaffCodes,
+  useAdminCreateStaffCode,
+  useAdminRevokeStaffCode,
+  type StaffCode,
   useAdminListCommunityPosts,
   getAdminListCommunityPostsQueryKey,
   useModerateCommunityPost,
@@ -1580,6 +1585,161 @@ function MembershipCodesTab({ isAdmin }: { isAdmin: boolean }) {
   );
 }
 
+function StaffCodesCard() {
+  const queryClient = useQueryClient();
+  const { data: codes, isLoading } = useAdminListStaffCodes({
+    query: { queryKey: getAdminListStaffCodesQueryKey() },
+  });
+  const create = useAdminCreateStaffCode();
+  const revoke = useAdminRevokeStaffCode();
+  const [label, setLabel] = useState("");
+
+  function refresh() {
+    void queryClient.invalidateQueries({ queryKey: getAdminListStaffCodesQueryKey() });
+  }
+
+  function handleCreate(e: React.FormEvent) {
+    e.preventDefault();
+    create.mutate(
+      { data: label.trim() ? { label: label.trim() } : {} },
+      {
+        onSuccess: (c) => {
+          void navigator.clipboard?.writeText(c.code).catch(() => {});
+          toast.success(`Code ${c.code} created and copied to clipboard`);
+          setLabel("");
+          refresh();
+        },
+        onError: () => toast.error("Couldn't create the code. Please try again."),
+      },
+    );
+  }
+
+  function handleCopy(code: string) {
+    void navigator.clipboard?.writeText(code).then(
+      () => toast.success("Code copied"),
+      () => toast.error("Couldn't copy — select and copy it manually"),
+    );
+  }
+
+  function handleRevoke(c: StaffCode) {
+    if (!window.confirm("Cancel this code so it can never be used?")) return;
+    revoke.mutate(
+      { id: c.id },
+      {
+        onSuccess: () => {
+          toast.success("Code cancelled");
+          refresh();
+        },
+        onError: () => toast.error("Couldn't cancel the code. Please try again."),
+      },
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <KeyRound className="h-5 w-5 text-primary" /> One-time staff codes
+        </CardTitle>
+        <CardDescription>
+          A safer way to add a team member: make them a personal code instead of sharing the code
+          above. Each code works exactly once — they enter it on the Staff Portal page and get
+          staff access. Cancel unused codes any time.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <form onSubmit={handleCreate} className="flex flex-col sm:flex-row gap-2 max-w-md">
+          <Input
+            value={label}
+            onChange={(e) => setLabel(e.target.value)}
+            maxLength={80}
+            placeholder="Who is it for? (optional)"
+            data-testid="input-staff-code-label"
+          />
+          <Button type="submit" disabled={create.isPending} data-testid="button-create-staff-code">
+            <Plus className="h-4 w-4 mr-1" />
+            {create.isPending ? "Creating..." : "New staff code"}
+          </Button>
+        </form>
+        {isLoading ? (
+          <p className="text-muted-foreground text-sm">Loading…</p>
+        ) : !codes || codes.length === 0 ? (
+          <p className="text-muted-foreground text-sm">No staff codes yet — create one above.</p>
+        ) : (
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Code</TableHead>
+                  <TableHead>For</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Used by</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {codes.map((c) => {
+                  const badge = CODE_STATUS_BADGE[c.status];
+                  return (
+                    <TableRow key={c.id} data-testid={`row-staff-code-${c.id}`}>
+                      <TableCell>
+                        <button
+                          type="button"
+                          onClick={() => handleCopy(c.code)}
+                          className="font-mono text-sm inline-flex items-center gap-1.5 hover:text-primary"
+                          title="Copy code"
+                        >
+                          {c.code}
+                          <Copy className="h-3.5 w-3.5 opacity-50" />
+                        </button>
+                        <div className="text-xs text-muted-foreground">
+                          {format(new Date(c.createdAt), "MMM d, yyyy")}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-sm">{c.label ?? "—"}</TableCell>
+                      <TableCell>
+                        <Badge variant="secondary" className={badge.className}>
+                          {badge.label}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {c.redeemedByName || c.redeemedByEmail ? (
+                          <>
+                            <div className="text-sm">{c.redeemedByName ?? "—"}</div>
+                            <div className="text-xs text-muted-foreground">
+                              {c.redeemedByEmail ?? ""}
+                            </div>
+                          </>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">—</span>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {c.status === "active" ? (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive hover:text-destructive"
+                            disabled={revoke.isPending}
+                            onClick={() => handleRevoke(c)}
+                            data-testid={`button-cancel-staff-code-${c.id}`}
+                          >
+                            <Ban className="h-4 w-4 mr-1" /> Cancel
+                          </Button>
+                        ) : null}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 /* ---------- Page ---------- */
 
 function CommunityModerationTab() {
@@ -2015,6 +2175,8 @@ function AdminTab({ myUserId }: { myUserId: string }) {
           </form>
         </CardContent>
       </Card>
+
+      <StaffCodesCard />
 
       <Card>
         <CardHeader>

@@ -36,6 +36,7 @@ import {
   goalsTable,
   offerClaimsTable,
   membershipCodesTable,
+  staffCodesTable,
 } from "@workspace/db";
 import {
   GetMeResponse,
@@ -134,6 +135,15 @@ router.post("/me/privacy-ack", async (_req, res): Promise<void> => {
   );
 });
 
+/**
+ * Activate staff access. The single input accepts either:
+ *   1. the shared staff access code (app_settings.staff_access_code) — the
+ *      legacy path and the admin-bootstrap path (admin_bootstrap_email), or
+ *   2. a one-time per-person staff code (staff_codes, LWS-XXXX-XXXX) —
+ *      admin-generated, strictly single-use, grants "staff" only.
+ * All failures return the same coarse 403 so the response never reveals
+ * whether a guessed code exists (endpoint-hardening house rule).
+ */
 router.post("/me/staff-access", rateLimitActivation, async (req, res): Promise<void> => {
   const userId = userIdOf(res);
   const body = ActivateStaffAccessBody.safeParse(req.body);
@@ -141,40 +151,94 @@ router.post("/me/staff-access", rateLimitActivation, async (req, res): Promise<v
     res.status(400).json({ error: body.error.message });
     return;
   }
-  const [setting] = await db
-    .select()
-    .from(appSettingsTable)
-    .where(eq(appSettingsTable.key, "staff_access_code"));
-  const submitted = body.data.code.trim().toUpperCase();
-  if (!setting || submitted !== setting.value.toUpperCase()) {
-    res.status(403).json({ error: "That access code is not valid" });
+  const [current] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+  if (!current) {
+    res.status(401).json({ error: "Not signed in" });
     return;
   }
-  const [current] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
+
+  const respond = (user: typeof current): void => {
+    res.json(
+      ActivateStaffAccessResponse.parse({
+        privacyAcknowledged: user.privacyAckAt !== null,
+        id: user.id,
+        email: user.email,
+        firstName: user.firstName,
+        role: user.role,
+      }),
+    );
+  };
+
+  // Already staff/admin: nothing to activate. Short-circuit BEFORE any code
+  // lookup so a one-time code is never consumed by an account that doesn't
+  // need it.
+  if (current.role === "staff" || current.role === "admin") {
+    respond(current);
+    return;
+  }
+
+  const submitted = body.data.code.trim().toUpperCase();
   const [bootstrap] = await db
     .select()
     .from(appSettingsTable)
     .where(eq(appSettingsTable.key, "admin_bootstrap_email"));
   const isBootstrapAdmin =
     bootstrap !== undefined &&
-    current?.email !== null &&
-    current?.email !== undefined &&
+    current.email !== null &&
     current.email.trim().toLowerCase() === bootstrap.value.trim().toLowerCase();
-  const newRole = isBootstrapAdmin || current?.role === "admin" ? "admin" : "staff";
-  const [user] = await db
-    .update(usersTable)
-    .set({ role: newRole })
-    .where(eq(usersTable.id, userId))
-    .returning();
-  res.json(
-    ActivateStaffAccessResponse.parse({
-      privacyAcknowledged: user!.privacyAckAt !== null,
-      id: user.id,
-      email: user.email,
-      firstName: user.firstName,
-      role: user.role,
-    }),
-  );
+
+  // Path 1: the shared staff access code.
+  const [setting] = await db
+    .select()
+    .from(appSettingsTable)
+    .where(eq(appSettingsTable.key, "staff_access_code"));
+  if (setting && submitted === setting.value.toUpperCase()) {
+    const [user] = await db
+      .update(usersTable)
+      .set({ role: isBootstrapAdmin ? "admin" : "staff" })
+      .where(eq(usersTable.id, userId))
+      .returning();
+    clearSubscriptionCache(userId);
+    req.log.info({ userId, role: user!.role }, "staff access activated via shared code");
+    respond(user!);
+    return;
+  }
+
+  // Path 2: a one-time per-person staff code. Mirrors the membership-code
+  // redemption pattern: lock the code row AND the user row, re-check both
+  // inside the transaction so concurrent redemptions cannot double-spend.
+  const redeemed = await db.transaction(async (tx) => {
+    const [code] = await tx
+      .select()
+      .from(staffCodesTable)
+      .where(eq(staffCodesTable.code, submitted))
+      .for("update");
+    if (!code || code.revokedAt || code.redeemedBy) return null;
+    const [lockedUser] = await tx
+      .select()
+      .from(usersTable)
+      .where(eq(usersTable.id, userId))
+      .for("update");
+    if (!lockedUser || lockedUser.role === "staff" || lockedUser.role === "admin") return null;
+    await tx
+      .update(staffCodesTable)
+      .set({ redeemedBy: userId, redeemedAt: new Date() })
+      .where(eq(staffCodesTable.id, code.id));
+    const [user] = await tx
+      .update(usersTable)
+      .set({ role: isBootstrapAdmin ? "admin" : "staff" })
+      .where(eq(usersTable.id, userId))
+      .returning();
+    return user!;
+  });
+  if (redeemed) {
+    clearSubscriptionCache(userId);
+    req.log.info({ userId, role: redeemed.role }, "staff access activated via one-time code");
+    respond(redeemed);
+    return;
+  }
+
+  res.status(403).json({ error: "That access code is not valid" });
 });
 
 /**

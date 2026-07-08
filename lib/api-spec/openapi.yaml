@@ -2200,6 +2200,59 @@ paths:
                 $ref: "#/components/schemas/MembershipCode"
         "404":
           description: Code not found
+  /admin/staff-codes:
+    get:
+      operationId: adminListStaffCodes
+      tags: [admin]
+      summary: List one-time staff access codes (admin only)
+      responses:
+        "200":
+          description: Staff code list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/StaffCode"
+    post:
+      operationId: adminCreateStaffCode
+      tags: [admin]
+      summary: Generate a one-time staff access code (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateStaffCodeInput"
+      responses:
+        "201":
+          description: Code created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StaffCode"
+  /admin/staff-codes/{id}/revoke:
+    post:
+      operationId: adminRevokeStaffCode
+      tags: [admin]
+      summary: Revoke an unredeemed staff access code (admin only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Code revoked
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StaffCode"
+        "404":
+          description: Code not found
+        "409":
+          description: Code already redeemed — demote the staff member via role management instead
   /admin/staff:
     get:
       operationId: adminListStaff
@@ -2981,6 +3034,46 @@ components:
         accessUntil:
           type: ["string", "null"]
           description: When free access ends (null for unlimited)
+    StaffCode:
+      type: object
+      required:
+        [
+          id,
+          code,
+          label,
+          status,
+          createdAt,
+          createdByName,
+          createdByEmail,
+          redeemedAt,
+          redeemedByName,
+          redeemedByEmail,
+          revokedAt,
+        ]
+      properties:
+        id: { type: integer }
+        code: { type: string }
+        label:
+          type: ["string", "null"]
+          description: Optional note for whom the code was made
+        status:
+          type: string
+          enum: [active, redeemed, revoked]
+          description: active = not yet used; redeemed = used to activate a staff account; revoked = cancelled before use
+        createdAt: { type: string, description: ISO timestamp }
+        createdByName: { type: ["string", "null"] }
+        createdByEmail: { type: ["string", "null"] }
+        redeemedAt: { type: ["string", "null"], description: ISO timestamp }
+        redeemedByName: { type: ["string", "null"] }
+        redeemedByEmail: { type: ["string", "null"] }
+        revokedAt: { type: ["string", "null"], description: ISO timestamp }
+    CreateStaffCodeInput:
+      type: object
+      properties:
+        label:
+          type: string
+          maxLength: 80
+          description: Optional note for whom the code is (e.g. the staff member's name)
     AdminStaffMember:
       type: object
       required: [id, email, firstName, role, createdAt]

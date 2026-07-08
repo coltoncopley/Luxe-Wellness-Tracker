@@ -9,3 +9,4 @@
 - [E2E testing quirks](e2e-testing-quirks.md) — reuse an existing comped test user, match emails with lower(), split slow AI flows from CRUD plans; harness may restart api-server mid-test; toaster absent until a toast fires.
 - [Expo dev testing quirks](expo-testing-quirks.md) — RN Alert.alert is a no-op on Expo web (use `@/lib/alert` shim); stale-Metro 404s → restart expo workflow; keep runTest plans against Expo web very short.
 - [Express router.use scoping](express-middleware-scoping.md) — unscoped gates in `router.use(mw, subRouter)` run for ALL fall-through requests; path-scope role gates or later-mounted routers 403.
+- [Drizzle push dev drift](drizzle-push-dev-drift.md) — push prompts on index-vs-constraint drift; diagnose and fix with `ADD CONSTRAINT ... USING INDEX`, never pipe blind answers.

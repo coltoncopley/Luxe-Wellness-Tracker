@@ -23,6 +23,8 @@ import {
   rewardEventsTable,
   membershipCodesTable,
   type MembershipCode,
+  staffCodesTable,
+  type StaffCode,
   doctorTipsTable,
   type DoctorTip,
   offersTable,
@@ -62,6 +64,10 @@ import {
   AdminGetMetricsResponse,
   AdminListMembershipCodesResponse,
   AdminCreateMembershipCodeBody,
+  AdminListStaffCodesResponse,
+  AdminCreateStaffCodeBody,
+  AdminCreateStaffCodeResponse,
+  AdminRevokeStaffCodeResponse,
   AdminCreateMembershipCodeResponse,
   AdminRevokeMembershipCodeResponse,
   AdminListDoctorTipsResponse,
@@ -570,6 +576,138 @@ router.post(
     res.json(AdminRevokeMembershipCodeResponse.parse(payload));
   },
 );
+
+// ---- One-time staff access codes (admin only) ----
+//
+// Per-person codes so the shared staff access code never has to be passed
+// around. Redeeming one (POST /me/staff-access) grants the "staff" role only —
+// never admin. Redeemer name/email exposure here is allowed under the privacy
+// rules (same as membership codes); no patient health data is involved.
+
+function generateStaffCode(): string {
+  const bytes = crypto.randomBytes(8);
+  let s = "";
+  for (let i = 0; i < 8; i++) {
+    s += CODE_ALPHABET[bytes[i]! % CODE_ALPHABET.length];
+    if (i === 3) s += "-";
+  }
+  return `LWS-${s}`;
+}
+
+function staffCodeStatus(row: StaffCode): "active" | "redeemed" | "revoked" {
+  if (row.revokedAt) return "revoked";
+  if (row.redeemedBy) return "redeemed";
+  return "active";
+}
+
+async function toStaffCodeResponses(rows: StaffCode[]) {
+  const userIds = new Set<string>();
+  for (const r of rows) {
+    userIds.add(r.createdBy);
+    if (r.redeemedBy) userIds.add(r.redeemedBy);
+  }
+  const users =
+    userIds.size > 0
+      ? await db
+          .select({
+            id: usersTable.id,
+            email: usersTable.email,
+            firstName: usersTable.firstName,
+          })
+          .from(usersTable)
+          .where(inArray(usersTable.id, [...userIds]))
+      : [];
+  const byId = new Map(users.map((u) => [u.id, u]));
+  return rows.map((r) => {
+    const creator = byId.get(r.createdBy);
+    const redeemer = r.redeemedBy ? byId.get(r.redeemedBy) : undefined;
+    return {
+      id: r.id,
+      code: r.code,
+      label: r.label,
+      status: staffCodeStatus(r),
+      createdAt: r.createdAt.toISOString(),
+      createdByName: creator?.firstName ?? null,
+      createdByEmail: creator?.email ?? null,
+      redeemedAt: r.redeemedAt ? r.redeemedAt.toISOString() : null,
+      redeemedByName: redeemer?.firstName ?? null,
+      redeemedByEmail: redeemer?.email ?? null,
+      revokedAt: r.revokedAt ? r.revokedAt.toISOString() : null,
+    };
+  });
+}
+
+router.get("/admin/staff-codes", requireAdmin, async (_req, res): Promise<void> => {
+  const rows = await db
+    .select()
+    .from(staffCodesTable)
+    .orderBy(desc(staffCodesTable.createdAt))
+    .limit(500);
+  res.json(AdminListStaffCodesResponse.parse(await toStaffCodeResponses(rows)));
+});
+
+router.post("/admin/staff-codes", requireAdmin, async (req, res): Promise<void> => {
+  const body = AdminCreateStaffCodeBody.safeParse(req.body);
+  if (!body.success) {
+    res.status(400).json({ error: "Invalid input" });
+    return;
+  }
+  const actorId = res.locals.userId as string;
+  const label = body.data.label?.trim() || null;
+  // Retry on the (astronomically unlikely) chance of a code collision.
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const [row] = await db
+        .insert(staffCodesTable)
+        .values({ code: generateStaffCode(), label, createdBy: actorId })
+        .returning();
+      const [payload] = await toStaffCodeResponses([row!]);
+      res.status(201).json(AdminCreateStaffCodeResponse.parse(payload));
+      return;
+    } catch (err) {
+      if (attempt === 2) throw err;
+    }
+  }
+});
+
+router.post("/admin/staff-codes/:id/revoke", requireAdmin, async (req, res): Promise<void> => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id)) {
+    res.status(404).json({ error: "Code not found" });
+    return;
+  }
+  const actorId = res.locals.userId as string;
+  const result = await db.transaction(async (tx) => {
+    const [code] = await tx
+      .select()
+      .from(staffCodesTable)
+      .where(eq(staffCodesTable.id, id))
+      .for("update");
+    if (!code) return "not_found" as const;
+    // A redeemed code already did its job — the person IS staff. Removing
+    // their access is a role-management action, not a code action.
+    if (code.redeemedBy) return "already_redeemed" as const;
+    if (code.revokedAt) return code;
+    const [updated] = await tx
+      .update(staffCodesTable)
+      .set({ revokedAt: new Date(), revokedBy: actorId })
+      .where(eq(staffCodesTable.id, id))
+      .returning();
+    return updated!;
+  });
+  if (result === "not_found") {
+    res.status(404).json({ error: "Code not found" });
+    return;
+  }
+  if (result === "already_redeemed") {
+    res.status(409).json({
+      error: "This code was already used. To remove that person's access, change their role in Staff management.",
+    });
+    return;
+  }
+  const [payload] = await toStaffCodeResponses([result]);
+  res.json(AdminRevokeStaffCodeResponse.parse(payload));
+});
 
 router.get("/admin/community/posts", async (_req, res): Promise<void> => {
   const posts = await db

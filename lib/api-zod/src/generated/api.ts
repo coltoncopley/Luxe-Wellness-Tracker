@@ -2359,6 +2359,73 @@ export const AdminRevokeMembershipCodeResponse = zod.object({
 
 
 /**
+ * @summary List one-time staff access codes (admin only)
+ */
+export const AdminListStaffCodesResponseItem = zod.object({
+  "id": zod.number(),
+  "code": zod.string(),
+  "label": zod.string().nullable().describe('Optional note for whom the code was made'),
+  "status": zod.enum(['active', 'redeemed', 'revoked']).describe('active = not yet used; redeemed = used to activate a staff account; revoked = cancelled before use'),
+  "createdAt": zod.string().describe('ISO timestamp'),
+  "createdByName": zod.string().nullable(),
+  "createdByEmail": zod.string().nullable(),
+  "redeemedAt": zod.string().nullable().describe('ISO timestamp'),
+  "redeemedByName": zod.string().nullable(),
+  "redeemedByEmail": zod.string().nullable(),
+  "revokedAt": zod.string().nullable().describe('ISO timestamp')
+})
+export const AdminListStaffCodesResponse = zod.array(AdminListStaffCodesResponseItem)
+
+
+/**
+ * @summary Generate a one-time staff access code (admin only)
+ */
+export const adminCreateStaffCodeBodyLabelMax = 80;
+
+
+
+export const AdminCreateStaffCodeBody = zod.object({
+  "label": zod.string().max(adminCreateStaffCodeBodyLabelMax).optional().describe('Optional note for whom the code is (e.g. the staff member\'s name)')
+})
+
+export const AdminCreateStaffCodeResponse = zod.object({
+  "id": zod.number(),
+  "code": zod.string(),
+  "label": zod.string().nullable().describe('Optional note for whom the code was made'),
+  "status": zod.enum(['active', 'redeemed', 'revoked']).describe('active = not yet used; redeemed = used to activate a staff account; revoked = cancelled before use'),
+  "createdAt": zod.string().describe('ISO timestamp'),
+  "createdByName": zod.string().nullable(),
+  "createdByEmail": zod.string().nullable(),
+  "redeemedAt": zod.string().nullable().describe('ISO timestamp'),
+  "redeemedByName": zod.string().nullable(),
+  "redeemedByEmail": zod.string().nullable(),
+  "revokedAt": zod.string().nullable().describe('ISO timestamp')
+})
+
+
+/**
+ * @summary Revoke an unredeemed staff access code (admin only)
+ */
+export const AdminRevokeStaffCodeParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const AdminRevokeStaffCodeResponse = zod.object({
+  "id": zod.number(),
+  "code": zod.string(),
+  "label": zod.string().nullable().describe('Optional note for whom the code was made'),
+  "status": zod.enum(['active', 'redeemed', 'revoked']).describe('active = not yet used; redeemed = used to activate a staff account; revoked = cancelled before use'),
+  "createdAt": zod.string().describe('ISO timestamp'),
+  "createdByName": zod.string().nullable(),
+  "createdByEmail": zod.string().nullable(),
+  "redeemedAt": zod.string().nullable().describe('ISO timestamp'),
+  "redeemedByName": zod.string().nullable(),
+  "redeemedByEmail": zod.string().nullable(),
+  "revokedAt": zod.string().nullable().describe('ISO timestamp')
+})
+
+
+/**
  * @summary List staff and admin accounts (admin only)
  */
 export const AdminListStaffResponseItem = zod.object({

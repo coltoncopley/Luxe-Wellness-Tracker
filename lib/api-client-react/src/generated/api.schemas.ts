@@ -167,6 +167,58 @@ export interface RedeemMembershipCodeResult {
   accessUntil: string | null;
 }
 
+/**
+ * active = not yet used; redeemed = used to activate a staff account; revoked = cancelled before use
+ */
+export type StaffCodeStatus = typeof StaffCodeStatus[keyof typeof StaffCodeStatus];
+
+
+export const StaffCodeStatus = {
+  active: 'active',
+  redeemed: 'redeemed',
+  revoked: 'revoked',
+} as const;
+
+export interface StaffCode {
+  id: number;
+  code: string;
+  /**
+     * Optional note for whom the code was made
+     * @nullable
+     */
+  label: string | null;
+  /** active = not yet used; redeemed = used to activate a staff account; revoked = cancelled before use */
+  status: StaffCodeStatus;
+  /** ISO timestamp */
+  createdAt: string;
+  /** @nullable */
+  createdByName: string | null;
+  /** @nullable */
+  createdByEmail: string | null;
+  /**
+     * ISO timestamp
+     * @nullable
+     */
+  redeemedAt: string | null;
+  /** @nullable */
+  redeemedByName: string | null;
+  /** @nullable */
+  redeemedByEmail: string | null;
+  /**
+     * ISO timestamp
+     * @nullable
+     */
+  revokedAt: string | null;
+}
+
+export interface CreateStaffCodeInput {
+  /**
+     * Optional note for whom the code is (e.g. the staff member's name)
+     * @maxLength 80
+     */
+  label?: string;
+}
+
 export type AdminStaffMemberRole = typeof AdminStaffMemberRole[keyof typeof AdminStaffMemberRole];
 
 
