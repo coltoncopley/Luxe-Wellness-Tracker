@@ -53,6 +53,8 @@ import {
   AdminListStaffResponse,
   AdminUpdateStaffRoleBody,
   AdminUpdateStaffRoleResponse,
+  AdminAddStaffByEmailBody,
+  AdminAddStaffByEmailResponse,
   AdminGetAccessCodeResponse,
   AdminUpdateAccessCodeBody,
   AdminUpdateAccessCodeResponse,
@@ -904,6 +906,59 @@ router.post("/admin/staff/:userId/role", requireAdmin, async (req, res): Promise
   }
   clearSubscriptionCache(targetId);
   res.json(AdminUpdateStaffRoleResponse.parse(toStaffMember(updated)));
+});
+
+// Grant staff (or admin) to an EXISTING account by email — the no-code path.
+// The person must already have signed into the app at least once (so a users
+// row exists); this only flips their role, it never creates an account.
+router.post("/admin/staff/add", requireAdmin, async (req, res): Promise<void> => {
+  const body = AdminAddStaffByEmailBody.safeParse(req.body);
+  if (!body.success) {
+    res.status(400).json({ error: "Invalid input" });
+    return;
+  }
+  const actorId = res.locals.userId as string;
+  const email = body.data.email.trim();
+  const role = body.data.role ?? "staff";
+  if (!email) {
+    res.status(400).json({ error: "Enter an email address" });
+    return;
+  }
+  const [target] = await db
+    .select()
+    .from(usersTable)
+    .where(sql`lower(${usersTable.email}) = lower(${email})`);
+  if (!target) {
+    res.status(404).json({ error: "No account exists with that email" });
+    return;
+  }
+  if (target.id === actorId) {
+    res.status(400).json({ error: "You cannot change your own role" });
+    return;
+  }
+  // Never silently demote: if they already have staff/admin access, don't touch
+  // their role — this is an "Add" action, not a role editor (use the staff list
+  // for demotions).
+  if (isStaffRole(target.role)) {
+    res.status(409).json({ error: "That person already has staff access" });
+    return;
+  }
+  const updated = await db.transaction(async (tx) => {
+    await tx.execute(sql`SELECT pg_advisory_xact_lock(hashtext('admin_role_change'))`);
+    const [row] = await tx
+      .update(usersTable)
+      .set({ role })
+      .where(eq(usersTable.id, target.id))
+      .returning();
+    return row ?? null;
+  });
+  if (!updated) {
+    res.status(400).json({ error: "Couldn't update that account" });
+    return;
+  }
+  clearSubscriptionCache(target.id);
+  req.log.info({ targetId: target.id, role, actorId }, "staff access granted by email");
+  res.json(AdminAddStaffByEmailResponse.parse(toStaffMember(updated)));
 });
 
 router.get("/admin/access-code", requireAdmin, async (_req, res): Promise<void> => {

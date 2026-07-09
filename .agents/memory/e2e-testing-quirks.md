@@ -15,5 +15,6 @@ Rules to avoid false e2e failures:
   **How to apply:** keep a patient test user with `comp_until` far in the future and sign in as that exact email in the `[Clerk Auth]` step.
 - **Curated restaurant names 409 on custom-add.** National chains (Olive Garden etc.) already exist as curated rows, so adding them returns "already in your list" — correct behavior, not a bug. Use a real local non-chain name for grounded-menu tests.
 - **Long AI flows can blow the 600s sandbox timeout.** A single test plan containing a 60–120s AI generation plus many CRUD steps timed out (and lost the result). Split into a slow AI-creation test and a fast follow-up CRUD test that reuses the created data.
+- **Testing admin-only flows:** sign in via `[Clerk Auth]`, then `[DB] UPDATE users SET role='admin' WHERE lower(email)=lower(...)` and reload so `/me` picks up the role (admins are paywall-exempt, so no comp needed). A promotion *target* can be inserted directly — `INSERT INTO users (id, email, role)` needs only id+email (role defaults to patient); the target never has to sign in. Clean up any directly-inserted rows after.
 
 **Why:** all of these caused failed/lost test runs (Activity & Sleep 2026-07, restaurant menus 2026-07) even though the features worked; each cost a full re-run to diagnose.

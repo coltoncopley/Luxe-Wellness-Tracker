@@ -46,6 +46,7 @@ import {
   useAdminListStaff,
   getAdminListStaffQueryKey,
   useAdminUpdateStaffRole,
+  useAdminAddStaffByEmail,
   useAdminGetAccessCode,
   getAdminGetAccessCodeQueryKey,
   useAdminUpdateAccessCode,
@@ -125,6 +126,7 @@ import {
   Wand2,
   Send,
   BadgePercent,
+  UserPlus,
 } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
@@ -2081,9 +2083,39 @@ function AdminTab({ myUserId }: { myUserId: string }) {
 
   const [showCode, setShowCode] = useState(false);
   const [newCode, setNewCode] = useState("");
+  const [addEmail, setAddEmail] = useState("");
 
   const updateCode = useAdminUpdateAccessCode();
   const updateRole = useAdminUpdateStaffRole();
+  const addStaff = useAdminAddStaffByEmail();
+
+  function handleAddStaff(e: React.FormEvent) {
+    e.preventDefault();
+    const email = addEmail.trim();
+    if (!email) return;
+    addStaff.mutate(
+      { data: { email, role: "staff" } },
+      {
+        onSuccess: (member) => {
+          toast.success(`${member.firstName ?? member.email ?? "That person"} is now staff`);
+          setAddEmail("");
+          void queryClient.invalidateQueries({ queryKey: getAdminListStaffQueryKey() });
+        },
+        onError: (err) => {
+          const status = (err as { status?: number }).status;
+          if (status === 404) {
+            toast.error("No account with that email — they must sign in to the app once first");
+          } else if (status === 409) {
+            toast.error("That person already has staff access");
+          } else if (status === 400) {
+            toast.error("That change isn't allowed");
+          } else {
+            toast.error("Couldn't add them — try again");
+          }
+        },
+      },
+    );
+  }
 
   function handleCodeSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -2177,6 +2209,37 @@ function AdminTab({ myUserId }: { myUserId: string }) {
       </Card>
 
       <StaffCodesCard />
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <UserPlus className="h-5 w-5 text-primary" /> Add a staff member by email
+          </CardTitle>
+          <CardDescription>
+            Instantly grant staff access to someone who already has an account — no code needed.
+            They must have signed into the app at least once first. Enter the email they use to
+            sign in.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <form onSubmit={handleAddStaff} className="flex gap-2 max-w-md">
+            <Input
+              type="email"
+              value={addEmail}
+              onChange={(e) => setAddEmail(e.target.value)}
+              placeholder="person@example.com"
+              data-testid="input-add-staff-email"
+            />
+            <Button
+              type="submit"
+              disabled={addStaff.isPending || !addEmail.trim()}
+              data-testid="button-add-staff"
+            >
+              {addStaff.isPending ? "Adding…" : "Add as staff"}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

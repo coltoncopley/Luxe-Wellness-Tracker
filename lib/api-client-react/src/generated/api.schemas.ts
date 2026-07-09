@@ -256,6 +256,27 @@ export interface UpdateStaffRoleInput {
   role: UpdateStaffRoleInputRole;
 }
 
+/**
+ * Role to grant (defaults to staff)
+ */
+export type AddStaffByEmailInputRole = typeof AddStaffByEmailInputRole[keyof typeof AddStaffByEmailInputRole];
+
+
+export const AddStaffByEmailInputRole = {
+  staff: 'staff',
+  admin: 'admin',
+} as const;
+
+export interface AddStaffByEmailInput {
+  /**
+     * Email of an existing account to grant staff access to
+     * @minLength 1
+     */
+  email: string;
+  /** Role to grant (defaults to staff) */
+  role?: AddStaffByEmailInputRole;
+}
+
 export interface AccessCodeSetting {
   /** The staff access code */
   code: string;

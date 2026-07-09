@@ -14,6 +14,8 @@ export * from './activitySource';
 export * from './activitySummary';
 export * from './activitySummarySeriesItem';
 export * from './activityType';
+export * from './addStaffByEmailInput';
+export * from './addStaffByEmailInputRole';
 export * from './adminCommunityPost';
 export * from './adminGenerateDoctorTips201';
 export * from './adminListAnnouncements200';

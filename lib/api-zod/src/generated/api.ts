@@ -2459,6 +2459,26 @@ export const AdminUpdateStaffRoleResponse = zod.object({
 
 
 /**
+ * @summary Grant staff (or admin) to an existing account by email (admin only)
+ */
+
+
+
+export const AdminAddStaffByEmailBody = zod.object({
+  "email": zod.string().min(1).describe('Email of an existing account to grant staff access to'),
+  "role": zod.enum(['staff', 'admin']).optional().describe('Role to grant (defaults to staff)')
+})
+
+export const AdminAddStaffByEmailResponse = zod.object({
+  "id": zod.string(),
+  "email": zod.string().nullable(),
+  "firstName": zod.string().nullable(),
+  "role": zod.enum(['patient', 'staff', 'admin']),
+  "createdAt": zod.string().describe('ISO timestamp')
+})
+
+
+/**
  * @summary View the current staff access code (admin only)
  */
 export const AdminGetAccessCodeResponse = zod.object({

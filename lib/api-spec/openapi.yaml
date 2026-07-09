@@ -2295,6 +2295,30 @@ paths:
           description: Cannot change your own role
         "404":
           description: User not found
+  /admin/staff/add:
+    post:
+      operationId: adminAddStaffByEmail
+      tags: [admin]
+      summary: Grant staff (or admin) to an existing account by email (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AddStaffByEmailInput"
+      responses:
+        "200":
+          description: The user, now with the granted role
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminStaffMember"
+        "400":
+          description: Invalid input, or you cannot change your own role
+        "404":
+          description: No account exists with that email
+        "409":
+          description: That account already has staff access
   /admin/access-code:
     get:
       operationId: adminGetAccessCode
@@ -3093,6 +3117,18 @@ components:
           type: string
           enum: [patient, staff, admin]
           description: New role for the user (patient removes staff access)
+    AddStaffByEmailInput:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          minLength: 1
+          description: Email of an existing account to grant staff access to
+        role:
+          type: string
+          enum: [staff, admin]
+          description: Role to grant (defaults to staff)
     AccessCodeSetting:
       type: object
       required: [code]

@@ -24,6 +24,7 @@ import type {
   Activity,
   ActivityInput,
   ActivitySummary,
+  AddStaffByEmailInput,
   AdminGenerateDoctorTips201,
   AdminListAnnouncements200,
   AdminListCommunityPosts200,
@@ -9265,6 +9266,76 @@ export const useAdminUpdateStaffRole = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getAdminUpdateStaffRoleMutationOptions(options));
+    }
+
+export const getAdminAddStaffByEmailUrl = () => {
+
+
+
+
+  return `/api/admin/staff/add`
+}
+
+/**
+ * @summary Grant staff (or admin) to an existing account by email (admin only)
+ */
+export const adminAddStaffByEmail = async (addStaffByEmailInput: AddStaffByEmailInput, options?: RequestInit): Promise<AdminStaffMember> => {
+
+  return customFetch<AdminStaffMember>(getAdminAddStaffByEmailUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(addStaffByEmailInput)
+  }
+);}
+
+
+
+
+export const getAdminAddStaffByEmailMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminAddStaffByEmail>>, TError,{data: BodyType<AddStaffByEmailInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminAddStaffByEmail>>, TError,{data: BodyType<AddStaffByEmailInput>}, TContext> => {
+
+const mutationKey = ['adminAddStaffByEmail'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminAddStaffByEmail>>, {data: BodyType<AddStaffByEmailInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  adminAddStaffByEmail(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminAddStaffByEmailMutationResult = NonNullable<Awaited<ReturnType<typeof adminAddStaffByEmail>>>
+    export type AdminAddStaffByEmailMutationBody = BodyType<AddStaffByEmailInput>
+    export type AdminAddStaffByEmailMutationError = ErrorType<void>
+
+    /**
+ * @summary Grant staff (or admin) to an existing account by email (admin only)
+ */
+export const useAdminAddStaffByEmail = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminAddStaffByEmail>>, TError,{data: BodyType<AddStaffByEmailInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminAddStaffByEmail>>,
+        TError,
+        {data: BodyType<AddStaffByEmailInput>},
+        TContext
+      > => {
+      return useMutation(getAdminAddStaffByEmailMutationOptions(options));
     }
 
 export const getAdminGetAccessCodeUrl = () => {
