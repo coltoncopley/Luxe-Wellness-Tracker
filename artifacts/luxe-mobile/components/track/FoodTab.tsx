@@ -13,7 +13,7 @@ import {
   useGetDailySummary,
   useListFoodLogs,
 } from "@workspace/api-client-react";
-import type { MealPhotoAnalysis } from "@workspace/api-client-react";
+import type { FoodLog, MealPhotoAnalysis } from "@workspace/api-client-react";
 
 import { Card, Chip, EmptyState, LuxeButton, LuxeInput, SectionTitle } from "@/components/ui";
 import { NutritionFactsLabel } from "@/components/NutritionFactsLabel";
@@ -21,6 +21,76 @@ import { useColors } from "@/hooks/useColors";
 import { pickImageAsset, todayStr } from "@/lib/luxe";
 
 const MEAL_TYPES = ["breakfast", "lunch", "dinner", "snack"] as const;
+
+function FoodLogItemRow({
+  item,
+  isFirst,
+  onDelete,
+}: {
+  item: FoodLog;
+  isFirst: boolean;
+  onDelete: (item: FoodLog) => void;
+}) {
+  const c = useColors();
+  const [open, setOpen] = useState(false);
+  const servingLabel =
+    item.servings != null && item.servings !== 1
+      ? `${Math.round(item.servings * 100) / 100} × ${item.servingSize || "serving"}`
+      : item.servingSize || null;
+  return (
+    <View style={{ borderTopWidth: isFirst ? 0 : 1, borderTopColor: c.border, paddingVertical: 12 }}>
+      <View style={{ flexDirection: "row", alignItems: "center" }}>
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 14, color: c.foreground }}>
+            {item.foodName}
+          </Text>
+          <Text style={{ fontFamily: "Inter_400Regular", fontSize: 12, color: c.mutedForeground, marginTop: 2 }}>
+            {item.mealType.charAt(0).toUpperCase() + item.mealType.slice(1)}
+            {item.servings != null && item.servings !== 1
+              ? ` · ${Math.round(item.servings * 100) / 100}×${item.servingSize ? ` ${item.servingSize}` : ""}`
+              : item.servingSize
+                ? ` · ${item.servingSize}`
+                : ""}
+          </Text>
+          <Pressable
+            onPress={() => setOpen((o) => !o)}
+            hitSlop={8}
+            style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 6 }}
+          >
+            <Feather name={open ? "chevron-up" : "chevron-down"} size={14} color={c.tint} />
+            <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 12, color: c.tint }}>
+              Nutrition Facts
+            </Text>
+          </Pressable>
+        </View>
+        <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 14, color: c.foreground }}>
+          {item.calories} cal
+        </Text>
+        <Pressable hitSlop={10} style={{ marginLeft: 14 }} onPress={() => onDelete(item)}>
+          <Feather name="trash-2" size={16} color={c.mutedForeground} />
+        </Pressable>
+      </View>
+      {open ? (
+        <View style={{ marginTop: 10 }}>
+          <NutritionFactsLabel
+            servingLabel={servingLabel}
+            values={{
+              calories: item.calories,
+              proteinG: item.proteinG,
+              carbsG: item.carbsG,
+              fatG: item.fatG,
+              satFatG: item.satFatG,
+              fiberG: item.fiberG,
+              sugarG: item.sugarG,
+              sodiumMg: item.sodiumMg,
+              cholesterolMg: item.cholesterolMg,
+            }}
+          />
+        </View>
+      ) : null}
+    </View>
+  );
+}
 
 export function FoodTab() {
   const c = useColors();
@@ -54,6 +124,17 @@ export function FoodTab() {
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: getGetDailySummaryQueryKey({ date }) });
     void queryClient.invalidateQueries({ queryKey: getListFoodLogsQueryKey({ date }) });
+  };
+
+  const handleDeleteMeal = (f: FoodLog) => {
+    Alert.alert("Delete meal?", `Remove "${f.foodName}"?`, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: () => deleteLog.mutate({ id: f.id }, { onSuccess: invalidate }),
+      },
+    ]);
   };
 
   async function scanMeal(source: "camera" | "library") {
@@ -438,52 +519,7 @@ export function FoodTab() {
       ) : (
         <Card style={{ paddingVertical: 4 }}>
           {items.map((f, i) => (
-            <View
-              key={f.id}
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                paddingVertical: 12,
-                borderTopWidth: i === 0 ? 0 : 1,
-                borderTopColor: c.border,
-              }}
-            >
-              <View style={{ flex: 1 }}>
-                <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 14, color: c.foreground }}>
-                  {f.foodName}
-                </Text>
-                <Text style={{ fontFamily: "Inter_400Regular", fontSize: 12, color: c.mutedForeground, marginTop: 2 }}>
-                  {f.mealType.charAt(0).toUpperCase() + f.mealType.slice(1)}
-                  {f.servings != null && f.servings !== 1
-                    ? ` · ${Math.round(f.servings * 100) / 100}×${f.servingSize ? ` ${f.servingSize}` : ""}`
-                    : f.servingSize
-                      ? ` · ${f.servingSize}`
-                      : ""}
-                  {f.proteinG != null ? ` · ${Math.round(f.proteinG)}g protein` : ""}
-                  {f.fiberG != null ? ` · ${Math.round(f.fiberG)}g fiber` : ""}
-                  {f.sodiumMg != null ? ` · ${Math.round(f.sodiumMg)}mg sodium` : ""}
-                </Text>
-              </View>
-              <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 14, color: c.foreground }}>
-                {f.calories} cal
-              </Text>
-              <Pressable
-                hitSlop={10}
-                style={{ marginLeft: 14 }}
-                onPress={() =>
-                  Alert.alert("Delete meal?", `Remove "${f.foodName}"?`, [
-                    { text: "Cancel", style: "cancel" },
-                    {
-                      text: "Delete",
-                      style: "destructive",
-                      onPress: () => deleteLog.mutate({ id: f.id }, { onSuccess: invalidate }),
-                    },
-                  ])
-                }
-              >
-                <Feather name="trash-2" size={16} color={c.mutedForeground} />
-              </Pressable>
-            </View>
+            <FoodLogItemRow key={f.id} item={f} isFirst={i === 0} onDelete={handleDeleteMeal} />
           ))}
         </Card>
       )}

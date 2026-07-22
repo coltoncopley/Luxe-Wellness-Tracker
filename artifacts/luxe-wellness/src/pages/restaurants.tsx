@@ -25,6 +25,7 @@ import {
   Info,
   CheckCircle2,
   ChevronRight,
+  ChevronDown,
   Plus,
   Sparkles,
   Loader2,
@@ -34,9 +35,44 @@ import {
   Globe,
 } from "lucide-react";
 import { useState } from "react";
+import { NutritionFactsLabel } from "@/components/nutrition-facts-label";
 
 function doorDashUrl(name: string) {
   return `https://www.doordash.com/search/store/${encodeURIComponent(name)}`;
+}
+
+function MenuItemNutrition({ item }: { item: MenuItem }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+        aria-expanded={open}
+      >
+        <ChevronDown className={`w-3.5 h-3.5 transition-transform ${open ? "rotate-180" : ""}`} />
+        Nutrition Facts
+      </button>
+      {open && (
+        <div className="mt-2 max-w-xs">
+          <NutritionFactsLabel
+            values={{
+              calories: item.calories,
+              proteinG: item.proteinG,
+              carbsG: item.carbsG,
+              fatG: item.fatG,
+              satFatG: item.satFatG,
+              fiberG: item.fiberG,
+              sugarG: item.sugarG,
+              sodiumMg: item.sodiumMg,
+              cholesterolMg: item.cholesterolMg,
+            }}
+          />
+        </div>
+      )}
+    </div>
+  );
 }
 
 export default function Restaurants() {
@@ -505,16 +541,13 @@ function RestaurantModal({
 
                           <div className="bg-card p-3 rounded-xl border border-border sm:w-32 shrink-0 flex flex-col items-center justify-center">
                             <span className="text-xl font-serif text-primary">{item.calories}</span>
-                            <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider mb-2">
+                            <span className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
                               Calories
                             </span>
-
-                            <div className="w-full flex justify-between text-xs font-mono text-muted-foreground mt-2 pt-2 border-t border-border">
-                              <span title="Protein">P:{item.proteinG || 0}</span>
-                              <span title="Carbs">C:{item.carbsG || 0}</span>
-                              <span title="Fat">F:{item.fatG || 0}</span>
-                            </div>
                           </div>
+                        </div>
+                        <div className="px-4 sm:px-6 pb-4 sm:pb-6">
+                          <MenuItemNutrition item={item} />
                         </div>
                       </CardContent>
                     </Card>
@@ -539,15 +572,8 @@ function RestaurantModal({
                           {item.calories} kcal
                         </span>
                       </div>
-                      <div className="flex items-end justify-between mt-3">
-                        <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground font-mono">
-                          <span>P: {item.proteinG || 0}g</span>
-                          <span>C: {item.carbsG || 0}g</span>
-                          <span>F: {item.fatG || 0}g</span>
-                          {item.fiberG != null && <span>Fiber: {item.fiberG}g</span>}
-                          {item.sugarG != null && <span>Sugar: {item.sugarG}g</span>}
-                          {item.sodiumMg != null && <span>Na: {item.sodiumMg}mg</span>}
-                        </div>
+                      <div className="flex items-start justify-between mt-3 gap-2">
+                        <MenuItemNutrition item={item} />
                         {isMine && (
                           <div className="flex gap-1">
                             <Button

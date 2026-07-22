@@ -2,7 +2,8 @@ import { useState } from "react";
 import { 
   useListFoodLogs, useCreateFoodLog, useDeleteFoodLog, getListFoodLogsQueryKey,
   useGetDailySummary, getGetDailySummaryQueryKey,
-  useSearchMenuItems
+  useSearchMenuItems,
+  type FoodLog,
 } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,68 @@ import { Utensils, Flame, Trash2, Plus, ChevronLeft, ChevronRight, Search, Check
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MealScanner } from "@/components/meal-scanner";
 import { NutritionFactsLabel } from "@/components/nutrition-facts-label";
+
+function FoodLogRow({ item, onDelete }: { item: FoodLog; onDelete: (id: number) => void }) {
+  const [open, setOpen] = useState(false);
+  const servingLabel =
+    item.servings != null && item.servings !== 1
+      ? `${Math.round(item.servings * 100) / 100} × ${item.servingSize || "serving"}`
+      : item.servingSize || null;
+  return (
+    <div className="p-4 hover:bg-muted/30 transition-colors">
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="font-medium text-foreground">{item.foodName}</div>
+          {item.restaurantName && <div className="text-xs text-muted-foreground mt-0.5">{item.restaurantName}</div>}
+          {(item.servingSize || (item.servings != null && item.servings !== 1)) && (
+            <div className="text-xs text-muted-foreground mt-0.5">
+              {item.servings != null && item.servings !== 1 ? `${item.servings} × ` : ""}
+              {item.servingSize || "serving"}
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={() => setOpen((o) => !o)}
+            className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+            aria-expanded={open}
+          >
+            <ChevronDown className={`w-3.5 h-3.5 transition-transform ${open ? "rotate-180" : ""}`} />
+            Nutrition Facts
+          </button>
+        </div>
+        <div className="flex items-center gap-4">
+          <span className="font-medium text-primary">{item.calories} kcal</span>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0"
+            onClick={() => onDelete(item.id)}
+          >
+            <Trash2 className="w-4 h-4" />
+          </Button>
+        </div>
+      </div>
+      {open && (
+        <div className="mt-3 max-w-xs">
+          <NutritionFactsLabel
+            servingLabel={servingLabel}
+            values={{
+              calories: item.calories,
+              proteinG: item.proteinG,
+              carbsG: item.carbsG,
+              fatG: item.fatG,
+              satFatG: item.satFatG,
+              fiberG: item.fiberG,
+              sugarG: item.sugarG,
+              sodiumMg: item.sodiumMg,
+              cholesterolMg: item.cholesterolMg,
+            }}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function Food() {
   const queryClient = useQueryClient();
@@ -366,31 +429,7 @@ export default function Food() {
                   <div className="divide-y divide-border">
                     {logsByMeal[meal].length > 0 ? (
                       logsByMeal[meal].map(item => (
-                        <div key={item.id} className="p-4 flex items-center justify-between hover:bg-muted/30 transition-colors">
-                          <div>
-                            <div className="font-medium text-foreground">{item.foodName}</div>
-                            {item.restaurantName && <div className="text-xs text-muted-foreground mt-0.5">{item.restaurantName}</div>}
-                            {(item.servingSize || (item.servings != null && item.servings !== 1)) && (
-                              <div className="text-xs text-muted-foreground mt-0.5">
-                                {item.servings != null && item.servings !== 1 ? `${item.servings} × ` : ""}
-                                {item.servingSize || "serving"}
-                              </div>
-                            )}
-                            <div className="text-xs text-muted-foreground mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
-                              {item.proteinG != null && <span>P: {item.proteinG}g</span>}
-                              {item.carbsG != null && <span>C: {item.carbsG}g</span>}
-                              {item.fatG != null && <span>F: {item.fatG}g</span>}
-                              {item.fiberG != null && <span>Fiber: {item.fiberG}g</span>}
-                              {item.sodiumMg != null && <span>Na: {item.sodiumMg}mg</span>}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-4">
-                            <span className="font-medium text-primary">{item.calories} kcal</span>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive shrink-0" onClick={() => handleDelete(item.id)}>
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </div>
+                        <FoodLogRow key={item.id} item={item} onDelete={handleDelete} />
                       ))
                     ) : (
                       <div className="p-4 text-sm text-muted-foreground text-center italic">No items logged</div>

@@ -24,6 +24,7 @@ import {
   Segmented,
   StackScreen,
 } from "@/components/ui";
+import { NutritionFactsLabel } from "@/components/NutritionFactsLabel";
 import { useColors } from "@/hooks/useColors";
 import { Alert } from "@/lib/alert";
 
@@ -448,6 +449,7 @@ function RestaurantMenu({ restaurantId }: { restaurantId: number }) {
 
 function MenuItemRow({ item }: { item: MenuItem }) {
   const c = useColors();
+  const [open, setOpen] = useState(false);
   return (
     <View
       style={{
@@ -471,32 +473,33 @@ function MenuItemRow({ item }: { item: MenuItem }) {
           {item.calories} kcal
         </Text>
       </View>
-      <View style={{ flexDirection: "row", flexWrap: "wrap", columnGap: 14, rowGap: 2, marginTop: 6 }}>
-        <Text style={{ fontFamily: "Inter_400Regular", fontSize: 12, color: c.mutedForeground }}>
-          P: {item.proteinG ?? 0}g
+      <Pressable
+        onPress={() => setOpen((o) => !o)}
+        hitSlop={8}
+        style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 8 }}
+      >
+        <Feather name={open ? "chevron-up" : "chevron-down"} size={14} color={c.tint} />
+        <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 12, color: c.tint }}>
+          Nutrition Facts
         </Text>
-        <Text style={{ fontFamily: "Inter_400Regular", fontSize: 12, color: c.mutedForeground }}>
-          C: {item.carbsG ?? 0}g
-        </Text>
-        <Text style={{ fontFamily: "Inter_400Regular", fontSize: 12, color: c.mutedForeground }}>
-          F: {item.fatG ?? 0}g
-        </Text>
-        {item.fiberG != null ? (
-          <Text style={{ fontFamily: "Inter_400Regular", fontSize: 12, color: c.mutedForeground }}>
-            Fiber: {item.fiberG}g
-          </Text>
-        ) : null}
-        {item.sugarG != null ? (
-          <Text style={{ fontFamily: "Inter_400Regular", fontSize: 12, color: c.mutedForeground }}>
-            Sugar: {item.sugarG}g
-          </Text>
-        ) : null}
-        {item.sodiumMg != null ? (
-          <Text style={{ fontFamily: "Inter_400Regular", fontSize: 12, color: c.mutedForeground }}>
-            Na: {item.sodiumMg}mg
-          </Text>
-        ) : null}
-      </View>
+      </Pressable>
+      {open ? (
+        <View style={{ marginTop: 10 }}>
+          <NutritionFactsLabel
+            values={{
+              calories: item.calories,
+              proteinG: item.proteinG,
+              carbsG: item.carbsG,
+              fatG: item.fatG,
+              satFatG: item.satFatG,
+              fiberG: item.fiberG,
+              sugarG: item.sugarG,
+              sodiumMg: item.sodiumMg,
+              cholesterolMg: item.cholesterolMg,
+            }}
+          />
+        </View>
+      ) : null}
       {item.orderingTip ? (
         <View
           style={{
