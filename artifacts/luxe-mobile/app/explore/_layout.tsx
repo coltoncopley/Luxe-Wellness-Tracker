@@ -42,7 +42,7 @@ export default function ExploreLayout() {
       <Stack.Screen name="restaurants" options={{ title: "Dining Out Guide" }} />
       <Stack.Screen name="photos" options={{ title: "Progress Photos" }} />
       <Stack.Screen name="skin" options={{ title: "Skin Scan" }} />
-      <Stack.Screen name="ingredients" options={{ title: "Ingredient Scanner" }} />
+      <Stack.Screen name="ingredients" options={{ title: "Skincare Product Evaluator" }} />
       <Stack.Screen name="passport" options={{ title: "Beauty Passport" }} />
       <Stack.Screen name="friends" options={{ title: "Friends" }} />
       <Stack.Screen name="community" options={{ title: "Community" }} />

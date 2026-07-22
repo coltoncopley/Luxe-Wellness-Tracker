@@ -162,7 +162,7 @@ export default function HomeScreen() {
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
         {[
           { label: "Skin Scan", icon: "aperture" as const, href: "/explore/skin" },
-          { label: "Ingredient Scanner", icon: "search" as const, href: "/explore/ingredients" },
+          { label: "Skincare Product Evaluator", icon: "search" as const, href: "/explore/ingredients" },
           { label: "Progress Photos", icon: "camera" as const, href: "/explore/photos" },
           { label: "Beauty Passport", icon: "book-open" as const, href: "/explore/passport" },
           { label: "Dining Out Guide", icon: "map-pin" as const, href: "/explore/restaurants" },

@@ -164,7 +164,7 @@ export default function Ingredients() {
     <div className="space-y-8 pb-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <div>
         <h1 className="text-4xl mb-2 text-primary flex items-center gap-3">
-          <FlaskConical className="h-8 w-8" /> Ingredient Scanner
+          <FlaskConical className="h-8 w-8" /> Skincare Product Evaluator
         </h1>
         <p className="text-muted-foreground text-lg">
           Snap a product's ingredient label — the AI tells you what's great, what to watch, and
