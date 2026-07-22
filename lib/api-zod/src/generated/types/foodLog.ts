@@ -20,4 +20,17 @@ export interface FoodLog {
   carbsG?: number | null;
   /** @nullable */
   fatG?: number | null;
+  /** @nullable */
+  satFatG?: number | null;
+  /** @nullable */
+  fiberG?: number | null;
+  /** @nullable */
+  sugarG?: number | null;
+  /** @nullable */
+  sodiumMg?: number | null;
+  /** @nullable */
+  cholesterolMg?: number | null;
+  servings: number;
+  /** @nullable */
+  servingSize?: string | null;
 }

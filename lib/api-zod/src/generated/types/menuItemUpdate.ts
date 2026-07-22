@@ -26,6 +26,31 @@ export interface MenuItemUpdate {
      * @nullable
      */
   fatG?: number | null;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  satFatG?: number | null;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  fiberG?: number | null;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  sugarG?: number | null;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  sodiumMg?: number | null;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  cholesterolMg?: number | null;
   isHealthyPick?: boolean;
   /** @nullable */
   orderingTip?: string | null;

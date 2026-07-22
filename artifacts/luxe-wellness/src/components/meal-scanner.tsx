@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/select";
 import { Camera, Sparkles, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
+import { NutritionFactsLabel } from "@/components/nutrition-facts-label";
 
 const MAX_DIMENSION = 1280;
 
@@ -28,6 +29,11 @@ type Analysis = {
   proteinG: number;
   carbsG: number;
   fatG: number;
+  satFatG: number;
+  fiberG: number;
+  sugarG: number;
+  sodiumMg: number;
+  cholesterolMg: number;
   confidence: string;
   notes: string;
 };
@@ -144,15 +150,20 @@ export function MealScanner({
                       {analysis.confidence} confidence estimate
                     </div>
                   </div>
-                  <span className="text-lg font-serif text-primary shrink-0">
-                    {analysis.calories} kcal
-                  </span>
                 </div>
-                <div className="flex gap-4 text-sm">
-                  <span>P: {analysis.proteinG}g</span>
-                  <span>C: {analysis.carbsG}g</span>
-                  <span>F: {analysis.fatG}g</span>
-                </div>
+                <NutritionFactsLabel
+                  values={{
+                    calories: analysis.calories,
+                    proteinG: analysis.proteinG,
+                    carbsG: analysis.carbsG,
+                    fatG: analysis.fatG,
+                    satFatG: analysis.satFatG,
+                    fiberG: analysis.fiberG,
+                    sugarG: analysis.sugarG,
+                    sodiumMg: analysis.sodiumMg,
+                    cholesterolMg: analysis.cholesterolMg,
+                  }}
+                />
                 <p className="text-xs text-muted-foreground">{analysis.notes}</p>
               </div>
 

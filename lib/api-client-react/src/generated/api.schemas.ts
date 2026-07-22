@@ -760,6 +760,16 @@ export interface MenuItemInput {
   carbsG?: number;
   /** @minimum 0 */
   fatG?: number;
+  /** @minimum 0 */
+  satFatG?: number;
+  /** @minimum 0 */
+  fiberG?: number;
+  /** @minimum 0 */
+  sugarG?: number;
+  /** @minimum 0 */
+  sodiumMg?: number;
+  /** @minimum 0 */
+  cholesterolMg?: number;
   isHealthyPick?: boolean;
   orderingTip?: string;
 }
@@ -784,6 +794,31 @@ export interface MenuItemUpdate {
      * @nullable
      */
   fatG?: number | null;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  satFatG?: number | null;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  fiberG?: number | null;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  sugarG?: number | null;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  sodiumMg?: number | null;
+  /**
+     * @minimum 0
+     * @nullable
+     */
+  cholesterolMg?: number | null;
   isHealthyPick?: boolean;
   /** @nullable */
   orderingTip?: string | null;
@@ -801,6 +836,16 @@ export interface MenuItem {
   carbsG?: number | null;
   /** @nullable */
   fatG?: number | null;
+  /** @nullable */
+  satFatG?: number | null;
+  /** @nullable */
+  fiberG?: number | null;
+  /** @nullable */
+  sugarG?: number | null;
+  /** @nullable */
+  sodiumMg?: number | null;
+  /** @nullable */
+  cholesterolMg?: number | null;
   isHealthyPick: boolean;
   /** @nullable */
   orderingTip?: string | null;
@@ -820,6 +865,19 @@ export interface FoodLog {
   carbsG?: number | null;
   /** @nullable */
   fatG?: number | null;
+  /** @nullable */
+  satFatG?: number | null;
+  /** @nullable */
+  fiberG?: number | null;
+  /** @nullable */
+  sugarG?: number | null;
+  /** @nullable */
+  sodiumMg?: number | null;
+  /** @nullable */
+  cholesterolMg?: number | null;
+  servings: number;
+  /** @nullable */
+  servingSize?: string | null;
 }
 
 export interface FoodLogInput {
@@ -833,6 +891,19 @@ export interface FoodLogInput {
   proteinG?: number;
   carbsG?: number;
   fatG?: number;
+  /** @minimum 0 */
+  satFatG?: number;
+  /** @minimum 0 */
+  fiberG?: number;
+  /** @minimum 0 */
+  sugarG?: number;
+  /** @minimum 0 */
+  sodiumMg?: number;
+  /** @minimum 0 */
+  cholesterolMg?: number;
+  /** @minimum 0 */
+  servings?: number;
+  servingSize?: string;
 }
 
 export interface DailySummary {
@@ -841,6 +912,11 @@ export interface DailySummary {
   totalProteinG: number;
   totalCarbsG: number;
   totalFatG: number;
+  totalSatFatG: number;
+  totalFiberG: number;
+  totalSugarG: number;
+  totalSodiumMg: number;
+  totalCholesterolMg: number;
   mealCount: number;
   /** @nullable */
   calorieTarget?: number | null;
@@ -1019,6 +1095,11 @@ export interface MealPhotoAnalysis {
   proteinG: number;
   carbsG: number;
   fatG: number;
+  satFatG: number;
+  fiberG: number;
+  sugarG: number;
+  sodiumMg: number;
+  cholesterolMg: number;
   confidence: MealPhotoAnalysisConfidence;
   notes: string;
 }

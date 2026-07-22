@@ -16,6 +16,7 @@ import {
 import type { MealPhotoAnalysis } from "@workspace/api-client-react";
 
 import { Card, Chip, EmptyState, LuxeButton, LuxeInput, SectionTitle } from "@/components/ui";
+import { NutritionFactsLabel } from "@/components/NutritionFactsLabel";
 import { useColors } from "@/hooks/useColors";
 import { pickImageAsset, todayStr } from "@/lib/luxe";
 
@@ -35,6 +36,16 @@ export function FoodTab() {
   const [foodName, setFoodName] = useState("");
   const [calories, setCalories] = useState("");
   const [protein, setProtein] = useState("");
+  const [carbs, setCarbs] = useState("");
+  const [fat, setFat] = useState("");
+  const [satFat, setSatFat] = useState("");
+  const [fiber, setFiber] = useState("");
+  const [sugar, setSugar] = useState("");
+  const [sodium, setSodium] = useState("");
+  const [cholesterol, setCholesterol] = useState("");
+  const [servings, setServings] = useState("1");
+  const [servingSize, setServingSize] = useState("");
+  const [showMore, setShowMore] = useState(false);
 
   const analyze = useAnalyzeMealPhoto();
   const [scanning, setScanning] = useState(false);
@@ -85,6 +96,11 @@ export function FoodTab() {
           proteinG: scanResult.proteinG,
           carbsG: scanResult.carbsG,
           fatG: scanResult.fatG,
+          satFatG: scanResult.satFatG,
+          fiberG: scanResult.fiberG,
+          sugarG: scanResult.sugarG,
+          sodiumMg: scanResult.sodiumMg,
+          cholesterolMg: scanResult.cholesterolMg,
         },
       },
       {
@@ -96,25 +112,68 @@ export function FoodTab() {
     );
   }
 
+  const resetForm = () => {
+    setFoodName("");
+    setCalories("");
+    setProtein("");
+    setCarbs("");
+    setFat("");
+    setSatFat("");
+    setFiber("");
+    setSugar("");
+    setSodium("");
+    setCholesterol("");
+    setServings("1");
+    setServingSize("");
+    setShowMore(false);
+  };
+
   const handleAdd = () => {
-    const cal = parseInt(calories, 10);
-    if (!foodName.trim() || !Number.isFinite(cal) || cal < 0) return;
-    const proteinVal = protein.trim() ? parseFloat(protein) : undefined;
+    const calPer = parseFloat(calories);
+    if (!foodName.trim() || !Number.isFinite(calPer) || calPer < 0) return;
+    const servingsNum = servings.trim() ? parseFloat(servings) : 1;
+    const mult = Number.isFinite(servingsNum) && servingsNum > 0 ? servingsNum : 1;
+    // Inputs are per-serving; we persist totals-as-consumed (per-serving × servings).
+    const perServing = (raw: string): number | undefined => {
+      if (!raw.trim()) return undefined;
+      const n = parseFloat(raw);
+      return Number.isFinite(n) && n >= 0 ? Math.round(n * mult * 10) / 10 : undefined;
+    };
+    const perServingInt = (raw: string): number | undefined => {
+      if (!raw.trim()) return undefined;
+      const n = parseFloat(raw);
+      return Number.isFinite(n) && n >= 0 ? Math.round(n * mult) : undefined;
+    };
+    const proteinVal = perServing(protein);
+    const carbsVal = perServing(carbs);
+    const fatVal = perServing(fat);
+    const satFatVal = perServing(satFat);
+    const fiberVal = perServing(fiber);
+    const sugarVal = perServing(sugar);
+    const sodiumVal = perServingInt(sodium);
+    const cholesterolVal = perServingInt(cholesterol);
     createLog.mutate(
       {
         data: {
           date,
           mealType,
           foodName: foodName.trim(),
-          calories: cal,
-          ...(proteinVal != null && Number.isFinite(proteinVal) ? { proteinG: proteinVal } : {}),
+          calories: Math.round(calPer * mult),
+          servings: mult,
+          ...(servingSize.trim() ? { servingSize: servingSize.trim() } : {}),
+          ...(proteinVal != null ? { proteinG: proteinVal } : {}),
+          ...(carbsVal != null ? { carbsG: carbsVal } : {}),
+          ...(fatVal != null ? { fatG: fatVal } : {}),
+          ...(satFatVal != null ? { satFatG: satFatVal } : {}),
+          ...(fiberVal != null ? { fiberG: fiberVal } : {}),
+          ...(sugarVal != null ? { sugarG: sugarVal } : {}),
+          ...(sodiumVal != null ? { sodiumMg: sodiumVal } : {}),
+          ...(cholesterolVal != null ? { cholesterolMg: cholesterolVal } : {}),
         },
       },
       {
         onSuccess: () => {
-          setFoodName("");
-          setCalories("");
-          setProtein("");
+          resetForm();
           invalidate();
         },
       },
@@ -149,6 +208,25 @@ export function FoodTab() {
             Fat {Math.round(s?.totalFatG ?? 0)}g
           </Text>
         </View>
+        {items.length > 0 ? (
+          <View style={{ marginTop: 14 }}>
+            <NutritionFactsLabel
+              title="Today's Nutrition"
+              servingLabel={`${items.length} item${items.length === 1 ? "" : "s"} logged today`}
+              values={{
+                calories: s?.totalCalories ?? 0,
+                proteinG: s?.totalProteinG ?? 0,
+                carbsG: s?.totalCarbsG ?? 0,
+                fatG: s?.totalFatG ?? 0,
+                satFatG: s?.totalSatFatG ?? 0,
+                fiberG: s?.totalFiberG ?? 0,
+                sugarG: s?.totalSugarG ?? 0,
+                sodiumMg: s?.totalSodiumMg ?? 0,
+                cholesterolMg: s?.totalCholesterolMg ?? 0,
+              }}
+            />
+          </View>
+        ) : null}
       </Card>
 
       <SectionTitle>Log a meal</SectionTitle>
@@ -181,17 +259,20 @@ export function FoodTab() {
                 {scanResult.calories} kcal
               </Text>
             </View>
-            <View style={{ flexDirection: "row", gap: 14 }}>
-              <Text style={{ fontFamily: "Inter_500Medium", fontSize: 13, color: c.mutedForeground }}>
-                P: {Math.round(scanResult.proteinG)}g
-              </Text>
-              <Text style={{ fontFamily: "Inter_500Medium", fontSize: 13, color: c.mutedForeground }}>
-                C: {Math.round(scanResult.carbsG)}g
-              </Text>
-              <Text style={{ fontFamily: "Inter_500Medium", fontSize: 13, color: c.mutedForeground }}>
-                F: {Math.round(scanResult.fatG)}g
-              </Text>
-            </View>
+            <NutritionFactsLabel
+              servingLabel="AI estimate · per serving"
+              values={{
+                calories: scanResult.calories,
+                proteinG: scanResult.proteinG,
+                carbsG: scanResult.carbsG,
+                fatG: scanResult.fatG,
+                satFatG: scanResult.satFatG,
+                fiberG: scanResult.fiberG,
+                sugarG: scanResult.sugarG,
+                sodiumMg: scanResult.sodiumMg,
+                cholesterolMg: scanResult.cholesterolMg,
+              }}
+            />
             {scanResult.notes ? (
               <Text style={{ fontFamily: "Inter_400Regular", fontSize: 12, color: c.mutedForeground }}>
                 {scanResult.notes}
@@ -246,6 +327,24 @@ export function FoodTab() {
         <LuxeInput placeholder="What did you eat?" value={foodName} onChangeText={setFoodName} />
         <View style={{ flexDirection: "row", gap: 10 }}>
           <LuxeInput
+            placeholder="Serving size (e.g. 1 cup)"
+            value={servingSize}
+            onChangeText={setServingSize}
+            style={{ flex: 2 }}
+          />
+          <LuxeInput
+            placeholder="Servings"
+            keyboardType="decimal-pad"
+            value={servings}
+            onChangeText={setServings}
+            style={{ flex: 1 }}
+          />
+        </View>
+        <Text style={{ fontFamily: "Inter_400Regular", fontSize: 11, color: c.mutedForeground }}>
+          Enter amounts per serving — we multiply by servings for your daily total.
+        </Text>
+        <View style={{ flexDirection: "row", gap: 10 }}>
+          <LuxeInput
             placeholder="Calories"
             keyboardType="number-pad"
             value={calories}
@@ -253,13 +352,76 @@ export function FoodTab() {
             style={{ flex: 1 }}
           />
           <LuxeInput
-            placeholder="Protein g (optional)"
+            placeholder="Protein g"
             keyboardType="decimal-pad"
             value={protein}
             onChangeText={setProtein}
             style={{ flex: 1 }}
           />
         </View>
+        <View style={{ flexDirection: "row", gap: 10 }}>
+          <LuxeInput
+            placeholder="Carbs g"
+            keyboardType="decimal-pad"
+            value={carbs}
+            onChangeText={setCarbs}
+            style={{ flex: 1 }}
+          />
+          <LuxeInput
+            placeholder="Fat g"
+            keyboardType="decimal-pad"
+            value={fat}
+            onChangeText={setFat}
+            style={{ flex: 1 }}
+          />
+        </View>
+        <Pressable onPress={() => setShowMore((v) => !v)} hitSlop={6}>
+          <Text style={{ fontFamily: "Inter_500Medium", fontSize: 13, color: c.primary }}>
+            {showMore ? "− Fewer nutrients" : "+ More nutrients"}
+          </Text>
+        </Pressable>
+        {showMore ? (
+          <View style={{ gap: 10 }}>
+            <View style={{ flexDirection: "row", gap: 10 }}>
+              <LuxeInput
+                placeholder="Sat. fat g"
+                keyboardType="decimal-pad"
+                value={satFat}
+                onChangeText={setSatFat}
+                style={{ flex: 1 }}
+              />
+              <LuxeInput
+                placeholder="Fiber g"
+                keyboardType="decimal-pad"
+                value={fiber}
+                onChangeText={setFiber}
+                style={{ flex: 1 }}
+              />
+            </View>
+            <View style={{ flexDirection: "row", gap: 10 }}>
+              <LuxeInput
+                placeholder="Sugar g"
+                keyboardType="decimal-pad"
+                value={sugar}
+                onChangeText={setSugar}
+                style={{ flex: 1 }}
+              />
+              <LuxeInput
+                placeholder="Sodium mg"
+                keyboardType="number-pad"
+                value={sodium}
+                onChangeText={setSodium}
+                style={{ flex: 1 }}
+              />
+            </View>
+            <LuxeInput
+              placeholder="Cholesterol mg"
+              keyboardType="number-pad"
+              value={cholesterol}
+              onChangeText={setCholesterol}
+            />
+          </View>
+        ) : null}
         <LuxeButton
           label="Add meal"
           onPress={handleAdd}
@@ -292,7 +454,14 @@ export function FoodTab() {
                 </Text>
                 <Text style={{ fontFamily: "Inter_400Regular", fontSize: 12, color: c.mutedForeground, marginTop: 2 }}>
                   {f.mealType.charAt(0).toUpperCase() + f.mealType.slice(1)}
+                  {f.servings != null && f.servings !== 1
+                    ? ` · ${Math.round(f.servings * 100) / 100}×${f.servingSize ? ` ${f.servingSize}` : ""}`
+                    : f.servingSize
+                      ? ` · ${f.servingSize}`
+                      : ""}
                   {f.proteinG != null ? ` · ${Math.round(f.proteinG)}g protein` : ""}
+                  {f.fiberG != null ? ` · ${Math.round(f.fiberG)}g fiber` : ""}
+                  {f.sodiumMg != null ? ` · ${Math.round(f.sodiumMg)}mg sodium` : ""}
                 </Text>
               </View>
               <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 14, color: c.foreground }}>

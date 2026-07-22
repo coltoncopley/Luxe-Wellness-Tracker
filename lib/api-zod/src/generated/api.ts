@@ -334,6 +334,11 @@ export const ListMenuItemsResponseItem = zod.object({
   "proteinG": zod.number().nullish(),
   "carbsG": zod.number().nullish(),
   "fatG": zod.number().nullish(),
+  "satFatG": zod.number().nullish(),
+  "fiberG": zod.number().nullish(),
+  "sugarG": zod.number().nullish(),
+  "sodiumMg": zod.number().nullish(),
+  "cholesterolMg": zod.number().nullish(),
   "isHealthyPick": zod.boolean(),
   "orderingTip": zod.string().nullish()
 })
@@ -356,6 +361,16 @@ export const createMyMenuItemBodyCarbsGMin = 0;
 
 export const createMyMenuItemBodyFatGMin = 0;
 
+export const createMyMenuItemBodySatFatGMin = 0;
+
+export const createMyMenuItemBodyFiberGMin = 0;
+
+export const createMyMenuItemBodySugarGMin = 0;
+
+export const createMyMenuItemBodySodiumMgMin = 0;
+
+export const createMyMenuItemBodyCholesterolMgMin = 0;
+
 
 
 export const CreateMyMenuItemBody = zod.object({
@@ -364,6 +379,11 @@ export const CreateMyMenuItemBody = zod.object({
   "proteinG": zod.number().min(createMyMenuItemBodyProteinGMin).optional(),
   "carbsG": zod.number().min(createMyMenuItemBodyCarbsGMin).optional(),
   "fatG": zod.number().min(createMyMenuItemBodyFatGMin).optional(),
+  "satFatG": zod.number().min(createMyMenuItemBodySatFatGMin).optional(),
+  "fiberG": zod.number().min(createMyMenuItemBodyFiberGMin).optional(),
+  "sugarG": zod.number().min(createMyMenuItemBodySugarGMin).optional(),
+  "sodiumMg": zod.number().min(createMyMenuItemBodySodiumMgMin).optional(),
+  "cholesterolMg": zod.number().min(createMyMenuItemBodyCholesterolMgMin).optional(),
   "isHealthyPick": zod.boolean().optional(),
   "orderingTip": zod.string().optional()
 })
@@ -377,6 +397,11 @@ export const CreateMyMenuItemResponse = zod.object({
   "proteinG": zod.number().nullish(),
   "carbsG": zod.number().nullish(),
   "fatG": zod.number().nullish(),
+  "satFatG": zod.number().nullish(),
+  "fiberG": zod.number().nullish(),
+  "sugarG": zod.number().nullish(),
+  "sodiumMg": zod.number().nullish(),
+  "cholesterolMg": zod.number().nullish(),
   "isHealthyPick": zod.boolean(),
   "orderingTip": zod.string().nullish()
 })
@@ -398,6 +423,11 @@ export const ListHealthyPicksResponseItem = zod.object({
   "proteinG": zod.number().nullish(),
   "carbsG": zod.number().nullish(),
   "fatG": zod.number().nullish(),
+  "satFatG": zod.number().nullish(),
+  "fiberG": zod.number().nullish(),
+  "sugarG": zod.number().nullish(),
+  "sodiumMg": zod.number().nullish(),
+  "cholesterolMg": zod.number().nullish(),
   "isHealthyPick": zod.boolean(),
   "orderingTip": zod.string().nullish()
 })
@@ -484,6 +514,16 @@ export const updateMyMenuItemBodyCarbsGMin = 0;
 
 export const updateMyMenuItemBodyFatGMin = 0;
 
+export const updateMyMenuItemBodySatFatGMin = 0;
+
+export const updateMyMenuItemBodyFiberGMin = 0;
+
+export const updateMyMenuItemBodySugarGMin = 0;
+
+export const updateMyMenuItemBodySodiumMgMin = 0;
+
+export const updateMyMenuItemBodyCholesterolMgMin = 0;
+
 
 
 export const UpdateMyMenuItemBody = zod.object({
@@ -492,6 +532,11 @@ export const UpdateMyMenuItemBody = zod.object({
   "proteinG": zod.number().min(updateMyMenuItemBodyProteinGMin).nullish(),
   "carbsG": zod.number().min(updateMyMenuItemBodyCarbsGMin).nullish(),
   "fatG": zod.number().min(updateMyMenuItemBodyFatGMin).nullish(),
+  "satFatG": zod.number().min(updateMyMenuItemBodySatFatGMin).nullish(),
+  "fiberG": zod.number().min(updateMyMenuItemBodyFiberGMin).nullish(),
+  "sugarG": zod.number().min(updateMyMenuItemBodySugarGMin).nullish(),
+  "sodiumMg": zod.number().min(updateMyMenuItemBodySodiumMgMin).nullish(),
+  "cholesterolMg": zod.number().min(updateMyMenuItemBodyCholesterolMgMin).nullish(),
   "isHealthyPick": zod.boolean().optional(),
   "orderingTip": zod.string().nullish()
 })
@@ -505,6 +550,11 @@ export const UpdateMyMenuItemResponse = zod.object({
   "proteinG": zod.number().nullish(),
   "carbsG": zod.number().nullish(),
   "fatG": zod.number().nullish(),
+  "satFatG": zod.number().nullish(),
+  "fiberG": zod.number().nullish(),
+  "sugarG": zod.number().nullish(),
+  "sodiumMg": zod.number().nullish(),
+  "cholesterolMg": zod.number().nullish(),
   "isHealthyPick": zod.boolean(),
   "orderingTip": zod.string().nullish()
 })
@@ -536,6 +586,11 @@ export const SearchMenuItemsResponseItem = zod.object({
   "proteinG": zod.number().nullish(),
   "carbsG": zod.number().nullish(),
   "fatG": zod.number().nullish(),
+  "satFatG": zod.number().nullish(),
+  "fiberG": zod.number().nullish(),
+  "sugarG": zod.number().nullish(),
+  "sodiumMg": zod.number().nullish(),
+  "cholesterolMg": zod.number().nullish(),
   "isHealthyPick": zod.boolean(),
   "orderingTip": zod.string().nullish()
 })
@@ -558,7 +613,14 @@ export const ListFoodLogsResponseItem = zod.object({
   "calories": zod.number(),
   "proteinG": zod.number().nullish(),
   "carbsG": zod.number().nullish(),
-  "fatG": zod.number().nullish()
+  "fatG": zod.number().nullish(),
+  "satFatG": zod.number().nullish(),
+  "fiberG": zod.number().nullish(),
+  "sugarG": zod.number().nullish(),
+  "sodiumMg": zod.number().nullish(),
+  "cholesterolMg": zod.number().nullish(),
+  "servings": zod.number(),
+  "servingSize": zod.string().nullish()
 })
 export const ListFoodLogsResponse = zod.array(ListFoodLogsResponseItem)
 
@@ -567,6 +629,18 @@ export const ListFoodLogsResponse = zod.array(ListFoodLogsResponseItem)
  * @summary Log a food entry
  */
 
+
+export const createFoodLogBodySatFatGMin = 0;
+
+export const createFoodLogBodyFiberGMin = 0;
+
+export const createFoodLogBodySugarGMin = 0;
+
+export const createFoodLogBodySodiumMgMin = 0;
+
+export const createFoodLogBodyCholesterolMgMin = 0;
+
+export const createFoodLogBodyServingsMin = 0;
 
 
 
@@ -578,7 +652,14 @@ export const CreateFoodLogBody = zod.object({
   "calories": zod.number(),
   "proteinG": zod.number().optional(),
   "carbsG": zod.number().optional(),
-  "fatG": zod.number().optional()
+  "fatG": zod.number().optional(),
+  "satFatG": zod.number().min(createFoodLogBodySatFatGMin).optional(),
+  "fiberG": zod.number().min(createFoodLogBodyFiberGMin).optional(),
+  "sugarG": zod.number().min(createFoodLogBodySugarGMin).optional(),
+  "sodiumMg": zod.number().min(createFoodLogBodySodiumMgMin).optional(),
+  "cholesterolMg": zod.number().min(createFoodLogBodyCholesterolMgMin).optional(),
+  "servings": zod.number().min(createFoodLogBodyServingsMin).optional(),
+  "servingSize": zod.string().optional()
 })
 
 export const CreateFoodLogResponse = zod.object({
@@ -590,7 +671,14 @@ export const CreateFoodLogResponse = zod.object({
   "calories": zod.number(),
   "proteinG": zod.number().nullish(),
   "carbsG": zod.number().nullish(),
-  "fatG": zod.number().nullish()
+  "fatG": zod.number().nullish(),
+  "satFatG": zod.number().nullish(),
+  "fiberG": zod.number().nullish(),
+  "sugarG": zod.number().nullish(),
+  "sodiumMg": zod.number().nullish(),
+  "cholesterolMg": zod.number().nullish(),
+  "servings": zod.number(),
+  "servingSize": zod.string().nullish()
 })
 
 
@@ -617,6 +705,11 @@ export const GetDailySummaryResponse = zod.object({
   "totalProteinG": zod.number(),
   "totalCarbsG": zod.number(),
   "totalFatG": zod.number(),
+  "totalSatFatG": zod.number(),
+  "totalFiberG": zod.number(),
+  "totalSugarG": zod.number(),
+  "totalSodiumMg": zod.number(),
+  "totalCholesterolMg": zod.number(),
   "mealCount": zod.number(),
   "calorieTarget": zod.number().nullish()
 })
@@ -788,6 +881,11 @@ export const AnalyzeMealPhotoResponse = zod.object({
   "proteinG": zod.number(),
   "carbsG": zod.number(),
   "fatG": zod.number(),
+  "satFatG": zod.number(),
+  "fiberG": zod.number(),
+  "sugarG": zod.number(),
+  "sodiumMg": zod.number(),
+  "cholesterolMg": zod.number(),
   "confidence": zod.enum(['low', 'medium', 'high']),
   "notes": zod.string()
 })
@@ -2120,6 +2218,16 @@ export const adminCreateMenuItemBodyCarbsGMin = 0;
 
 export const adminCreateMenuItemBodyFatGMin = 0;
 
+export const adminCreateMenuItemBodySatFatGMin = 0;
+
+export const adminCreateMenuItemBodyFiberGMin = 0;
+
+export const adminCreateMenuItemBodySugarGMin = 0;
+
+export const adminCreateMenuItemBodySodiumMgMin = 0;
+
+export const adminCreateMenuItemBodyCholesterolMgMin = 0;
+
 
 
 export const AdminCreateMenuItemBody = zod.object({
@@ -2128,6 +2236,11 @@ export const AdminCreateMenuItemBody = zod.object({
   "proteinG": zod.number().min(adminCreateMenuItemBodyProteinGMin).optional(),
   "carbsG": zod.number().min(adminCreateMenuItemBodyCarbsGMin).optional(),
   "fatG": zod.number().min(adminCreateMenuItemBodyFatGMin).optional(),
+  "satFatG": zod.number().min(adminCreateMenuItemBodySatFatGMin).optional(),
+  "fiberG": zod.number().min(adminCreateMenuItemBodyFiberGMin).optional(),
+  "sugarG": zod.number().min(adminCreateMenuItemBodySugarGMin).optional(),
+  "sodiumMg": zod.number().min(adminCreateMenuItemBodySodiumMgMin).optional(),
+  "cholesterolMg": zod.number().min(adminCreateMenuItemBodyCholesterolMgMin).optional(),
   "isHealthyPick": zod.boolean().optional(),
   "orderingTip": zod.string().optional()
 })
@@ -2141,6 +2254,11 @@ export const AdminCreateMenuItemResponse = zod.object({
   "proteinG": zod.number().nullish(),
   "carbsG": zod.number().nullish(),
   "fatG": zod.number().nullish(),
+  "satFatG": zod.number().nullish(),
+  "fiberG": zod.number().nullish(),
+  "sugarG": zod.number().nullish(),
+  "sodiumMg": zod.number().nullish(),
+  "cholesterolMg": zod.number().nullish(),
   "isHealthyPick": zod.boolean(),
   "orderingTip": zod.string().nullish()
 })

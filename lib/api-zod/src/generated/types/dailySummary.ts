@@ -12,6 +12,11 @@ export interface DailySummary {
   totalProteinG: number;
   totalCarbsG: number;
   totalFatG: number;
+  totalSatFatG: number;
+  totalFiberG: number;
+  totalSugarG: number;
+  totalSodiumMg: number;
+  totalCholesterolMg: number;
   mealCount: number;
   /** @nullable */
   calorieTarget?: number | null;

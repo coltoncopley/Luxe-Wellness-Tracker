@@ -38,6 +38,13 @@ export const menuItemsTable = pgTable("menu_items", {
   proteinG: real("protein_g"),
   carbsG: real("carbs_g"),
   fatG: real("fat_g"),
+  // Extended "Nutrition Facts" nutrients (all nullable — curated seed rows and
+  // pre-existing rows have nulls; the label renders "—" for missing values).
+  satFatG: real("sat_fat_g"),
+  fiberG: real("fiber_g"),
+  sugarG: real("sugar_g"),
+  sodiumMg: real("sodium_mg"),
+  cholesterolMg: real("cholesterol_mg"),
   isHealthyPick: boolean("is_healthy_pick").notNull().default(false),
   orderingTip: text("ordering_tip"),
 });
@@ -59,6 +66,18 @@ export const foodLogsTable = pgTable("food_logs", {
   proteinG: real("protein_g"),
   carbsG: real("carbs_g"),
   fatG: real("fat_g"),
+  // Extended "Nutrition Facts" nutrients (all nullable). Stored as TOTALS as
+  // consumed — servings below is display metadata only, never a multiplier the
+  // aggregation applies (daily-summary just sums these columns).
+  satFatG: real("sat_fat_g"),
+  fiberG: real("fiber_g"),
+  sugarG: real("sugar_g"),
+  sodiumMg: real("sodium_mg"),
+  cholesterolMg: real("cholesterol_mg"),
+  // Quantity metadata (e.g. servings = 1.5, servingSize = "1 cup"). The stored
+  // nutrient columns already reflect the full amount consumed.
+  servings: real("servings").notNull().default(1),
+  servingSize: text("serving_size"),
 });
 
 export const insertFoodLogSchema = createInsertSchema(foodLogsTable).omit({

@@ -471,7 +471,7 @@ function MenuItemRow({ item }: { item: MenuItem }) {
           {item.calories} kcal
         </Text>
       </View>
-      <View style={{ flexDirection: "row", gap: 14, marginTop: 6 }}>
+      <View style={{ flexDirection: "row", flexWrap: "wrap", columnGap: 14, rowGap: 2, marginTop: 6 }}>
         <Text style={{ fontFamily: "Inter_400Regular", fontSize: 12, color: c.mutedForeground }}>
           P: {item.proteinG ?? 0}g
         </Text>
@@ -481,6 +481,21 @@ function MenuItemRow({ item }: { item: MenuItem }) {
         <Text style={{ fontFamily: "Inter_400Regular", fontSize: 12, color: c.mutedForeground }}>
           F: {item.fatG ?? 0}g
         </Text>
+        {item.fiberG != null ? (
+          <Text style={{ fontFamily: "Inter_400Regular", fontSize: 12, color: c.mutedForeground }}>
+            Fiber: {item.fiberG}g
+          </Text>
+        ) : null}
+        {item.sugarG != null ? (
+          <Text style={{ fontFamily: "Inter_400Regular", fontSize: 12, color: c.mutedForeground }}>
+            Sugar: {item.sugarG}g
+          </Text>
+        ) : null}
+        {item.sodiumMg != null ? (
+          <Text style={{ fontFamily: "Inter_400Regular", fontSize: 12, color: c.mutedForeground }}>
+            Na: {item.sodiumMg}mg
+          </Text>
+        ) : null}
       </View>
       {item.orderingTip ? (
         <View

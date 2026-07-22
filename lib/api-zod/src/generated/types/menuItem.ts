@@ -18,6 +18,16 @@ export interface MenuItem {
   carbsG?: number | null;
   /** @nullable */
   fatG?: number | null;
+  /** @nullable */
+  satFatG?: number | null;
+  /** @nullable */
+  fiberG?: number | null;
+  /** @nullable */
+  sugarG?: number | null;
+  /** @nullable */
+  sodiumMg?: number | null;
+  /** @nullable */
+  cholesterolMg?: number | null;
   isHealthyPick: boolean;
   /** @nullable */
   orderingTip?: string | null;

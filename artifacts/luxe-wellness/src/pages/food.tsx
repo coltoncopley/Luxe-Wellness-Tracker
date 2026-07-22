@@ -13,9 +13,10 @@ import { format } from "date-fns";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
-import { Utensils, Flame, Trash2, Plus, ChevronLeft, ChevronRight, Search, CheckCircle2 } from "lucide-react";
+import { Utensils, Flame, Trash2, Plus, ChevronLeft, ChevronRight, Search, CheckCircle2, ChevronDown } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MealScanner } from "@/components/meal-scanner";
+import { NutritionFactsLabel } from "@/components/nutrition-facts-label";
 
 export default function Food() {
   const queryClient = useQueryClient();
@@ -31,15 +32,24 @@ export default function Food() {
 
   // State for add manual form
   const [isAddOpen, setIsAddOpen] = useState(false);
-  const [formData, setFormData] = useState({
+  const [showMoreNutrients, setShowMoreNutrients] = useState(false);
+  const emptyForm = {
     mealType: "breakfast",
     foodName: "",
     restaurantName: "",
+    servingSize: "",
+    servings: "1",
     calories: "",
     proteinG: "",
     carbsG: "",
-    fatG: ""
-  });
+    fatG: "",
+    satFatG: "",
+    fiberG: "",
+    sugarG: "",
+    sodiumMg: "",
+    cholesterolMg: "",
+  };
+  const [formData, setFormData] = useState(emptyForm);
 
   // State for quick search
   const [searchQuery, setSearchQuery] = useState("");
@@ -63,42 +73,64 @@ export default function Food() {
 
   const handleAddManual = (e: React.FormEvent) => {
     e.preventDefault();
+    // Per-serving values × servings = totals-as-consumed stored on the log.
+    const servings = Number(formData.servings) > 0 ? Number(formData.servings) : 1;
+    const scale = (v: string) => (v.trim() === "" ? undefined : Math.round(Number(v) * servings * 10) / 10);
+    const scaleInt = (v: string) => (v.trim() === "" ? undefined : Math.round(Number(v) * servings));
     createLog.mutate({ data: {
       date: selectedDate,
       mealType: formData.mealType,
       foodName: formData.foodName,
       restaurantName: formData.restaurantName || undefined,
-      calories: Number(formData.calories),
-      proteinG: formData.proteinG ? Number(formData.proteinG) : undefined,
-      carbsG: formData.carbsG ? Number(formData.carbsG) : undefined,
-      fatG: formData.fatG ? Number(formData.fatG) : undefined
+      servings,
+      servingSize: formData.servingSize.trim() || undefined,
+      calories: Math.round(Number(formData.calories) * servings),
+      proteinG: scale(formData.proteinG),
+      carbsG: scale(formData.carbsG),
+      fatG: scale(formData.fatG),
+      satFatG: scale(formData.satFatG),
+      fiberG: scale(formData.fiberG),
+      sugarG: scale(formData.sugarG),
+      sodiumMg: scaleInt(formData.sodiumMg),
+      cholesterolMg: scaleInt(formData.cholesterolMg),
     }}, {
       onSuccess: () => {
         toast.success("Food logged successfully");
         queryClient.invalidateQueries({ queryKey: getListFoodLogsQueryKey({ date: selectedDate }) });
         queryClient.invalidateQueries({ queryKey: getGetDailySummaryQueryKey({ date: selectedDate }) });
         setIsAddOpen(false);
-        setFormData({ mealType: "breakfast", foodName: "", restaurantName: "", calories: "", proteinG: "", carbsG: "", fatG: "" });
+        setShowMoreNutrients(false);
+        setFormData(emptyForm);
       }
     });
   };
 
   const handleQuickAdd = (item: any) => {
+    // Server nutrient fields are `.optional()` (not nullable) — coerce nulls to
+    // undefined so curated menu items (all nutrients null) don't 400.
     createLog.mutate({ data: {
       date: selectedDate,
       mealType: formData.mealType, // use currently selected meal type in form state as default
       foodName: item.name,
       restaurantName: item.restaurantName,
       calories: item.calories,
-      proteinG: item.proteinG,
-      carbsG: item.carbsG,
-      fatG: item.fatG
+      proteinG: item.proteinG ?? undefined,
+      carbsG: item.carbsG ?? undefined,
+      fatG: item.fatG ?? undefined,
+      satFatG: item.satFatG ?? undefined,
+      fiberG: item.fiberG ?? undefined,
+      sugarG: item.sugarG ?? undefined,
+      sodiumMg: item.sodiumMg ?? undefined,
+      cholesterolMg: item.cholesterolMg ?? undefined,
     }}, {
       onSuccess: () => {
         toast.success(`Logged ${item.name}`);
         queryClient.invalidateQueries({ queryKey: getListFoodLogsQueryKey({ date: selectedDate }) });
         queryClient.invalidateQueries({ queryKey: getGetDailySummaryQueryKey({ date: selectedDate }) });
         setSearchQuery("");
+      },
+      onError: () => {
+        toast.error("Couldn't log that item. Please try again.");
       }
     });
   };
@@ -196,7 +228,12 @@ export default function Food() {
                   calories: analysis.calories,
                   proteinG: analysis.proteinG,
                   carbsG: analysis.carbsG,
-                  fatG: analysis.fatG
+                  fatG: analysis.fatG,
+                  satFatG: analysis.satFatG,
+                  fiberG: analysis.fiberG,
+                  sugarG: analysis.sugarG,
+                  sodiumMg: analysis.sodiumMg,
+                  cholesterolMg: analysis.cholesterolMg,
                 }}, {
                   onSuccess: () => {
                     toast.success(`Logged ${analysis.name}`);
@@ -212,7 +249,7 @@ export default function Food() {
                   <Plus className="w-4 h-4 mr-2" /> Custom Entry
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className="max-h-[90vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>Log Custom Food</DialogTitle>
                 </DialogHeader>
@@ -235,6 +272,19 @@ export default function Food() {
                     <Label htmlFor="foodName">Food Name</Label>
                     <Input id="foodName" required value={formData.foodName} onChange={e => setFormData({...formData, foodName: e.target.value})} placeholder="e.g. Grilled Chicken Salad" />
                   </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="servingSize">Serving size</Label>
+                      <Input id="servingSize" value={formData.servingSize} onChange={e => setFormData({...formData, servingSize: e.target.value})} placeholder="e.g. 1 cup" />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="servings">Number of servings</Label>
+                      <Input id="servings" type="number" min={0} step="0.5" value={formData.servings} onChange={e => setFormData({...formData, servings: e.target.value})} />
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground -mt-1">
+                    Enter the amounts <strong>per serving</strong> — we'll multiply by the number of servings.
+                  </p>
                   <div className="space-y-2">
                     <Label htmlFor="calories">Calories</Label>
                     <Input id="calories" type="number" required value={formData.calories} onChange={e => setFormData({...formData, calories: e.target.value})} />
@@ -253,6 +303,39 @@ export default function Food() {
                       <Input id="fatG" type="number" value={formData.fatG} onChange={e => setFormData({...formData, fatG: e.target.value})} />
                     </div>
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowMoreNutrients((v) => !v)}
+                    className="flex items-center gap-1 text-sm font-medium text-primary hover:underline"
+                    data-testid="button-toggle-nutrients"
+                  >
+                    <ChevronDown className={`w-4 h-4 transition-transform ${showMoreNutrients ? "rotate-180" : ""}`} />
+                    {showMoreNutrients ? "Fewer nutrients" : "More nutrients (optional)"}
+                  </button>
+                  {showMoreNutrients && (
+                    <div className="grid grid-cols-2 gap-4 rounded-xl border border-border bg-muted/20 p-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="satFatG">Sat. Fat (g)</Label>
+                        <Input id="satFatG" type="number" value={formData.satFatG} onChange={e => setFormData({...formData, satFatG: e.target.value})} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="fiberG">Fiber (g)</Label>
+                        <Input id="fiberG" type="number" value={formData.fiberG} onChange={e => setFormData({...formData, fiberG: e.target.value})} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="sugarG">Sugar (g)</Label>
+                        <Input id="sugarG" type="number" value={formData.sugarG} onChange={e => setFormData({...formData, sugarG: e.target.value})} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="sodiumMg">Sodium (mg)</Label>
+                        <Input id="sodiumMg" type="number" value={formData.sodiumMg} onChange={e => setFormData({...formData, sodiumMg: e.target.value})} />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="cholesterolMg">Cholesterol (mg)</Label>
+                        <Input id="cholesterolMg" type="number" value={formData.cholesterolMg} onChange={e => setFormData({...formData, cholesterolMg: e.target.value})} />
+                      </div>
+                    </div>
+                  )}
                   <Button type="submit" className="w-full mt-4" disabled={createLog.isPending}>
                     Save to Log
                   </Button>
@@ -287,10 +370,18 @@ export default function Food() {
                           <div>
                             <div className="font-medium text-foreground">{item.foodName}</div>
                             {item.restaurantName && <div className="text-xs text-muted-foreground mt-0.5">{item.restaurantName}</div>}
-                            <div className="text-xs text-muted-foreground mt-1 flex gap-3">
+                            {(item.servingSize || (item.servings != null && item.servings !== 1)) && (
+                              <div className="text-xs text-muted-foreground mt-0.5">
+                                {item.servings != null && item.servings !== 1 ? `${item.servings} × ` : ""}
+                                {item.servingSize || "serving"}
+                              </div>
+                            )}
+                            <div className="text-xs text-muted-foreground mt-1 flex flex-wrap gap-x-3 gap-y-0.5">
                               {item.proteinG != null && <span>P: {item.proteinG}g</span>}
                               {item.carbsG != null && <span>C: {item.carbsG}g</span>}
                               {item.fatG != null && <span>F: {item.fatG}g</span>}
+                              {item.fiberG != null && <span>Fiber: {item.fiberG}g</span>}
+                              {item.sodiumMg != null && <span>Na: {item.sodiumMg}mg</span>}
                             </div>
                           </div>
                           <div className="flex items-center gap-4">
@@ -311,7 +402,34 @@ export default function Food() {
           )}
         </div>
 
-        <div>
+        <div className="space-y-6">
+          <Card className="overflow-hidden">
+            <CardHeader className="pb-3">
+              <CardTitle className="font-serif">Today's Nutrition Facts</CardTitle>
+              <CardDescription>Totals across everything you've logged today.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {isLoadingSummary ? (
+                <div className="py-6 text-center text-sm text-muted-foreground">Loading…</div>
+              ) : (
+                <NutritionFactsLabel
+                  servingLabel={`${summary?.mealCount ?? 0} item${(summary?.mealCount ?? 0) === 1 ? "" : "s"} logged today`}
+                  values={{
+                    calories: summary?.totalCalories ?? 0,
+                    proteinG: summary?.totalProteinG ?? null,
+                    carbsG: summary?.totalCarbsG ?? null,
+                    fatG: summary?.totalFatG ?? null,
+                    satFatG: summary?.totalSatFatG ?? null,
+                    fiberG: summary?.totalFiberG ?? null,
+                    sugarG: summary?.totalSugarG ?? null,
+                    sodiumMg: summary?.totalSodiumMg ?? null,
+                    cholesterolMg: summary?.totalCholesterolMg ?? null,
+                  }}
+                />
+              )}
+            </CardContent>
+          </Card>
+
           <Card className="sticky top-24">
             <CardHeader>
               <CardTitle className="font-serif">Quick Add from Restaurants</CardTitle>

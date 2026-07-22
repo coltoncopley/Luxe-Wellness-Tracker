@@ -17,4 +17,17 @@ export interface FoodLogInput {
   proteinG?: number;
   carbsG?: number;
   fatG?: number;
+  /** @minimum 0 */
+  satFatG?: number;
+  /** @minimum 0 */
+  fiberG?: number;
+  /** @minimum 0 */
+  sugarG?: number;
+  /** @minimum 0 */
+  sodiumMg?: number;
+  /** @minimum 0 */
+  cholesterolMg?: number;
+  /** @minimum 0 */
+  servings?: number;
+  servingSize?: string;
 }

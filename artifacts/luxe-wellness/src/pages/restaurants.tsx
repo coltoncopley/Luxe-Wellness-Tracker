@@ -540,10 +540,13 @@ function RestaurantModal({
                         </span>
                       </div>
                       <div className="flex items-end justify-between mt-3">
-                        <div className="flex gap-3 text-xs text-muted-foreground font-mono">
+                        <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground font-mono">
                           <span>P: {item.proteinG || 0}g</span>
                           <span>C: {item.carbsG || 0}g</span>
                           <span>F: {item.fatG || 0}g</span>
+                          {item.fiberG != null && <span>Fiber: {item.fiberG}g</span>}
+                          {item.sugarG != null && <span>Sugar: {item.sugarG}g</span>}
+                          {item.sodiumMg != null && <span>Na: {item.sodiumMg}mg</span>}
                         </div>
                         {isMine && (
                           <div className="flex gap-1">
@@ -608,6 +611,11 @@ function MenuItemEditorDialog({
   const [proteinG, setProteinG] = useState("");
   const [carbsG, setCarbsG] = useState("");
   const [fatG, setFatG] = useState("");
+  const [satFatG, setSatFatG] = useState("");
+  const [fiberG, setFiberG] = useState("");
+  const [sugarG, setSugarG] = useState("");
+  const [sodiumMg, setSodiumMg] = useState("");
+  const [cholesterolMg, setCholesterolMg] = useState("");
   const [isHealthyPick, setIsHealthyPick] = useState(false);
   const [orderingTip, setOrderingTip] = useState("");
   const [loadedFor, setLoadedFor] = useState<number | "new" | null>(null);
@@ -625,6 +633,11 @@ function MenuItemEditorDialog({
     setProteinG(editing?.proteinG != null ? String(editing.proteinG) : "");
     setCarbsG(editing?.carbsG != null ? String(editing.carbsG) : "");
     setFatG(editing?.fatG != null ? String(editing.fatG) : "");
+    setSatFatG(editing?.satFatG != null ? String(editing.satFatG) : "");
+    setFiberG(editing?.fiberG != null ? String(editing.fiberG) : "");
+    setSugarG(editing?.sugarG != null ? String(editing.sugarG) : "");
+    setSodiumMg(editing?.sodiumMg != null ? String(editing.sodiumMg) : "");
+    setCholesterolMg(editing?.cholesterolMg != null ? String(editing.cholesterolMg) : "");
     setIsHealthyPick(editing?.isHealthyPick ?? false);
     setOrderingTip(editing?.orderingTip ?? "");
   }
@@ -652,6 +665,11 @@ function MenuItemEditorDialog({
       proteinG: parseNum(proteinG),
       carbsG: parseNum(carbsG),
       fatG: parseNum(fatG),
+      satFatG: parseNum(satFatG),
+      fiberG: parseNum(fiberG),
+      sugarG: parseNum(sugarG),
+      sodiumMg: parseNum(sodiumMg),
+      cholesterolMg: parseNum(cholesterolMg),
     };
     const tip = orderingTip.trim();
     const done = () => {
@@ -673,6 +691,11 @@ function MenuItemEditorDialog({
             ...(macros.proteinG !== null ? { proteinG: macros.proteinG } : {}),
             ...(macros.carbsG !== null ? { carbsG: macros.carbsG } : {}),
             ...(macros.fatG !== null ? { fatG: macros.fatG } : {}),
+            ...(macros.satFatG !== null ? { satFatG: macros.satFatG } : {}),
+            ...(macros.fiberG !== null ? { fiberG: macros.fiberG } : {}),
+            ...(macros.sugarG !== null ? { sugarG: macros.sugarG } : {}),
+            ...(macros.sodiumMg !== null ? { sodiumMg: macros.sodiumMg } : {}),
+            ...(macros.cholesterolMg !== null ? { cholesterolMg: macros.cholesterolMg } : {}),
             isHealthyPick,
             ...(tip ? { orderingTip: tip } : {}),
           },
@@ -689,6 +712,11 @@ function MenuItemEditorDialog({
             proteinG: macros.proteinG,
             carbsG: macros.carbsG,
             fatG: macros.fatG,
+            satFatG: macros.satFatG,
+            fiberG: macros.fiberG,
+            sugarG: macros.sugarG,
+            sodiumMg: macros.sodiumMg,
+            cholesterolMg: macros.cholesterolMg,
             isHealthyPick,
             orderingTip: tip || null,
           },
@@ -774,6 +802,76 @@ function MenuItemEditorDialog({
                 placeholder="optional"
                 disabled={isPending}
                 data-testid="input-item-fat"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="item-satfat">Sat. Fat (g)</Label>
+              <Input
+                id="item-satfat"
+                type="number"
+                inputMode="decimal"
+                min={0}
+                value={satFatG}
+                onChange={(e) => setSatFatG(e.target.value)}
+                placeholder="optional"
+                disabled={isPending}
+                data-testid="input-item-satfat"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="item-fiber">Fiber (g)</Label>
+              <Input
+                id="item-fiber"
+                type="number"
+                inputMode="decimal"
+                min={0}
+                value={fiberG}
+                onChange={(e) => setFiberG(e.target.value)}
+                placeholder="optional"
+                disabled={isPending}
+                data-testid="input-item-fiber"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="item-sugar">Sugar (g)</Label>
+              <Input
+                id="item-sugar"
+                type="number"
+                inputMode="decimal"
+                min={0}
+                value={sugarG}
+                onChange={(e) => setSugarG(e.target.value)}
+                placeholder="optional"
+                disabled={isPending}
+                data-testid="input-item-sugar"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="item-sodium">Sodium (mg)</Label>
+              <Input
+                id="item-sodium"
+                type="number"
+                inputMode="numeric"
+                min={0}
+                value={sodiumMg}
+                onChange={(e) => setSodiumMg(e.target.value)}
+                placeholder="optional"
+                disabled={isPending}
+                data-testid="input-item-sodium"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="item-cholesterol">Cholesterol (mg)</Label>
+              <Input
+                id="item-cholesterol"
+                type="number"
+                inputMode="numeric"
+                min={0}
+                value={cholesterolMg}
+                onChange={(e) => setCholesterolMg(e.target.value)}
+                placeholder="optional"
+                disabled={isPending}
+                data-testid="input-item-cholesterol"
               />
             </div>
           </div>

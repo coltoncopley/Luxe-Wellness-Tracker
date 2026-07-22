@@ -13,6 +13,11 @@ export interface MealPhotoAnalysis {
   proteinG: number;
   carbsG: number;
   fatG: number;
+  satFatG: number;
+  fiberG: number;
+  sugarG: number;
+  sodiumMg: number;
+  cholesterolMg: number;
   confidence: MealPhotoAnalysisConfidence;
   notes: string;
 }

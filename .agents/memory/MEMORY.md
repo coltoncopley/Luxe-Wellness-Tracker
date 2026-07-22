@@ -1,5 +1,6 @@
 - [Design subagent output verification](design-subagent-verification.md) — always verify page files exist, typecheck passes, and no escaped `\`` template literals after a DESIGN subagent finishes.
 - [Orval + Clerk web quirks](orval-clerk-quirks.md) — generated hooks require queryKey alongside `enabled`; web Clerk auth is cookie-based, never add Bearer/token getters.
+- [OpenAPI optional vs nullable](openapi-optional-vs-nullable.md) — numeric extras are `.optional()` not `.nullable()`; forwarding null-nutrient menu items into a food-log create 400s — coerce `?? undefined`.
 - [Code-based endpoint hardening](code-endpoint-hardening.md) — any endpoint accepting a guessable code (invite, claim, redemption) needs rate limiting + minimal response disclosure, and patient-data routes need explicit staff exclusion, or review will block it.
 - [Stripe sync mirror quirks](stripe-sync-quirks.md) — billing mutations (checkout, trial eligibility) must query Stripe live, mirror tables are for reads only; verify runMigrations actually created the stripe tables.
 - [Account deletion & Apple 5.1.1(v)](account-deletion-apple.md) — delete must be reachable on the paywall/gate itself (not just gated Settings), and signOut() must run before queryClient.clear() or ensureUserRow resurrects the deleted row.

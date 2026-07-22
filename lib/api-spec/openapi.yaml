@@ -3621,6 +3621,11 @@ components:
         proteinG: { type: number, minimum: 0 }
         carbsG: { type: number, minimum: 0 }
         fatG: { type: number, minimum: 0 }
+        satFatG: { type: number, minimum: 0 }
+        fiberG: { type: number, minimum: 0 }
+        sugarG: { type: number, minimum: 0 }
+        sodiumMg: { type: number, minimum: 0 }
+        cholesterolMg: { type: number, minimum: 0 }
         isHealthyPick: { type: boolean }
         orderingTip: { type: string }
     MenuItemUpdate:
@@ -3631,6 +3636,11 @@ components:
         proteinG: { type: ["number", "null"], minimum: 0 }
         carbsG: { type: ["number", "null"], minimum: 0 }
         fatG: { type: ["number", "null"], minimum: 0 }
+        satFatG: { type: ["number", "null"], minimum: 0 }
+        fiberG: { type: ["number", "null"], minimum: 0 }
+        sugarG: { type: ["number", "null"], minimum: 0 }
+        sodiumMg: { type: ["number", "null"], minimum: 0 }
+        cholesterolMg: { type: ["number", "null"], minimum: 0 }
         isHealthyPick: { type: boolean }
         orderingTip: { type: ["string", "null"] }
     MenuItem:
@@ -3645,11 +3655,16 @@ components:
         proteinG: { type: ["number", "null"] }
         carbsG: { type: ["number", "null"] }
         fatG: { type: ["number", "null"] }
+        satFatG: { type: ["number", "null"] }
+        fiberG: { type: ["number", "null"] }
+        sugarG: { type: ["number", "null"] }
+        sodiumMg: { type: ["number", "null"] }
+        cholesterolMg: { type: ["number", "null"] }
         isHealthyPick: { type: boolean }
         orderingTip: { type: ["string", "null"] }
     FoodLog:
       type: object
-      required: [id, date, mealType, foodName, calories]
+      required: [id, date, mealType, foodName, calories, servings]
       properties:
         id: { type: integer }
         date: { type: string }
@@ -3660,6 +3675,13 @@ components:
         proteinG: { type: ["number", "null"] }
         carbsG: { type: ["number", "null"] }
         fatG: { type: ["number", "null"] }
+        satFatG: { type: ["number", "null"] }
+        fiberG: { type: ["number", "null"] }
+        sugarG: { type: ["number", "null"] }
+        sodiumMg: { type: ["number", "null"] }
+        cholesterolMg: { type: ["number", "null"] }
+        servings: { type: number }
+        servingSize: { type: ["string", "null"] }
     FoodLogInput:
       type: object
       required: [date, mealType, foodName, calories]
@@ -3672,15 +3694,40 @@ components:
         proteinG: { type: number }
         carbsG: { type: number }
         fatG: { type: number }
+        satFatG: { type: number, minimum: 0 }
+        fiberG: { type: number, minimum: 0 }
+        sugarG: { type: number, minimum: 0 }
+        sodiumMg: { type: number, minimum: 0 }
+        cholesterolMg: { type: number, minimum: 0 }
+        servings: { type: number, minimum: 0 }
+        servingSize: { type: string }
     DailySummary:
       type: object
-      required: [date, totalCalories, totalProteinG, totalCarbsG, totalFatG, mealCount]
+      required:
+        [
+          date,
+          totalCalories,
+          totalProteinG,
+          totalCarbsG,
+          totalFatG,
+          totalSatFatG,
+          totalFiberG,
+          totalSugarG,
+          totalSodiumMg,
+          totalCholesterolMg,
+          mealCount,
+        ]
       properties:
         date: { type: string }
         totalCalories: { type: integer }
         totalProteinG: { type: number }
         totalCarbsG: { type: number }
         totalFatG: { type: number }
+        totalSatFatG: { type: number }
+        totalFiberG: { type: number }
+        totalSugarG: { type: number }
+        totalSodiumMg: { type: number }
+        totalCholesterolMg: { type: number }
         mealCount: { type: integer }
         calorieTarget: { type: ["integer", "null"] }
     WellnessTip:
@@ -3942,6 +3989,16 @@ components:
           type: number
         fatG:
           type: number
+        satFatG:
+          type: number
+        fiberG:
+          type: number
+        sugarG:
+          type: number
+        sodiumMg:
+          type: number
+        cholesterolMg:
+          type: number
         confidence:
           type: string
           enum: [low, medium, high]
@@ -3953,6 +4010,11 @@ components:
         - proteinG
         - carbsG
         - fatG
+        - satFatG
+        - fiberG
+        - sugarG
+        - sodiumMg
+        - cholesterolMg
         - confidence
         - notes
     RewardEvent:

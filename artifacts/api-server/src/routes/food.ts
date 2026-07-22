@@ -47,6 +47,11 @@ const menuItemSelect = {
   proteinG: menuItemsTable.proteinG,
   carbsG: menuItemsTable.carbsG,
   fatG: menuItemsTable.fatG,
+  satFatG: menuItemsTable.satFatG,
+  fiberG: menuItemsTable.fiberG,
+  sugarG: menuItemsTable.sugarG,
+  sodiumMg: menuItemsTable.sodiumMg,
+  cholesterolMg: menuItemsTable.cholesterolMg,
   isHealthyPick: menuItemsTable.isHealthyPick,
   orderingTip: menuItemsTable.orderingTip,
 };
@@ -172,6 +177,11 @@ const aiMenuItemSchema = z.object({
   proteinG: z.number(),
   carbsG: z.number(),
   fatG: z.number(),
+  satFatG: z.number().nullable().optional(),
+  fiberG: z.number().nullable().optional(),
+  sugarG: z.number().nullable().optional(),
+  sodiumMg: z.number().nullable().optional(),
+  cholesterolMg: z.number().nullable().optional(),
   isHealthyPick: z.boolean(),
   orderingTip: z.string().nullable(),
 });
@@ -244,12 +254,12 @@ function parseMenu(raw: string | null | undefined): z.infer<typeof aiMenuSchema>
 
 const MENU_JSON_SHAPE =
   '{"looksLikeRestaurant": boolean, "cuisine": string, "description": string, "sourceDomain": string|null, ' +
-  '"menuItems": [{"name": string, "calories": number, "proteinG": number, "carbsG": number, "fatG": number, "isHealthyPick": boolean, "orderingTip": string|null}]}';
+  '"menuItems": [{"name": string, "calories": number, "proteinG": number, "carbsG": number, "fatG": number, "satFatG": number|null, "fiberG": number|null, "sugarG": number|null, "sodiumMg": number|null, "cholesterolMg": number|null, "isHealthyPick": boolean, "orderingTip": string|null}]}';
 
 const MENU_SHARED_RULES =
   "Set looksLikeRestaurant to false ONLY if the name clearly is not a restaurant or food establishment (e.g. random letters, an object, a person). " +
   "Mark the 3-4 lightest, highest-protein choices as isHealthyPick with a short practical orderingTip (e.g. 'Ask for dressing on the side'). " +
-  "Nutrition numbers are estimates for one serving. Keep the description to one sentence about the restaurant. " +
+  "Estimate nutrition per serving: calories and grams of protein, carbs, and fat, plus grams of saturated fat, fiber, and sugar and milligrams of sodium and cholesterol. Use null for any value you genuinely cannot estimate. Keep the description to one sentence about the restaurant. " +
   "Use educational, non-medical language. Never mention medications, dosing, or medical conditions. " +
   `Respond ONLY with JSON — no prose, citations, or markdown outside the JSON: ${MENU_JSON_SHAPE}`;
 
@@ -310,7 +320,7 @@ async function generateTypicalMenu(
 
 const DISCOVER_JSON_SHAPE =
   '{"restaurants": [{"name": string, "cuisine": string, "description": string, "sourceDomain": string, ' +
-  '"menuItems": [{"name": string, "calories": number, "proteinG": number, "carbsG": number, "fatG": number, "isHealthyPick": boolean, "orderingTip": string|null}]}]}';
+  '"menuItems": [{"name": string, "calories": number, "proteinG": number, "carbsG": number, "fatG": number, "satFatG": number|null, "fiberG": number|null, "sugarG": number|null, "sodiumMg": number|null, "cholesterolMg": number|null, "isHealthyPick": boolean, "orderingTip": string|null}]}]}';
 
 // Discovery must be web-grounded: we return { searched } so the caller can reject
 // (422) any response that never actually ran a web search, and we only keep
@@ -329,7 +339,7 @@ async function generateDiscovery(
       "For each restaurant, list 3-6 real menu items with estimated nutrition. " +
       "Do NOT invent or guess restaurants. If you cannot verify real restaurants near the location, return an empty restaurants array. " +
       "Mark the 1-2 lightest, highest-protein items per restaurant as isHealthyPick with a short practical orderingTip (e.g. 'Ask for dressing on the side'). " +
-      "Nutrition numbers are estimates for one serving. Keep each description to one sentence about the restaurant. " +
+      "Estimate nutrition per serving: calories and grams of protein, carbs, and fat, plus grams of saturated fat, fiber, and sugar and milligrams of sodium and cholesterol (use null for any value you genuinely cannot estimate). Keep each description to one sentence about the restaurant. " +
       "Use educational, non-medical language. Never mention medications, dosing, or medical conditions. " +
       `Respond ONLY with JSON — no prose, citations, or markdown outside the JSON: ${DISCOVER_JSON_SHAPE}`,
     input: `Location: ${location}`,
@@ -420,6 +430,11 @@ router.post(
       proteinG: clampMacro(m.proteinG),
       carbsG: clampMacro(m.carbsG),
       fatG: clampMacro(m.fatG),
+      satFatG: m.satFatG == null ? null : clampMacro(m.satFatG),
+      fiberG: m.fiberG == null ? null : clampMacro(m.fiberG),
+      sugarG: m.sugarG == null ? null : clampMacro(m.sugarG),
+      sodiumMg: m.sodiumMg == null ? null : clampInt(m.sodiumMg, 8000),
+      cholesterolMg: m.cholesterolMg == null ? null : clampInt(m.cholesterolMg, 1500),
       isHealthyPick: m.isHealthyPick,
       orderingTip: m.orderingTip ? stripLinks(m.orderingTip).slice(0, 300) || null : null,
     }));
@@ -541,6 +556,11 @@ router.post(
         proteinG: clampMacro(m.proteinG),
         carbsG: clampMacro(m.carbsG),
         fatG: clampMacro(m.fatG),
+        satFatG: m.satFatG == null ? null : clampMacro(m.satFatG),
+        fiberG: m.fiberG == null ? null : clampMacro(m.fiberG),
+        sugarG: m.sugarG == null ? null : clampMacro(m.sugarG),
+        sodiumMg: m.sodiumMg == null ? null : clampInt(m.sodiumMg, 8000),
+        cholesterolMg: m.cholesterolMg == null ? null : clampInt(m.cholesterolMg, 1500),
         isHealthyPick: m.isHealthyPick,
         orderingTip: m.orderingTip ? stripLinks(m.orderingTip).slice(0, 300) || null : null,
       }));
@@ -678,6 +698,12 @@ router.post(
           proteinG: body.data.proteinG === undefined ? null : clampMacro(body.data.proteinG),
           carbsG: body.data.carbsG === undefined ? null : clampMacro(body.data.carbsG),
           fatG: body.data.fatG === undefined ? null : clampMacro(body.data.fatG),
+          satFatG: body.data.satFatG === undefined ? null : clampMacro(body.data.satFatG),
+          fiberG: body.data.fiberG === undefined ? null : clampMacro(body.data.fiberG),
+          sugarG: body.data.sugarG === undefined ? null : clampMacro(body.data.sugarG),
+          sodiumMg: body.data.sodiumMg === undefined ? null : clampInt(body.data.sodiumMg, 8000),
+          cholesterolMg:
+            body.data.cholesterolMg === undefined ? null : clampInt(body.data.cholesterolMg, 1500),
           isHealthyPick: body.data.isHealthyPick ?? false,
           orderingTip: body.data.orderingTip?.trim()
             ? body.data.orderingTip.trim().slice(0, 300)
@@ -727,6 +753,12 @@ router.patch("/menu-items/:id", requirePatient, async (req, res): Promise<void> 
   if (b.proteinG !== undefined) updates.proteinG = b.proteinG === null ? null : clampMacro(b.proteinG);
   if (b.carbsG !== undefined) updates.carbsG = b.carbsG === null ? null : clampMacro(b.carbsG);
   if (b.fatG !== undefined) updates.fatG = b.fatG === null ? null : clampMacro(b.fatG);
+  if (b.satFatG !== undefined) updates.satFatG = b.satFatG === null ? null : clampMacro(b.satFatG);
+  if (b.fiberG !== undefined) updates.fiberG = b.fiberG === null ? null : clampMacro(b.fiberG);
+  if (b.sugarG !== undefined) updates.sugarG = b.sugarG === null ? null : clampMacro(b.sugarG);
+  if (b.sodiumMg !== undefined) updates.sodiumMg = b.sodiumMg === null ? null : clampInt(b.sodiumMg, 8000);
+  if (b.cholesterolMg !== undefined)
+    updates.cholesterolMg = b.cholesterolMg === null ? null : clampInt(b.cholesterolMg, 1500);
   if (b.isHealthyPick !== undefined) updates.isHealthyPick = b.isHealthyPick;
   if (b.orderingTip !== undefined) {
     updates.orderingTip = b.orderingTip?.trim() ? b.orderingTip.trim().slice(0, 300) : null;
@@ -834,6 +866,11 @@ const mealEstimateSchema = z.object({
   proteinG: z.number(),
   carbsG: z.number(),
   fatG: z.number(),
+  satFatG: z.number(),
+  fiberG: z.number(),
+  sugarG: z.number(),
+  sodiumMg: z.number(),
+  cholesterolMg: z.number(),
   confidence: z.enum(["low", "medium", "high"]),
   notes: z.string(),
 });
@@ -858,7 +895,8 @@ router.post("/food/analyze-photo", async (req, res): Promise<void> => {
           "You are a nutrition estimation assistant for a med spa patient app. " +
           "Analyze the meal photo and estimate total nutrition for the full visible portion. " +
           "Respond ONLY with JSON matching this shape: " +
-          '{"isFood": boolean, "name": string, "calories": number, "proteinG": number, "carbsG": number, "fatG": number, "confidence": "low"|"medium"|"high", "notes": string}. ' +
+          '{"isFood": boolean, "name": string, "calories": number, "proteinG": number, "carbsG": number, "fatG": number, "satFatG": number, "fiberG": number, "sugarG": number, "sodiumMg": number, "cholesterolMg": number, "confidence": "low"|"medium"|"high", "notes": string}. ' +
+          "proteinG, carbsG, fatG, satFatG, fiberG, and sugarG are grams; sodiumMg and cholesterolMg are milligrams. Estimate every nutrient field for the full portion (use 0 only when a nutrient is truly negligible). " +
           "If the image does not contain food or drink, set isFood to false. " +
           "Keep name short (e.g. 'Grilled chicken salad'). In notes, give one brief weight-loss-friendly observation (e.g. protein content, portion tip).",
       },
@@ -898,6 +936,11 @@ router.post("/food/analyze-photo", async (req, res): Promise<void> => {
       proteinG: Math.max(0, Math.round(estimate.proteinG * 10) / 10),
       carbsG: Math.max(0, Math.round(estimate.carbsG * 10) / 10),
       fatG: Math.max(0, Math.round(estimate.fatG * 10) / 10),
+      satFatG: clampMacro(estimate.satFatG),
+      fiberG: clampMacro(estimate.fiberG),
+      sugarG: clampMacro(estimate.sugarG),
+      sodiumMg: clampInt(estimate.sodiumMg, 8000),
+      cholesterolMg: clampInt(estimate.cholesterolMg, 1500),
       confidence: estimate.confidence,
       notes: estimate.notes,
     }),
@@ -941,9 +984,14 @@ router.get("/food-logs/daily-summary", async (req, res): Promise<void> => {
       acc.protein += r.proteinG ?? 0;
       acc.carbs += r.carbsG ?? 0;
       acc.fat += r.fatG ?? 0;
+      acc.satFat += r.satFatG ?? 0;
+      acc.fiber += r.fiberG ?? 0;
+      acc.sugar += r.sugarG ?? 0;
+      acc.sodium += r.sodiumMg ?? 0;
+      acc.cholesterol += r.cholesterolMg ?? 0;
       return acc;
     },
-    { calories: 0, protein: 0, carbs: 0, fat: 0 },
+    { calories: 0, protein: 0, carbs: 0, fat: 0, satFat: 0, fiber: 0, sugar: 0, sodium: 0, cholesterol: 0 },
   );
 
   res.json(
@@ -953,6 +1001,11 @@ router.get("/food-logs/daily-summary", async (req, res): Promise<void> => {
       totalProteinG: Math.round(totals.protein * 10) / 10,
       totalCarbsG: Math.round(totals.carbs * 10) / 10,
       totalFatG: Math.round(totals.fat * 10) / 10,
+      totalSatFatG: Math.round(totals.satFat * 10) / 10,
+      totalFiberG: Math.round(totals.fiber * 10) / 10,
+      totalSugarG: Math.round(totals.sugar * 10) / 10,
+      totalSodiumMg: Math.round(totals.sodium),
+      totalCholesterolMg: Math.round(totals.cholesterol),
       mealCount: rows.length,
       calorieTarget: goal?.dailyCalorieTarget ?? null,
     }),
