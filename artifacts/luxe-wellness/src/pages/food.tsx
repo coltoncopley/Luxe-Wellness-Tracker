@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { 
   useListFoodLogs, useCreateFoodLog, useDeleteFoodLog, getListFoodLogsQueryKey,
   useGetDailySummary, getGetDailySummaryQueryKey,
@@ -18,6 +18,7 @@ import { Utensils, Flame, Trash2, Plus, ChevronLeft, ChevronRight, Search, Check
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MealScanner } from "@/components/meal-scanner";
 import { NutritionFactsLabel } from "@/components/nutrition-facts-label";
+import { useLogMenuItem, MEAL_TYPES, defaultMealType, type LoggableMenuItem } from "@/hooks/use-log-menu-item";
 
 function FoodLogRow({ item, onDelete }: { item: FoodLog; onDelete: (id: number) => void }) {
   const [open, setOpen] = useState(false);
@@ -120,6 +121,18 @@ export default function Food() {
     { q: searchQuery }, 
     { query: { enabled: searchQuery.length > 2, queryKey: ['searchMenuItems', { q: searchQuery }] } }
   );
+  const [quickMealType, setQuickMealType] = useState<string>(defaultMealType());
+  const { logMenuItem, isPending: isLogging } = useLogMenuItem();
+  const groupedResults = useMemo(() => {
+    const groups = new Map<string, NonNullable<typeof searchResults>>();
+    (searchResults ?? []).forEach((it) => {
+      const key = it.restaurantName ?? "Other";
+      const arr = groups.get(key) ?? [];
+      arr.push(it);
+      groups.set(key, arr);
+    });
+    return Array.from(groups.entries());
+  }, [searchResults]);
 
   // Date navigation
   const handlePrevDay = () => {
@@ -168,33 +181,11 @@ export default function Food() {
     });
   };
 
-  const handleQuickAdd = (item: any) => {
-    // Server nutrient fields are `.optional()` (not nullable) — coerce nulls to
-    // undefined so curated menu items (all nutrients null) don't 400.
-    createLog.mutate({ data: {
+  const handleQuickAdd = (item: LoggableMenuItem) => {
+    logMenuItem(item, {
       date: selectedDate,
-      mealType: formData.mealType, // use currently selected meal type in form state as default
-      foodName: item.name,
-      restaurantName: item.restaurantName,
-      calories: item.calories,
-      proteinG: item.proteinG ?? undefined,
-      carbsG: item.carbsG ?? undefined,
-      fatG: item.fatG ?? undefined,
-      satFatG: item.satFatG ?? undefined,
-      fiberG: item.fiberG ?? undefined,
-      sugarG: item.sugarG ?? undefined,
-      sodiumMg: item.sodiumMg ?? undefined,
-      cholesterolMg: item.cholesterolMg ?? undefined,
-    }}, {
-      onSuccess: () => {
-        toast.success(`Logged ${item.name}`);
-        queryClient.invalidateQueries({ queryKey: getListFoodLogsQueryKey({ date: selectedDate }) });
-        queryClient.invalidateQueries({ queryKey: getGetDailySummaryQueryKey({ date: selectedDate }) });
-        setSearchQuery("");
-      },
-      onError: () => {
-        toast.error("Couldn't log that item. Please try again.");
-      }
+      mealType: quickMealType,
+      onSuccess: () => setSearchQuery(""),
     });
   };
 
@@ -472,13 +463,26 @@ export default function Food() {
           <Card className="sticky top-24">
             <CardHeader>
               <CardTitle className="font-serif">Quick Add from Restaurants</CardTitle>
-              <CardDescription>Search local healthy menu items to log instantly.</CardDescription>
+              <CardDescription>Search any restaurant or menu item and log it to today instantly.</CardDescription>
             </CardHeader>
             <CardContent>
+              <div className="flex items-center gap-2 mb-3">
+                <Label htmlFor="quick-meal" className="text-xs text-muted-foreground shrink-0">Log to</Label>
+                <Select value={quickMealType} onValueChange={setQuickMealType}>
+                  <SelectTrigger id="quick-meal" className="h-8 text-sm capitalize">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {MEAL_TYPES.map((m) => (
+                      <SelectItem key={m} value={m} className="capitalize">{m}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
               <div className="relative mb-4">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input 
-                  placeholder="Search menu items..." 
+                  placeholder="Search restaurants or menu items..." 
                   className="pl-9"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
@@ -486,20 +490,26 @@ export default function Food() {
               </div>
 
               {searchQuery.length > 2 && (
-                <div className="space-y-3 max-h-[400px] overflow-y-auto pr-2">
-                  {searchResults && searchResults.length > 0 ? (
-                    searchResults.map(item => (
-                      <div key={item.id} className="p-3 border border-border rounded-xl bg-card hover:border-primary/50 transition-colors">
-                        <div className="flex justify-between items-start gap-2 mb-1">
-                          <span className="font-medium text-sm leading-tight">{item.name}</span>
-                          {item.isHealthyPick && <CheckCircle2 className="w-4 h-4 text-accent shrink-0" />}
-                        </div>
-                        <div className="text-xs text-muted-foreground mb-3">{item.restaurantName}</div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-semibold text-primary">{item.calories} kcal</span>
-                          <Button size="sm" variant="secondary" className="h-7 text-xs rounded-full" onClick={() => handleQuickAdd(item)} disabled={createLog.isPending}>
-                            <Plus className="w-3 h-3 mr-1" /> Add
-                          </Button>
+                <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
+                  {groupedResults.length > 0 ? (
+                    groupedResults.map(([restaurant, items]) => (
+                      <div key={restaurant}>
+                        <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">{restaurant}</div>
+                        <div className="space-y-2">
+                          {items.map((item) => (
+                            <div key={item.id} className="p-3 border border-border rounded-xl bg-card hover:border-primary/50 transition-colors">
+                              <div className="flex justify-between items-start gap-2 mb-2">
+                                <span className="font-medium text-sm leading-tight">{item.name}</span>
+                                {item.isHealthyPick && <CheckCircle2 className="w-4 h-4 text-accent shrink-0" />}
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm font-semibold text-primary">{item.calories} kcal</span>
+                                <Button size="sm" variant="secondary" className="h-7 text-xs rounded-full" onClick={() => handleQuickAdd(item)} disabled={isLogging}>
+                                  <Plus className="w-3 h-3 mr-1" /> Add
+                                </Button>
+                              </div>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     ))

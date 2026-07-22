@@ -1,6 +1,6 @@
 import { Feather } from "@expo/vector-icons";
 import { useQueryClient } from "@tanstack/react-query";
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { Alert } from "@/lib/alert";
 
@@ -12,12 +12,14 @@ import {
   useDeleteFoodLog,
   useGetDailySummary,
   useListFoodLogs,
+  useSearchMenuItems,
 } from "@workspace/api-client-react";
 import type { FoodLog, MealPhotoAnalysis } from "@workspace/api-client-react";
 
 import { Card, Chip, EmptyState, LuxeButton, LuxeInput, SectionTitle } from "@/components/ui";
 import { NutritionFactsLabel } from "@/components/NutritionFactsLabel";
 import { useColors } from "@/hooks/useColors";
+import { useLogMenuItem } from "@/hooks/useLogMenuItem";
 import { pickImageAsset, todayStr } from "@/lib/luxe";
 
 const MEAL_TYPES = ["breakfast", "lunch", "dinner", "snack"] as const;
@@ -116,6 +118,23 @@ export function FoodTab() {
   const [servings, setServings] = useState("1");
   const [servingSize, setServingSize] = useState("");
   const [showMore, setShowMore] = useState(false);
+
+  const [menuQuery, setMenuQuery] = useState("");
+  const menuSearch = useSearchMenuItems(
+    { q: menuQuery },
+    { query: { enabled: menuQuery.trim().length > 2, queryKey: ["searchMenuItems", { q: menuQuery }] } },
+  );
+  const { promptLog, isPending: isLogging } = useLogMenuItem();
+  const menuGroups = useMemo(() => {
+    const groups = new Map<string, NonNullable<typeof menuSearch.data>>();
+    (menuSearch.data ?? []).forEach((it) => {
+      const key = it.restaurantName ?? "Other";
+      const arr = groups.get(key) ?? [];
+      arr.push(it);
+      groups.set(key, arr);
+    });
+    return Array.from(groups.entries());
+  }, [menuSearch.data]);
 
   const analyze = useAnalyzeMealPhoto();
   const [scanning, setScanning] = useState(false);
@@ -509,6 +528,115 @@ export function FoodTab() {
           loading={createLog.isPending}
           disabled={!foodName.trim() || !calories.trim()}
         />
+      </Card>
+
+      <SectionTitle>Quick add from restaurants</SectionTitle>
+      <Card style={{ gap: 12 }}>
+        <LuxeInput
+          placeholder="Search restaurants or menu items..."
+          value={menuQuery}
+          onChangeText={setMenuQuery}
+        />
+        {menuQuery.trim().length > 2 ? (
+          menuGroups.length > 0 ? (
+            <View style={{ gap: 14 }}>
+              {menuGroups.map(([restaurant, group]) => (
+                <View key={restaurant} style={{ gap: 8 }}>
+                  <Text
+                    style={{
+                      fontFamily: "Inter_600SemiBold",
+                      fontSize: 12,
+                      color: c.mutedForeground,
+                      textTransform: "uppercase",
+                      letterSpacing: 0.5,
+                    }}
+                  >
+                    {restaurant}
+                  </Text>
+                  {group.map((mi) => (
+                    <View
+                      key={mi.id}
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 10,
+                        borderWidth: 1,
+                        borderColor: mi.isHealthyPick ? c.accent : c.border,
+                        borderRadius: 12,
+                        padding: 12,
+                      }}
+                    >
+                      <View style={{ flex: 1 }}>
+                        <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                          <Text
+                            style={{
+                              fontFamily: "Inter_600SemiBold",
+                              fontSize: 14,
+                              color: c.foreground,
+                              flexShrink: 1,
+                            }}
+                          >
+                            {mi.name}
+                          </Text>
+                          {mi.isHealthyPick ? (
+                            <Feather name="check-circle" size={14} color={c.accent} />
+                          ) : null}
+                        </View>
+                        <Text
+                          style={{
+                            fontFamily: "Inter_500Medium",
+                            fontSize: 12,
+                            color: c.tint,
+                            marginTop: 2,
+                          }}
+                        >
+                          {mi.calories} cal
+                        </Text>
+                      </View>
+                      <Pressable
+                        onPress={() => promptLog(mi)}
+                        disabled={isLogging}
+                        hitSlop={8}
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 4,
+                          backgroundColor: c.secondary,
+                          paddingHorizontal: 12,
+                          paddingVertical: 8,
+                          borderRadius: 999,
+                        }}
+                      >
+                        <Feather name="plus" size={14} color={c.foreground} />
+                        <Text
+                          style={{ fontFamily: "Inter_600SemiBold", fontSize: 13, color: c.foreground }}
+                        >
+                          Log
+                        </Text>
+                      </Pressable>
+                    </View>
+                  ))}
+                </View>
+              ))}
+            </View>
+          ) : (
+            <Text
+              style={{
+                fontFamily: "Inter_400Regular",
+                fontSize: 13,
+                color: c.mutedForeground,
+                textAlign: "center",
+                paddingVertical: 8,
+              }}
+            >
+              No matching items found.
+            </Text>
+          )
+        ) : (
+          <Text style={{ fontFamily: "Inter_400Regular", fontSize: 12, color: c.mutedForeground }}>
+            Search any local restaurant to log a dish with full nutrition in one tap.
+          </Text>
+        )}
       </Card>
 
       <SectionTitle>Today's meals</SectionTitle>

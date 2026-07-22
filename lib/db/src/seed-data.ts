@@ -9,6 +9,7 @@ import {
   appSettingsTable,
   rewardItemsTable,
 } from "./schema";
+import { RESTAURANT_MENU_EXTRA } from "./restaurant-menu-extra";
 
 const BOOKING_URL = "https://hklqy.myaestheticrecord.com/online-booking";
 
@@ -47,6 +48,13 @@ type MenuItemSeed = {
   proteinG: number | null;
   carbsG: number | null;
   fatG: number | null;
+  // Extended nutrients are optional on hand-curated items (they render "—");
+  // the AI-generated extra menus (restaurant-menu-extra.ts) always provide them.
+  satFatG?: number | null;
+  fiberG?: number | null;
+  sugarG?: number | null;
+  sodiumMg?: number | null;
+  cholesterolMg?: number | null;
   isHealthyPick: boolean;
   orderingTip: string | null;
 };
@@ -229,11 +237,21 @@ async function seedRestaurants(tx: Tx, log: LogFn) {
 
   const existingItems = await tx.select().from(menuItemsTable);
   const itemKeys = new Set(existingItems.map((i) => `${i.restaurantId}:${i.name}`));
+  const extraByName = new Map(RESTAURANT_MENU_EXTRA.map((e) => [e.restaurant, e.items]));
   const itemRows = RESTAURANT_SEED.flatMap((r) => {
     const restaurantId = rid.get(r.name);
     if (restaurantId == null) return [];
-    return r.items
-      .filter((item) => !itemKeys.has(`${restaurantId}:${item.name}`))
+    // Hand-curated items first so their healthy-pick/tip curation wins any
+    // case-insensitive name collision with a generated item.
+    const combined = [...r.items, ...(extraByName.get(r.name) ?? [])];
+    const seenNames = new Set<string>();
+    return combined
+      .filter((item) => {
+        const lower = item.name.toLowerCase();
+        if (seenNames.has(lower)) return false;
+        seenNames.add(lower);
+        return !itemKeys.has(`${restaurantId}:${item.name}`);
+      })
       .map((item) => ({ ...item, restaurantId }));
   });
   if (itemRows.length > 0) {

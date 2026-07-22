@@ -116,12 +116,18 @@ router.get("/menu-items/search", async (req, res): Promise<void> => {
     res.status(400).json({ error: query.error.message });
     return;
   }
+  const q = `%${query.data.q}%`;
   const rows = await db
     .select(menuItemSelect)
     .from(menuItemsTable)
     .innerJoin(restaurantsTable, eq(menuItemsTable.restaurantId, restaurantsTable.id))
-    .where(and(ilike(menuItemsTable.name, `%${query.data.q}%`), visibleRestaurants(userIdOf(res))))
-    .orderBy(asc(menuItemsTable.calories))
+    .where(
+      and(
+        or(ilike(menuItemsTable.name, q), ilike(restaurantsTable.name, q)),
+        visibleRestaurants(userIdOf(res)),
+      ),
+    )
+    .orderBy(asc(restaurantsTable.name), asc(menuItemsTable.calories))
     .limit(50);
   res.json(SearchMenuItemsResponse.parse(rows));
 });

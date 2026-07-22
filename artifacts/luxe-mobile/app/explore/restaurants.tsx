@@ -26,6 +26,7 @@ import {
 } from "@/components/ui";
 import { NutritionFactsLabel } from "@/components/NutritionFactsLabel";
 import { useColors } from "@/hooks/useColors";
+import { useLogMenuItem } from "@/hooks/useLogMenuItem";
 import { Alert } from "@/lib/alert";
 
 function openDoorDash(name: string) {
@@ -450,6 +451,7 @@ function RestaurantMenu({ restaurantId }: { restaurantId: number }) {
 function MenuItemRow({ item }: { item: MenuItem }) {
   const c = useColors();
   const [open, setOpen] = useState(false);
+  const { promptLog, isPending: isLogging } = useLogMenuItem();
   return (
     <View
       style={{
@@ -518,6 +520,25 @@ function MenuItemRow({ item }: { item: MenuItem }) {
           </Text>
         </View>
       ) : null}
+      <Pressable
+        onPress={() => promptLog(item)}
+        disabled={isLogging}
+        style={{
+          marginTop: 12,
+          flexDirection: "row",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 6,
+          backgroundColor: c.secondary,
+          paddingVertical: 10,
+          borderRadius: 10,
+        }}
+      >
+        <Feather name="plus" size={15} color={c.foreground} />
+        <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 13, color: c.foreground }}>
+          Log to food diary
+        </Text>
+      </Pressable>
     </View>
   );
 }

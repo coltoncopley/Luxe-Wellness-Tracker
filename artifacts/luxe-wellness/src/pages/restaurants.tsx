@@ -36,9 +36,54 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { NutritionFactsLabel } from "@/components/nutrition-facts-label";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { useLogMenuItem, MEAL_TYPES } from "@/hooks/use-log-menu-item";
 
 function doorDashUrl(name: string) {
   return `https://www.doordash.com/search/store/${encodeURIComponent(name)}`;
+}
+
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+/** Dropdown "Log" button — pick a meal, logs the item to today's food log. */
+function LogMenuItemButton({ item, restaurantName }: { item: MenuItem; restaurantName?: string }) {
+  const { logMenuItem, isPending } = useLogMenuItem();
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          size="sm"
+          variant="secondary"
+          className="h-7 text-xs rounded-full shrink-0"
+          disabled={isPending}
+          data-testid={`button-log-item-${item.id}`}
+        >
+          <Plus className="w-3 h-3 mr-1" /> Log
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        <DropdownMenuLabel>Log to today's…</DropdownMenuLabel>
+        {MEAL_TYPES.map((m) => (
+          <DropdownMenuItem
+            key={m}
+            className="capitalize"
+            onClick={() => logMenuItem({ ...item, restaurantName }, { date: todayStr(), mealType: m })}
+          >
+            {m}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
 }
 
 function MenuItemNutrition({ item }: { item: MenuItem }) {
@@ -546,8 +591,9 @@ function RestaurantModal({
                             </span>
                           </div>
                         </div>
-                        <div className="px-4 sm:px-6 pb-4 sm:pb-6">
+                        <div className="px-4 sm:px-6 pb-4 sm:pb-6 flex items-center justify-between gap-2">
                           <MenuItemNutrition item={item} />
+                          <LogMenuItemButton item={item} restaurantName={restaurantName} />
                         </div>
                       </CardContent>
                     </Card>
@@ -574,29 +620,32 @@ function RestaurantModal({
                       </div>
                       <div className="flex items-start justify-between mt-3 gap-2">
                         <MenuItemNutrition item={item} />
-                        {isMine && (
-                          <div className="flex gap-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7"
-                              onClick={() => setEditorItem(item)}
-                              data-testid={`button-edit-item-${item.id}`}
-                            >
-                              <Pencil className="w-3.5 h-3.5" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7 text-destructive hover:text-destructive"
-                              onClick={() => removeItem(item)}
-                              disabled={deleteItemMutation.isPending}
-                              data-testid={`button-delete-item-${item.id}`}
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </Button>
-                          </div>
-                        )}
+                        <div className="flex items-center gap-1 shrink-0">
+                          <LogMenuItemButton item={item} restaurantName={restaurantName} />
+                          {isMine && (
+                            <>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7"
+                                onClick={() => setEditorItem(item)}
+                                data-testid={`button-edit-item-${item.id}`}
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-7 w-7 text-destructive hover:text-destructive"
+                                onClick={() => removeItem(item)}
+                                disabled={deleteItemMutation.isPending}
+                                data-testid={`button-delete-item-${item.id}`}
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            </>
+                          )}
+                        </div>
                       </div>
                     </div>
                   ))}
