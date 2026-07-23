@@ -1,4 +1,4 @@
-import { sql } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { db } from "./index";
 import {
   servicesTable,
@@ -223,7 +223,13 @@ const RESTAURANT_SEED: {
 ];
 
 async function seedRestaurants(tx: Tx, log: LogFn) {
-  const existing = await tx.select().from(restaurantsTable);
+  // Curated (global) restaurants only: a patient-created restaurant that happens
+  // to share a chain name must never be matched here — otherwise the seed could
+  // insert into (or the nutrition sync could overwrite) a patient-private menu.
+  const existing = await tx
+    .select()
+    .from(restaurantsTable)
+    .where(isNull(restaurantsTable.ownerUserId));
   const rid = new Map(existing.map((r) => [r.name, r.id]));
 
   const missing = RESTAURANT_SEED.filter((r) => !rid.has(r.name));
@@ -263,6 +269,65 @@ async function seedRestaurants(tx: Tx, log: LogFn) {
   } else {
     log(`Seeded ${missing.length} restaurants and ${itemRows.length} menu items.`);
   }
+}
+
+/**
+ * Bump this whenever the nutrition values in RESTAURANT_MENU_EXTRA are
+ * refreshed (e.g. by scripts/src/enrich-menus.ts). Existing rows are then
+ * updated in place on the next seed run (dev: manual seed; prod: startup
+ * self-seed) — no manual SQL needed. Only the eight nutrition columns are
+ * touched; names, healthy-pick flags, and ordering tips are preserved.
+ */
+const MENU_NUTRITION_VERSION = 2;
+
+async function syncMenuNutrition(tx: Tx, log: LogFn) {
+  const [row] = await tx
+    .select()
+    .from(appSettingsTable)
+    .where(eq(appSettingsTable.key, "menu_nutrition_version"));
+  const stored = row ? parseInt(row.value, 10) : 0;
+  if (Number.isFinite(stored) && stored >= MENU_NUTRITION_VERSION) return;
+
+  // Curated restaurants only — never touch patient-private menus (see above).
+  const curated = await tx
+    .select()
+    .from(restaurantsTable)
+    .where(isNull(restaurantsTable.ownerUserId));
+  const rid = new Map(curated.map((r) => [r.name, r.id]));
+
+  let updated = 0;
+  for (const entry of RESTAURANT_MENU_EXTRA) {
+    const restaurantId = rid.get(entry.restaurant);
+    if (restaurantId == null) continue;
+    for (const item of entry.items) {
+      const result = await tx
+        .update(menuItemsTable)
+        .set({
+          calories: item.calories,
+          proteinG: item.proteinG,
+          carbsG: item.carbsG,
+          fatG: item.fatG,
+          satFatG: item.satFatG,
+          fiberG: item.fiberG,
+          sugarG: item.sugarG,
+          sodiumMg: item.sodiumMg,
+          cholesterolMg: item.cholesterolMg,
+        })
+        .where(
+          and(eq(menuItemsTable.restaurantId, restaurantId), eq(menuItemsTable.name, item.name)),
+        );
+      updated += result.rowCount ?? 0;
+    }
+  }
+
+  await tx
+    .insert(appSettingsTable)
+    .values({ key: "menu_nutrition_version", value: String(MENU_NUTRITION_VERSION) })
+    .onConflictDoUpdate({
+      target: appSettingsTable.key,
+      set: { value: String(MENU_NUTRITION_VERSION) },
+    });
+  log(`Menu nutrition sync v${MENU_NUTRITION_VERSION}: refreshed ${updated} menu items.`);
 }
 
 async function seedServices(tx: Tx, log: LogFn) {
@@ -344,6 +409,7 @@ export async function seedCoreData(log: LogFn = () => {}): Promise<void> {
     await tx.execute(sql`SELECT pg_advisory_xact_lock(${SEED_LOCK_KEY})`);
     await seedSettingsAndRewards(tx, log);
     await seedRestaurants(tx, log);
+    await syncMenuNutrition(tx, log);
     await seedServices(tx, log);
     await seedStaff(tx, log);
     await seedTips(tx, log);

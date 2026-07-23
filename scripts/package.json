@@ -7,7 +7,8 @@
     "hello": "tsx ./src/hello.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "seed": "tsx ./src/seed.ts",
-    "gen-menus": "tsx ./src/gen-menus.ts"
+    "gen-menus": "tsx ./src/gen-menus.ts",
+    "enrich-menus": "tsx ./src/enrich-menus.ts"
   },
   "devDependencies": {
     "@types/node": "catalog:",
