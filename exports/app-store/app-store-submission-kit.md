@@ -2,7 +2,9 @@
 
 Everything needed to submit the LUXE **mobile app** (`artifacts/luxe-mobile`, Expo / React Native) to the Apple App Store, plus the exact steps you still need to run.
 
-**Current status (updated 2026-07-08):**
+**Current status (updated 2026-07-23):**
+- ✅ App version bumped to **1.1.0** in the project (required so Apple accepts a new build)
+- ✅ New since the last kit update: **chain-restaurant nutrition search** (search national chains like McDonald's or Olive Garden, see their real published nutrition, log in one tap) — see the "What's New" text in §1b
 - ✅ Native iOS app exists (Expo/React Native, reuses the deployed backend)
 - ✅ Backend deployed & healthy at `https://luxewellnessapp.com`
 - ✅ Patient accounts + per-patient private data (Clerk auth)
@@ -39,6 +41,7 @@ Everything needed to submit the LUXE **mobile app** (`artifacts/luxe-mobile`, Ex
 > EAT SMARTER
 > • Log meals in seconds with calories, protein, carbs, and fat
 > • Snap a photo of your plate — AI estimates the nutrition for you
+> • Search national chain restaurants for real published nutrition and log items in one tap
 > • Browse local restaurant menus with healthy picks and ordering tips
 > • Daily calorie summary so you always know where you stand
 >
@@ -64,6 +67,13 @@ Everything needed to submit the LUXE **mobile app** (`artifacts/luxe-mobile`, Ex
 > LUXE Wellness and Aesthetics is a physician-owned med spa led by Dr. Copley in South Point, OH.
 >
 > Full access to premium features is part of the LUXE Membership ($4.99/month), managed on our website. This app is a wellness companion, not a medical device. It does not provide medical advice, diagnosis, or treatment. Always consult your healthcare provider about medical questions.
+
+### 1b. "What's New in This Version" (paste for version 1.1.0)
+
+> • NEW: Chain restaurant search — look up real published nutrition for national & regional chains and log menu items to your food diary in one tap
+> • Performance improvements and bug fixes
+
+(If this is your FIRST submission and 1.0 was never approved, skip this — the "What's New" field only appears for updates.)
 
 **Keywords** (100 char max)
 > med spa,wellness,GLP-1,weight tracker,glow,skincare,botox,aesthetics,food log,rewards,South Point
@@ -159,6 +169,14 @@ Captured drafts live in `screenshots/appstore/`:
 ---
 
 ## 7. What you still need to do — step by step
+
+### If the app is ALREADY live on the App Store (shipping the 1.1.0 update)
+1. Run a new build from Replit: **Publish** (top right) → **App Store / iOS** tab → build & upload (~20–40 min). The project is already set to version 1.1.0.
+2. In appstoreconnect.apple.com → **My Apps → LUXE Wellness**, click the **"+"** next to "iOS App" and create version **1.1.0**.
+3. Paste the "What's New" text from §1b, select the new build once it finishes processing (10–30 min after upload), and click **Submit for Review**. Everything else (screenshots, privacy answers, URLs) carries over from the live version — no need to redo it.
+4. Apple typically approves updates in 1–3 days; existing users get the update automatically.
+
+### If the app is NOT yet on the App Store, follow A–C below:
 
 ### A. Build & upload the iOS app — done from Replit, no command line
 1. Open the project on **replit.com** in a browser.
