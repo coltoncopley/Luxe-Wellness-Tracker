@@ -21,6 +21,7 @@ export type LoggableMenuItem = {
   sugarG?: number | null;
   sodiumMg?: number | null;
   cholesterolMg?: number | null;
+  servingSize?: string | null;
 };
 
 export const MEAL_TYPES = ["breakfast", "lunch", "dinner", "snack"] as const;
@@ -57,6 +58,7 @@ export function useLogMenuItem() {
           sugarG: item.sugarG ?? undefined,
           sodiumMg: item.sodiumMg ?? undefined,
           cholesterolMg: item.cholesterolMg ?? undefined,
+          servingSize: item.servingSize ?? undefined,
         },
       },
       {

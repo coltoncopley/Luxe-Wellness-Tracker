@@ -642,6 +642,34 @@ export const GetChainMenuItemResponse = zod.object({
 
 
 /**
+ * @summary Look up a packaged food product by barcode (UPC/EAN) with published nutrition
+ */
+export const getBarcodeProductPathBarcodeRegExp = new RegExp('^[0-9]{6,14}$');
+
+
+export const GetBarcodeProductParams = zod.object({
+  "barcode": zod.coerce.string().regex(getBarcodeProductPathBarcodeRegExp)
+})
+
+export const GetBarcodeProductResponse = zod.object({
+  "barcode": zod.string(),
+  "name": zod.string(),
+  "brand": zod.string().nullish(),
+  "servingSize": zod.string().nullish(),
+  "perServing": zod.boolean().describe('true = nutrition is per labeled serving; false = per 100 g'),
+  "calories": zod.number(),
+  "proteinG": zod.number().nullish(),
+  "carbsG": zod.number().nullish(),
+  "fatG": zod.number().nullish(),
+  "satFatG": zod.number().nullish(),
+  "fiberG": zod.number().nullish(),
+  "sugarG": zod.number().nullish(),
+  "sodiumMg": zod.number().nullish(),
+  "imageUrl": zod.string().nullish()
+})
+
+
+/**
  * @summary List food log entries, optionally by date (YYYY-MM-DD)
  */
 export const ListFoodLogsQueryParams = zod.object({

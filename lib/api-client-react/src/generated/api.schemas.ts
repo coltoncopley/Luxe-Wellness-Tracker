@@ -885,6 +885,34 @@ export interface ChainMenuItem {
   servingSize?: string | null;
 }
 
+export interface BarcodeProduct {
+  barcode: string;
+  name: string;
+  /** @nullable */
+  brand?: string | null;
+  /** @nullable */
+  servingSize?: string | null;
+  /** true = nutrition is per labeled serving; false = per 100 g */
+  perServing: boolean;
+  calories: number;
+  /** @nullable */
+  proteinG?: number | null;
+  /** @nullable */
+  carbsG?: number | null;
+  /** @nullable */
+  fatG?: number | null;
+  /** @nullable */
+  satFatG?: number | null;
+  /** @nullable */
+  fiberG?: number | null;
+  /** @nullable */
+  sugarG?: number | null;
+  /** @nullable */
+  sodiumMg?: number | null;
+  /** @nullable */
+  imageUrl?: string | null;
+}
+
 export interface FoodLog {
   id: number;
   date: string;

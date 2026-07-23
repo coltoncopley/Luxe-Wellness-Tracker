@@ -17,9 +17,10 @@ import { format } from "date-fns";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
-import { Utensils, Flame, Trash2, Plus, ChevronLeft, ChevronRight, Search, CheckCircle2, ChevronDown, ShieldCheck, Loader2 } from "lucide-react";
+import { Utensils, Flame, Trash2, Plus, ChevronLeft, ChevronRight, Search, CheckCircle2, ChevronDown, ShieldCheck, Loader2, ScanBarcode } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MealScanner } from "@/components/meal-scanner";
+import { BarcodeScannerDialog } from "@/components/barcode-scanner-dialog";
 import { NutritionFactsLabel } from "@/components/nutrition-facts-label";
 import { useLogMenuItem, MEAL_TYPES, defaultMealType, type LoggableMenuItem } from "@/hooks/use-log-menu-item";
 
@@ -99,6 +100,7 @@ export default function Food() {
 
   // State for add manual form
   const [isAddOpen, setIsAddOpen] = useState(false);
+  const [isScanOpen, setIsScanOpen] = useState(false);
   const [showMoreNutrients, setShowMoreNutrients] = useState(false);
   const emptyForm = {
     mealType: "breakfast",
@@ -529,7 +531,7 @@ export default function Food() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="relative mb-4">
+              <div className="relative mb-3">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input 
                   placeholder="Search restaurants or menu items..." 
@@ -538,6 +540,19 @@ export default function Food() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
+              <Button
+                variant="outline"
+                className="w-full mb-4 rounded-full"
+                onClick={() => setIsScanOpen(true)}
+              >
+                <ScanBarcode className="w-4 h-4 mr-2" /> Scan a barcode
+              </Button>
+              <BarcodeScannerDialog
+                open={isScanOpen}
+                onOpenChange={setIsScanOpen}
+                date={selectedDate}
+                initialMealType={quickMealType}
+              />
 
               {searchQuery.length > 2 && (
                 <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">

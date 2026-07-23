@@ -11,6 +11,11 @@ import {
   ChainMenuUnavailableError,
 } from "../lib/spoonacular";
 import {
+  getBarcodeProduct,
+  BarcodeUnavailableError,
+  BarcodeNotFoundError,
+} from "../lib/openfoodfacts";
+import {
   AnalyzeMealPhotoBody,
   AnalyzeMealPhotoResponse,
   CreateCustomRestaurantBody,
@@ -36,6 +41,8 @@ import {
   SearchChainMenuItemsResponse,
   GetChainMenuItemParams,
   GetChainMenuItemResponse,
+  GetBarcodeProductParams,
+  GetBarcodeProductResponse,
   ListFoodLogsQueryParams,
   ListFoodLogsResponse,
   CreateFoodLogBody,
@@ -203,6 +210,54 @@ router.get("/chain-menu-items/:id", rateLimitChainMenu, async (req, res): Promis
     }
     if (e instanceof Error && e.name === "SpoonacularNotFound") {
       res.status(404).json({ error: "Menu item not found" });
+      return;
+    }
+    throw e;
+  }
+});
+
+// --- Barcode product lookup (Open Food Facts, free/open database) -----------
+// Scan a packaged food's UPC/EAN → real label nutrition → one-tap log. OFF has
+// no API key or hard quota, but we rate-limit per user to stay polite and the
+// module caches results 24h. Premium-gated (food router), NOT requirePatient
+// (staff may self-track).
+const BARCODE_HOURLY_LIMIT = 60;
+const barcodeAttempts = new Map<string, { count: number; resetAt: number }>();
+
+function rateLimitBarcode(_req: Request, res: Response, next: NextFunction): void {
+  const userId = userIdOf(res);
+  const now = Date.now();
+  const entry = barcodeAttempts.get(userId);
+  if (!entry || now >= entry.resetAt) {
+    barcodeAttempts.set(userId, { count: 1, resetAt: now + 60 * 60 * 1000 });
+    next();
+    return;
+  }
+  if (entry.count >= BARCODE_HOURLY_LIMIT) {
+    res.status(429).json({ error: "You're going a bit fast — try again in a little while" });
+    return;
+  }
+  entry.count += 1;
+  next();
+}
+
+router.get("/barcode-products/:barcode", rateLimitBarcode, async (req, res): Promise<void> => {
+  const params = GetBarcodeProductParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: "Invalid barcode" });
+    return;
+  }
+  try {
+    const product = await getBarcodeProduct(params.data.barcode);
+    res.json(GetBarcodeProductResponse.parse(product));
+  } catch (e) {
+    if (e instanceof BarcodeNotFoundError) {
+      res.status(404).json({ error: "Product not found — try adding it manually" });
+      return;
+    }
+    if (e instanceof BarcodeUnavailableError) {
+      req.log.warn({ reason: e.reason }, "barcode lookup unavailable");
+      res.status(503).json({ error: "Barcode database temporarily unavailable" });
       return;
     }
     throw e;

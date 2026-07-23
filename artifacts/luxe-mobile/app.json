@@ -35,9 +35,17 @@
       "expo-web-browser",
       "@clerk/expo",
       [
+        "expo-camera",
+        {
+          "cameraPermission": "LUXE uses your camera to scan food barcodes so you can log packaged foods instantly.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
+      ],
+      [
         "expo-image-picker",
         {
-          "cameraPermission": "LUXE uses your camera to take progress photos, skin scan selfies, and photos of product labels.",
+          "cameraPermission": "LUXE uses your camera to take progress photos, skin scan selfies, photos of product labels, and to scan food barcodes.",
           "photosPermission": "LUXE uses your photo library so you can add progress photos and scan product labels."
         }
       ],

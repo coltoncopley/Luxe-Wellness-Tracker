@@ -19,6 +19,7 @@ import {
 import type { ChainMenuSearchResult, FoodLog, MealPhotoAnalysis } from "@workspace/api-client-react";
 
 import { Card, Chip, EmptyState, LuxeButton, LuxeInput, SectionTitle } from "@/components/ui";
+import { BarcodeScanCard } from "@/components/track/BarcodeScanCard";
 import { NutritionFactsLabel } from "@/components/NutritionFactsLabel";
 import { useColors } from "@/hooks/useColors";
 import { useLogMenuItem } from "@/hooks/useLogMenuItem";
@@ -682,6 +683,9 @@ export function FoodTab() {
           </Text>
         )}
       </Card>
+
+      <SectionTitle>Scan a barcode</SectionTitle>
+      <BarcodeScanCard />
 
       <SectionTitle>Chain restaurants</SectionTitle>
       <Card style={{ gap: 12 }}>

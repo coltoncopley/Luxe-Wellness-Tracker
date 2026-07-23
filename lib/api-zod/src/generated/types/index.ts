@@ -42,6 +42,7 @@ export * from './appleHealthImportInputSleepItem';
 export * from './appointment';
 export * from './appointmentInput';
 export * from './appointmentUpdate';
+export * from './barcodeProduct';
 export * from './billingStatus';
 export * from './billingStatusStatus';
 export * from './birthdayResponse';

@@ -41,6 +41,7 @@ import type {
   Appointment,
   AppointmentInput,
   AppointmentUpdate,
+  BarcodeProduct,
   BillingStatus,
   BirthdayResponse,
   Briefing,
@@ -2554,6 +2555,83 @@ export function useGetChainMenuItem<TData = Awaited<ReturnType<typeof getChainMe
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetChainMenuItemQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetBarcodeProductUrl = (barcode: string,) => {
+
+
+
+
+  return `/api/barcode-products/${barcode}`
+}
+
+/**
+ * @summary Look up a packaged food product by barcode (UPC/EAN) with published nutrition
+ */
+export const getBarcodeProduct = async (barcode: string, options?: RequestInit): Promise<BarcodeProduct> => {
+
+  return customFetch<BarcodeProduct>(getGetBarcodeProductUrl(barcode),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetBarcodeProductQueryKey = (barcode: string,) => {
+    return [
+    `/api/barcode-products/${barcode}`
+    ] as const;
+    }
+
+
+export const getGetBarcodeProductQueryOptions = <TData = Awaited<ReturnType<typeof getBarcodeProduct>>, TError = ErrorType<void>>(barcode: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBarcodeProduct>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetBarcodeProductQueryKey(barcode);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getBarcodeProduct>>> = ({ signal }) => getBarcodeProduct(barcode, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: barcode !== null && barcode !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getBarcodeProduct>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetBarcodeProductQueryResult = NonNullable<Awaited<ReturnType<typeof getBarcodeProduct>>>
+export type GetBarcodeProductQueryError = ErrorType<void>
+
+
+/**
+ * @summary Look up a packaged food product by barcode (UPC/EAN) with published nutrition
+ */
+
+export function useGetBarcodeProduct<TData = Awaited<ReturnType<typeof getBarcodeProduct>>, TError = ErrorType<void>>(
+ barcode: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getBarcodeProduct>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetBarcodeProductQueryOptions(barcode,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

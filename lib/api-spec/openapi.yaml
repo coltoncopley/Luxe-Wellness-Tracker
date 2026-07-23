@@ -593,6 +593,29 @@ paths:
           description: Not found
         "503":
           description: Chain menu database temporarily unavailable
+  /barcode-products/{barcode}:
+    get:
+      operationId: getBarcodeProduct
+      tags: [food]
+      summary: Look up a packaged food product by barcode (UPC/EAN) with published nutrition
+      parameters:
+        - name: barcode
+          in: path
+          required: true
+          schema:
+            type: string
+            pattern: "^[0-9]{6,14}$"
+      responses:
+        "200":
+          description: Packaged product with nutrition (per serving when available, else per 100 g)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BarcodeProduct"
+        "404":
+          description: Product not found in the barcode database
+        "503":
+          description: Barcode database temporarily unavailable
   /food-logs:
     get:
       operationId: listFoodLogs
@@ -3733,6 +3756,26 @@ components:
         sodiumMg: { type: ["number", "null"] }
         cholesterolMg: { type: ["number", "null"] }
         servingSize: { type: ["string", "null"] }
+    BarcodeProduct:
+      type: object
+      required: [barcode, name, calories, perServing]
+      properties:
+        barcode: { type: string }
+        name: { type: string }
+        brand: { type: ["string", "null"] }
+        servingSize: { type: ["string", "null"] }
+        perServing:
+          type: boolean
+          description: true = nutrition is per labeled serving; false = per 100 g
+        calories: { type: integer }
+        proteinG: { type: ["number", "null"] }
+        carbsG: { type: ["number", "null"] }
+        fatG: { type: ["number", "null"] }
+        satFatG: { type: ["number", "null"] }
+        fiberG: { type: ["number", "null"] }
+        sugarG: { type: ["number", "null"] }
+        sodiumMg: { type: ["number", "null"] }
+        imageUrl: { type: ["string", "null"] }
     FoodLog:
       type: object
       required: [id, date, mealType, foodName, calories, servings]
