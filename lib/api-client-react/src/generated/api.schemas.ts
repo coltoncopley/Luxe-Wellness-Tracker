@@ -851,6 +851,40 @@ export interface MenuItem {
   orderingTip?: string | null;
 }
 
+export interface ChainMenuSearchResult {
+  id: number;
+  name: string;
+  restaurantName: string;
+  /** @nullable */
+  imageUrl?: string | null;
+}
+
+export interface ChainMenuItem {
+  id: number;
+  name: string;
+  /** @nullable */
+  restaurantName?: string | null;
+  calories: number;
+  /** @nullable */
+  proteinG?: number | null;
+  /** @nullable */
+  carbsG?: number | null;
+  /** @nullable */
+  fatG?: number | null;
+  /** @nullable */
+  satFatG?: number | null;
+  /** @nullable */
+  fiberG?: number | null;
+  /** @nullable */
+  sugarG?: number | null;
+  /** @nullable */
+  sodiumMg?: number | null;
+  /** @nullable */
+  cholesterolMg?: number | null;
+  /** @nullable */
+  servingSize?: string | null;
+}
+
 export interface FoodLog {
   id: number;
   date: string;
@@ -2142,6 +2176,14 @@ export interface SyncResult {
 }
 
 export type SearchMenuItemsParams = {
+q: string;
+};
+
+export type SearchChainMenuItemsParams = {
+/**
+ * @minLength 1
+ * @maxLength 80
+ */
 q: string;
 };
 

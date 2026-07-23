@@ -12,3 +12,4 @@
 - [Express router.use scoping](express-middleware-scoping.md) — unscoped gates in `router.use(mw, subRouter)` run for ALL fall-through requests; path-scope role gates or later-mounted routers 403.
 - [Expo iOS build + Clerk pod](expo-ios-build-clerk.md) — "@clerk/expo" plugin must stay in app.json (iOS 17 min) or pod install crashes; Linux pod-install repro recipe; Apple sign-in needed for guideline 4.8.
 - [Drizzle push dev drift](drizzle-push-dev-drift.md) — push prompts on index-vs-constraint drift; diagnose and fix with `ADD CONSTRAINT ... USING INDEX`, never pipe blind answers.
+- [External quota-limited API endpoints](external-api-quota-endpoints.md) — rate-limit the detail/`:id` fetch too (not just search); detect fetch timeouts via `controller.signal.aborted`, not `instanceof Error`.

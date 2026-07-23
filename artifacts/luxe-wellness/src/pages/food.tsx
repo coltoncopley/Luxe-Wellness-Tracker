@@ -3,7 +3,10 @@ import {
   useListFoodLogs, useCreateFoodLog, useDeleteFoodLog, getListFoodLogsQueryKey,
   useGetDailySummary, getGetDailySummaryQueryKey,
   useSearchMenuItems,
+  useSearchChainMenuItems,
+  getChainMenuItem,
   type FoodLog,
+  type ChainMenuSearchResult,
 } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,7 +17,7 @@ import { format } from "date-fns";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Progress } from "@/components/ui/progress";
-import { Utensils, Flame, Trash2, Plus, ChevronLeft, ChevronRight, Search, CheckCircle2, ChevronDown } from "lucide-react";
+import { Utensils, Flame, Trash2, Plus, ChevronLeft, ChevronRight, Search, CheckCircle2, ChevronDown, ShieldCheck, Loader2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MealScanner } from "@/components/meal-scanner";
 import { NutritionFactsLabel } from "@/components/nutrition-facts-label";
@@ -134,6 +137,30 @@ export default function Food() {
     return Array.from(groups.entries());
   }, [searchResults]);
 
+  // Chain-restaurant search (Spoonacular) — fires on explicit submit to conserve quota.
+  const [chainQuery, setChainQuery] = useState("");
+  const [chainAddingId, setChainAddingId] = useState<number | null>(null);
+  const chainSearch = useSearchChainMenuItems(
+    { q: chainQuery },
+    {
+      query: {
+        enabled: chainQuery.length > 1,
+        retry: false,
+        queryKey: ["searchChainMenuItems", { q: chainQuery }],
+      },
+    },
+  );
+  const chainGroupedResults = useMemo(() => {
+    const groups = new Map<string, ChainMenuSearchResult[]>();
+    (chainSearch.data ?? []).forEach((it) => {
+      const key = it.restaurantName || "Other";
+      const arr = groups.get(key) ?? [];
+      arr.push(it);
+      groups.set(key, arr);
+    });
+    return Array.from(groups.entries());
+  }, [chainSearch.data]);
+
   // Date navigation
   const handlePrevDay = () => {
     const d = new Date(selectedDate);
@@ -187,6 +214,29 @@ export default function Food() {
       mealType: quickMealType,
       onSuccess: () => setSearchQuery(""),
     });
+  };
+
+  // Chain results have no nutrition until we fetch the item detail on demand.
+  const handleAddChain = async (result: ChainMenuSearchResult) => {
+    setChainAddingId(result.id);
+    try {
+      const detail = await getChainMenuItem(result.id);
+      logMenuItem(
+        { ...detail, restaurantName: detail.restaurantName ?? result.restaurantName },
+        {
+          date: selectedDate,
+          mealType: quickMealType,
+          onSuccess: () => {
+            setSearchQuery("");
+            setChainQuery("");
+          },
+        },
+      );
+    } catch {
+      toast.error("Couldn't load that item's nutrition. Please try again.");
+    } finally {
+      setChainAddingId(null);
+    }
   };
 
   const handleDelete = (id: number) => {
@@ -514,7 +564,84 @@ export default function Food() {
                       </div>
                     ))
                   ) : (
-                    <div className="text-center text-sm text-muted-foreground py-4">No matching items found.</div>
+                    <div className="text-center text-sm text-muted-foreground py-4">No matching local items found.</div>
+                  )}
+                </div>
+              )}
+
+              {searchQuery.trim().length > 1 && (
+                <div className="mt-4 pt-4 border-t border-border">
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <p className="text-xs text-muted-foreground leading-snug">
+                      Not seeing it? Search national &amp; chain restaurants.
+                    </p>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 text-xs rounded-full shrink-0"
+                      onClick={() => {
+                        const q = searchQuery.trim();
+                        if (q === chainQuery) chainSearch.refetch();
+                        else setChainQuery(q);
+                      }}
+                      disabled={chainSearch.isFetching && chainQuery === searchQuery.trim()}
+                    >
+                      {chainSearch.isFetching && chainQuery === searchQuery.trim() ? (
+                        <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                      ) : (
+                        <Search className="w-3 h-3 mr-1" />
+                      )}
+                      Search chains
+                    </Button>
+                  </div>
+
+                  {chainQuery.length > 1 && (
+                    <>
+                      {chainSearch.isFetching ? (
+                        <div className="text-center text-sm text-muted-foreground py-3">Searching chain menus…</div>
+                      ) : chainSearch.isError ? (
+                        <div className="text-center text-sm text-muted-foreground py-3">
+                          Chain menu search is unavailable right now. Please try again later.
+                        </div>
+                      ) : chainGroupedResults.length > 0 ? (
+                        <div className="space-y-4 max-h-[360px] overflow-y-auto pr-2">
+                          <div className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                            <ShieldCheck className="w-3.5 h-3.5 text-accent shrink-0" />
+                            <span>Verified nutrition · Powered by Spoonacular</span>
+                          </div>
+                          {chainGroupedResults.map(([restaurant, items]) => (
+                            <div key={restaurant}>
+                              <div className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">{restaurant}</div>
+                              <div className="space-y-2">
+                                {items.map((item) => (
+                                  <div key={item.id} className="p-3 border border-border rounded-xl bg-card hover:border-primary/50 transition-colors flex justify-between items-center gap-2">
+                                    <span className="font-medium text-sm leading-tight">{item.name}</span>
+                                    <Button
+                                      size="sm"
+                                      variant="secondary"
+                                      className="h-7 text-xs rounded-full shrink-0"
+                                      onClick={() => handleAddChain(item)}
+                                      disabled={isLogging || chainAddingId === item.id}
+                                    >
+                                      {chainAddingId === item.id ? (
+                                        <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                                      ) : (
+                                        <Plus className="w-3 h-3 mr-1" />
+                                      )}
+                                      Add
+                                    </Button>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center text-sm text-muted-foreground py-3">
+                          No chain menu matches for "{chainQuery}".
+                        </div>
+                      )}
+                    </>
                   )}
                 </div>
               )}

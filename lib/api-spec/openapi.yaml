@@ -547,6 +547,52 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/MenuItem"
+  /chain-menu-items/search:
+    get:
+      operationId: searchChainMenuItems
+      tags: [food]
+      summary: Search chain-restaurant menu items with real published nutrition (external database)
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 80
+      responses:
+        "200":
+          description: Matching chain-restaurant menu items
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ChainMenuSearchResult"
+        "503":
+          description: Chain menu database temporarily unavailable
+  /chain-menu-items/{id}:
+    get:
+      operationId: getChainMenuItem
+      tags: [food]
+      summary: Full nutrition for one chain-restaurant menu item
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Chain-restaurant menu item with full nutrition
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ChainMenuItem"
+        "404":
+          description: Not found
+        "503":
+          description: Chain menu database temporarily unavailable
   /food-logs:
     get:
       operationId: listFoodLogs
@@ -3662,6 +3708,31 @@ components:
         cholesterolMg: { type: ["number", "null"] }
         isHealthyPick: { type: boolean }
         orderingTip: { type: ["string", "null"] }
+    ChainMenuSearchResult:
+      type: object
+      required: [id, name, restaurantName]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        restaurantName: { type: string }
+        imageUrl: { type: ["string", "null"] }
+    ChainMenuItem:
+      type: object
+      required: [id, name, calories]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        restaurantName: { type: ["string", "null"] }
+        calories: { type: integer }
+        proteinG: { type: ["number", "null"] }
+        carbsG: { type: ["number", "null"] }
+        fatG: { type: ["number", "null"] }
+        satFatG: { type: ["number", "null"] }
+        fiberG: { type: ["number", "null"] }
+        sugarG: { type: ["number", "null"] }
+        sodiumMg: { type: ["number", "null"] }
+        cholesterolMg: { type: ["number", "null"] }
+        servingSize: { type: ["string", "null"] }
     FoodLog:
       type: object
       required: [id, date, mealType, foodName, calories, servings]

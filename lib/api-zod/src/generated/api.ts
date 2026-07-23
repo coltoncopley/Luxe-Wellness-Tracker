@@ -598,6 +598,50 @@ export const SearchMenuItemsResponse = zod.array(SearchMenuItemsResponseItem)
 
 
 /**
+ * @summary Search chain-restaurant menu items with real published nutrition (external database)
+ */
+export const searchChainMenuItemsQueryQMax = 80;
+
+
+
+export const SearchChainMenuItemsQueryParams = zod.object({
+  "q": zod.coerce.string().min(1).max(searchChainMenuItemsQueryQMax)
+})
+
+export const SearchChainMenuItemsResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "restaurantName": zod.string(),
+  "imageUrl": zod.string().nullish()
+})
+export const SearchChainMenuItemsResponse = zod.array(SearchChainMenuItemsResponseItem)
+
+
+/**
+ * @summary Full nutrition for one chain-restaurant menu item
+ */
+export const GetChainMenuItemParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetChainMenuItemResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "restaurantName": zod.string().nullish(),
+  "calories": zod.number(),
+  "proteinG": zod.number().nullish(),
+  "carbsG": zod.number().nullish(),
+  "fatG": zod.number().nullish(),
+  "satFatG": zod.number().nullish(),
+  "fiberG": zod.number().nullish(),
+  "sugarG": zod.number().nullish(),
+  "sodiumMg": zod.number().nullish(),
+  "cholesterolMg": zod.number().nullish(),
+  "servingSize": zod.string().nullish()
+})
+
+
+/**
  * @summary List food log entries, optionally by date (YYYY-MM-DD)
  */
 export const ListFoodLogsQueryParams = zod.object({

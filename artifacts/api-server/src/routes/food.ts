@@ -6,6 +6,11 @@ import { z } from "zod/v4";
 import { awardWithDailyCap, POINTS, FOOD_LOG_DAILY_CAP } from "../lib/rewards";
 import { userIdOf, requirePatient } from "../middlewares/auth";
 import {
+  searchChainMenuItems,
+  getChainMenuItem,
+  ChainMenuUnavailableError,
+} from "../lib/spoonacular";
+import {
   AnalyzeMealPhotoBody,
   AnalyzeMealPhotoResponse,
   CreateCustomRestaurantBody,
@@ -27,6 +32,10 @@ import {
   ListHealthyPicksResponse,
   SearchMenuItemsQueryParams,
   SearchMenuItemsResponse,
+  SearchChainMenuItemsQueryParams,
+  SearchChainMenuItemsResponse,
+  GetChainMenuItemParams,
+  GetChainMenuItemResponse,
   ListFoodLogsQueryParams,
   ListFoodLogsResponse,
   CreateFoodLogBody,
@@ -130,6 +139,74 @@ router.get("/menu-items/search", async (req, res): Promise<void> => {
     .orderBy(asc(restaurantsTable.name), asc(menuItemsTable.calories))
     .limit(50);
   res.json(SearchMenuItemsResponse.parse(rows));
+});
+
+// --- Chain-restaurant menu lookup (Spoonacular, real published nutrition) ---
+// Complements curated locals + AI custom restaurants. A single per-user hourly
+// bucket covers BOTH routes (search AND item detail) so no one can script the
+// item endpoint to drain the shared daily quota; the module layer adds a global
+// daily budget + 1h cache. Both routes stay premium-gated (food router).
+const CHAIN_MENU_HOURLY_LIMIT = 40;
+const chainMenuAttempts = new Map<string, { count: number; resetAt: number }>();
+
+function rateLimitChainMenu(_req: Request, res: Response, next: NextFunction): void {
+  const userId = userIdOf(res);
+  const now = Date.now();
+  const entry = chainMenuAttempts.get(userId);
+  if (!entry || now >= entry.resetAt) {
+    chainMenuAttempts.set(userId, { count: 1, resetAt: now + 60 * 60 * 1000 });
+    next();
+    return;
+  }
+  if (entry.count >= CHAIN_MENU_HOURLY_LIMIT) {
+    res.status(429).json({ error: "You're going a bit fast — try again in a little while" });
+    return;
+  }
+  entry.count += 1;
+  next();
+}
+
+// Register the literal "search" route BEFORE ":id" so it isn't captured as an id.
+router.get("/chain-menu-items/search", rateLimitChainMenu, async (req, res): Promise<void> => {
+  const query = SearchChainMenuItemsQueryParams.safeParse(req.query);
+  if (!query.success) {
+    res.status(400).json({ error: query.error.message });
+    return;
+  }
+  try {
+    const items = await searchChainMenuItems(query.data.q);
+    res.json(SearchChainMenuItemsResponse.parse(items));
+  } catch (e) {
+    if (e instanceof ChainMenuUnavailableError) {
+      req.log.warn({ reason: e.reason }, "chain menu search unavailable");
+      res.status(503).json({ error: "Chain menu database temporarily unavailable" });
+      return;
+    }
+    throw e;
+  }
+});
+
+router.get("/chain-menu-items/:id", rateLimitChainMenu, async (req, res): Promise<void> => {
+  const params = GetChainMenuItemParams.safeParse(req.params);
+  if (!params.success) {
+    res.status(400).json({ error: params.error.message });
+    return;
+  }
+  try {
+    const item = await getChainMenuItem(params.data.id);
+    res.json(GetChainMenuItemResponse.parse(item));
+  } catch (e) {
+    if (e instanceof ChainMenuUnavailableError) {
+      req.log.warn({ reason: e.reason }, "chain menu item unavailable");
+      res.status(503).json({ error: "Chain menu database temporarily unavailable" });
+      return;
+    }
+    if (e instanceof Error && e.name === "SpoonacularNotFound") {
+      res.status(404).json({ error: "Menu item not found" });
+      return;
+    }
+    throw e;
+  }
 });
 
 const MAX_CUSTOM_RESTAURANTS = 30;

@@ -44,6 +44,8 @@ import type {
   BillingStatus,
   BirthdayResponse,
   Briefing,
+  ChainMenuItem,
+  ChainMenuSearchResult,
   CheckoutSession,
   CheerList,
   ClaimReferralInput,
@@ -137,6 +139,7 @@ import type {
   RewardItemInput,
   RewardItemUpdate,
   RewardsSummary,
+  SearchChainMenuItemsParams,
   SearchMenuItemsParams,
   SendCheerInput,
   SendCheerResult,
@@ -2390,6 +2393,167 @@ export function useSearchMenuItems<TData = Awaited<ReturnType<typeof searchMenuI
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getSearchMenuItemsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getSearchChainMenuItemsUrl = (params: SearchChainMenuItemsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/chain-menu-items/search?${stringifiedParams}` : `/api/chain-menu-items/search`
+}
+
+/**
+ * @summary Search chain-restaurant menu items with real published nutrition (external database)
+ */
+export const searchChainMenuItems = async (params: SearchChainMenuItemsParams, options?: RequestInit): Promise<ChainMenuSearchResult[]> => {
+
+  return customFetch<ChainMenuSearchResult[]>(getSearchChainMenuItemsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getSearchChainMenuItemsQueryKey = (params?: SearchChainMenuItemsParams,) => {
+    return [
+    `/api/chain-menu-items/search`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getSearchChainMenuItemsQueryOptions = <TData = Awaited<ReturnType<typeof searchChainMenuItems>>, TError = ErrorType<void>>(params: SearchChainMenuItemsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof searchChainMenuItems>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getSearchChainMenuItemsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof searchChainMenuItems>>> = ({ signal }) => searchChainMenuItems(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof searchChainMenuItems>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type SearchChainMenuItemsQueryResult = NonNullable<Awaited<ReturnType<typeof searchChainMenuItems>>>
+export type SearchChainMenuItemsQueryError = ErrorType<void>
+
+
+/**
+ * @summary Search chain-restaurant menu items with real published nutrition (external database)
+ */
+
+export function useSearchChainMenuItems<TData = Awaited<ReturnType<typeof searchChainMenuItems>>, TError = ErrorType<void>>(
+ params: SearchChainMenuItemsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof searchChainMenuItems>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getSearchChainMenuItemsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetChainMenuItemUrl = (id: number,) => {
+
+
+
+
+  return `/api/chain-menu-items/${id}`
+}
+
+/**
+ * @summary Full nutrition for one chain-restaurant menu item
+ */
+export const getChainMenuItem = async (id: number, options?: RequestInit): Promise<ChainMenuItem> => {
+
+  return customFetch<ChainMenuItem>(getGetChainMenuItemUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetChainMenuItemQueryKey = (id: number,) => {
+    return [
+    `/api/chain-menu-items/${id}`
+    ] as const;
+    }
+
+
+export const getGetChainMenuItemQueryOptions = <TData = Awaited<ReturnType<typeof getChainMenuItem>>, TError = ErrorType<void>>(id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getChainMenuItem>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetChainMenuItemQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getChainMenuItem>>> = ({ signal }) => getChainMenuItem(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: id !== null && id !== undefined, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getChainMenuItem>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetChainMenuItemQueryResult = NonNullable<Awaited<ReturnType<typeof getChainMenuItem>>>
+export type GetChainMenuItemQueryError = ErrorType<void>
+
+
+/**
+ * @summary Full nutrition for one chain-restaurant menu item
+ */
+
+export function useGetChainMenuItem<TData = Awaited<ReturnType<typeof getChainMenuItem>>, TError = ErrorType<void>>(
+ id: number, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getChainMenuItem>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetChainMenuItemQueryOptions(id,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

@@ -13,8 +13,10 @@ import {
   useGetDailySummary,
   useListFoodLogs,
   useSearchMenuItems,
+  useSearchChainMenuItems,
+  getChainMenuItem,
 } from "@workspace/api-client-react";
-import type { FoodLog, MealPhotoAnalysis } from "@workspace/api-client-react";
+import type { ChainMenuSearchResult, FoodLog, MealPhotoAnalysis } from "@workspace/api-client-react";
 
 import { Card, Chip, EmptyState, LuxeButton, LuxeInput, SectionTitle } from "@/components/ui";
 import { NutritionFactsLabel } from "@/components/NutritionFactsLabel";
@@ -135,6 +137,48 @@ export function FoodTab() {
     });
     return Array.from(groups.entries());
   }, [menuSearch.data]);
+
+  // Chain-restaurant search (Spoonacular) — fires on explicit submit to conserve quota.
+  const [chainInput, setChainInput] = useState("");
+  const [chainQuery, setChainQuery] = useState("");
+  const [chainAddingId, setChainAddingId] = useState<number | null>(null);
+  const chainSearch = useSearchChainMenuItems(
+    { q: chainQuery },
+    {
+      query: {
+        enabled: chainQuery.trim().length > 1,
+        retry: false,
+        queryKey: ["searchChainMenuItems", { q: chainQuery }],
+      },
+    },
+  );
+  const runChainSearch = () => {
+    const q = chainInput.trim();
+    if (q === chainQuery) chainSearch.refetch();
+    else setChainQuery(q);
+  };
+  const chainGroups = useMemo(() => {
+    const groups = new Map<string, ChainMenuSearchResult[]>();
+    (chainSearch.data ?? []).forEach((it) => {
+      const key = it.restaurantName || "Other";
+      const arr = groups.get(key) ?? [];
+      arr.push(it);
+      groups.set(key, arr);
+    });
+    return Array.from(groups.entries());
+  }, [chainSearch.data]);
+
+  const handleAddChain = async (result: ChainMenuSearchResult) => {
+    setChainAddingId(result.id);
+    try {
+      const detail = await getChainMenuItem(result.id);
+      promptLog({ ...detail, restaurantName: detail.restaurantName ?? result.restaurantName });
+    } catch {
+      Alert.alert("Couldn't load", "That item's nutrition is unavailable right now. Please try again.");
+    } finally {
+      setChainAddingId(null);
+    }
+  };
 
   const analyze = useAnalyzeMealPhoto();
   const [scanning, setScanning] = useState(false);
@@ -637,6 +681,137 @@ export function FoodTab() {
             Search any local restaurant to log a dish with full nutrition in one tap.
           </Text>
         )}
+      </Card>
+
+      <SectionTitle>Chain restaurants</SectionTitle>
+      <Card style={{ gap: 12 }}>
+        <Text style={{ fontFamily: "Inter_400Regular", fontSize: 12, color: c.mutedForeground }}>
+          Search 800+ national &amp; chain restaurants for real published nutrition.
+        </Text>
+        <LuxeInput
+          placeholder="Search chain menu items..."
+          value={chainInput}
+          onChangeText={setChainInput}
+          onSubmitEditing={runChainSearch}
+          returnKeyType="search"
+        />
+        <LuxeButton
+          label="Search chains"
+          onPress={runChainSearch}
+          loading={chainSearch.isFetching}
+          disabled={chainInput.trim().length < 2}
+        />
+        {chainQuery.trim().length > 1 ? (
+          chainSearch.isFetching ? (
+            <Text
+              style={{
+                fontFamily: "Inter_400Regular",
+                fontSize: 13,
+                color: c.mutedForeground,
+                textAlign: "center",
+                paddingVertical: 8,
+              }}
+            >
+              Searching chain menus…
+            </Text>
+          ) : chainSearch.isError ? (
+            <Text
+              style={{
+                fontFamily: "Inter_400Regular",
+                fontSize: 13,
+                color: c.mutedForeground,
+                textAlign: "center",
+                paddingVertical: 8,
+              }}
+            >
+              Chain menu search is unavailable right now. Please try again later.
+            </Text>
+          ) : chainGroups.length > 0 ? (
+            <View style={{ gap: 14 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                <Feather name="check-circle" size={13} color={c.accent} />
+                <Text style={{ fontFamily: "Inter_500Medium", fontSize: 11, color: c.mutedForeground }}>
+                  Verified nutrition · Powered by Spoonacular
+                </Text>
+              </View>
+              {chainGroups.map(([restaurant, group]) => (
+                <View key={restaurant} style={{ gap: 8 }}>
+                  <Text
+                    style={{
+                      fontFamily: "Inter_600SemiBold",
+                      fontSize: 12,
+                      color: c.mutedForeground,
+                      textTransform: "uppercase",
+                      letterSpacing: 0.5,
+                    }}
+                  >
+                    {restaurant}
+                  </Text>
+                  {group.map((mi) => (
+                    <View
+                      key={mi.id}
+                      style={{
+                        flexDirection: "row",
+                        alignItems: "center",
+                        gap: 10,
+                        borderWidth: 1,
+                        borderColor: c.border,
+                        borderRadius: 12,
+                        padding: 12,
+                      }}
+                    >
+                      <View style={{ flex: 1 }}>
+                        <Text
+                          style={{
+                            fontFamily: "Inter_600SemiBold",
+                            fontSize: 14,
+                            color: c.foreground,
+                          }}
+                        >
+                          {mi.name}
+                        </Text>
+                      </View>
+                      <Pressable
+                        onPress={() => handleAddChain(mi)}
+                        disabled={isLogging || chainAddingId === mi.id}
+                        hitSlop={8}
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          gap: 4,
+                          backgroundColor: c.secondary,
+                          paddingHorizontal: 12,
+                          paddingVertical: 8,
+                          borderRadius: 999,
+                          opacity: chainAddingId === mi.id ? 0.6 : 1,
+                        }}
+                      >
+                        <Feather name="plus" size={14} color={c.foreground} />
+                        <Text
+                          style={{ fontFamily: "Inter_600SemiBold", fontSize: 13, color: c.foreground }}
+                        >
+                          {chainAddingId === mi.id ? "Adding…" : "Log"}
+                        </Text>
+                      </Pressable>
+                    </View>
+                  ))}
+                </View>
+              ))}
+            </View>
+          ) : (
+            <Text
+              style={{
+                fontFamily: "Inter_400Regular",
+                fontSize: 13,
+                color: c.mutedForeground,
+                textAlign: "center",
+                paddingVertical: 8,
+              }}
+            >
+              No chain menu matches for "{chainQuery.trim()}".
+            </Text>
+          )
+        ) : null}
       </Card>
 
       <SectionTitle>Today's meals</SectionTitle>
