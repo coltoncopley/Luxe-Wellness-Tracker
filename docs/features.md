@@ -79,6 +79,14 @@ Static educational page (Worldlink/Rouzier "Normal isn't optimal" framing, discl
 - Birthday perks (`users.birthday` MM-DD via PUT /me/birthday, daily 9:00 ET award 100 pts dedupe `birthday:<year>`).
 - Staff Portal gained "Offers" (staff) and "Weekly tips" (admin) tabs.
 
+## Retention features (2026-07)
+
+- **Wellness Streak** (Home card): GET /streak counts consecutive days with any qualifying log (food, weight, glow, mind, activity), computed live from distinct log dates — no streak table. Grace: today not yet counted doesn't break the streak. Once-ever milestones (7/14/30/60/100 days → 50/75/150/300/500 pts) awarded via reward_events dedupe `streak:<days>` (survives streak resets). Response includes current, longest, todayCounted, nextMilestone.
+- **My Journey `/journey`**: GET /journey read-only recap timeline — weight trend, milestones, monthly summaries, progress photo references. Patient-private.
+- **Weekly Report `/weekly-report`**: GET /weekly-report lazily generates an AI recap of LAST week (Mon-Sun ET) on first request, cached in `weekly_reports` (unique user+week, onConflictDoNothing, per-user in-flight map). Wins/focus/encouragement from the patient's own stats; educational-only language.
+- **Monthly community challenges** (Community page section): `challenges` + `challenge_participants` tables; lazy ensureChallenges seeds current+next month from a rotating template list (log_days/meals/glow_checkins/weigh_ins/move metrics). GET /community/challenges + POST /community/challenges/:id/join. Progress computed from the user's OWN logs only — only aggregate participant/completion counts shared ("only you can see this" copy). Completion awards 150 pts, dedupe `challenge:<key>:<month>`.
+- **Meal Plan `/meal-plan`**: GET /meal-plan/current + POST /meal-plan/generate. AI 7-day plan (gpt-5.4 json_object, 60s timeout, Zod-validated: exactly 7 days, calories clamped 0-2500, 1-12 grocery categories, dates assigned server-side) from goal facts + 30 distinct recent food names in a `<patient_data>` data-not-instructions block. Stored in `meal_plans` (jsonb content, unique user+week). Max 2 generations per ET week — generation AND upsert share one in-flight promise per user (double-tap burns one generation), setWhere generations<2 race-loss → 429 ("fresh plan unlocks Monday"), AI failure → 503 and never burns quota. Patient-private, premium-gated, disclaimer footer.
+
 ## Staff Portal, legal, privacy acknowledgment
 
 - Staff Portal at `/staff`. Legal: /privacy, /terms, /support.

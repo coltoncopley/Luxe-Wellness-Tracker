@@ -24,6 +24,9 @@ import Bhrt from "@/pages/bhrt";
 import Rewards from "@/pages/rewards";
 import Friends from "@/pages/friends";
 import Photos from "@/pages/photos";
+import Journey from "@/pages/journey";
+import WeeklyReport from "@/pages/weekly-report";
+import MealPlan from "@/pages/meal-plan";
 import Skin from "@/pages/skin";
 import Ingredients from "@/pages/ingredients";
 import Passport from "@/pages/passport";
@@ -296,6 +299,9 @@ function ClerkProviderWithRoutes() {
             <Route path="/rewards">{() => <Protected component={Rewards} />}</Route>
             <Route path="/friends">{() => <Protected component={Friends} />}</Route>
             <Route path="/photos">{() => <Protected component={Photos} />}</Route>
+            <Route path="/journey">{() => <Protected component={Journey} />}</Route>
+            <Route path="/weekly-report">{() => <Protected component={WeeklyReport} />}</Route>
+            <Route path="/meal-plan">{() => <Protected component={MealPlan} />}</Route>
             <Route path="/skin">{() => <Protected component={Skin} />}</Route>
             <Route path="/ingredients">{() => <Protected component={Ingredients} />}</Route>
             <Route path="/passport">{() => <Protected component={Passport} />}</Route>

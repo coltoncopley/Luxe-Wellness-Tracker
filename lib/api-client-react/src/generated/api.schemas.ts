@@ -1341,6 +1341,37 @@ export interface CreateCommunityPostInput {
   body: string;
 }
 
+export type ChallengeMetric = typeof ChallengeMetric[keyof typeof ChallengeMetric];
+
+
+export const ChallengeMetric = {
+  log_days: 'log_days',
+  meals: 'meals',
+  glow_checkins: 'glow_checkins',
+  weigh_ins: 'weigh_ins',
+  active_minutes: 'active_minutes',
+} as const;
+
+export interface Challenge {
+  id: number;
+  /** YYYY-MM */
+  month: string;
+  title: string;
+  description: string;
+  metric: ChallengeMetric;
+  target: number;
+  points: number;
+  /** Last day of the challenge month (YYYY-MM-DD) */
+  endsOn: string;
+  joined: boolean;
+  /** The current user's own progress toward the target */
+  progress: number;
+  completed: boolean;
+  /** Aggregate count only — no participant identities */
+  participantCount: number;
+  completedCount: number;
+}
+
 export interface ModerateCommunityPostInput {
   hidden: boolean;
 }
@@ -1593,6 +1624,103 @@ export interface MissionsResponse {
   weekEnd: string;
   missions: Mission[];
   completedCount: number;
+}
+
+export interface StreakMilestone {
+  days: number;
+  points: number;
+  achieved: boolean;
+}
+
+export type StreakSummaryNextMilestone = {
+  days: number;
+  points: number;
+} | null;
+
+export interface StreakSummary {
+  /** Consecutive days (ending today or yesterday, ET) with any logged activity */
+  current: number;
+  longest: number;
+  todayCounted: boolean;
+  milestones: StreakMilestone[];
+  nextMilestone: StreakSummaryNextMilestone;
+}
+
+export interface JourneyPhoto {
+  id: number;
+  objectPath: string;
+  category: string;
+  note: string | null;
+}
+
+export interface JourneyDay {
+  /** YYYY-MM-DD */
+  date: string;
+  photos: JourneyPhoto[];
+  weightLbs: number | null;
+  glowScore: number | null;
+}
+
+export interface JourneySummary {
+  /** Ascending by date; only days with at least one item */
+  days: JourneyDay[];
+  startWeightLbs: number | null;
+  currentWeightLbs: number | null;
+  firstDate: string | null;
+}
+
+export interface WeeklyReportStats {
+  mealsLogged: number;
+  avgCalories: number | null;
+  weighIns: number;
+  weightChangeLbs: number | null;
+  glowCheckins: number;
+  avgGlowScore: number | null;
+  activeMinutes: number;
+  steps: number;
+}
+
+export interface WeeklyReport {
+  /** YYYY-MM-DD (Monday) */
+  weekStart: string;
+  /** YYYY-MM-DD (Sunday) */
+  weekEnd: string;
+  summary: string;
+  highlights: string[];
+  focus: string;
+  stats: WeeklyReportStats;
+  generatedAt: string;
+}
+
+export interface MealPlanMeal {
+  name: string;
+  description: string;
+  calories: number;
+}
+
+export interface MealPlanDay {
+  /** YYYY-MM-DD */
+  date: string;
+  breakfast: MealPlanMeal;
+  lunch: MealPlanMeal;
+  dinner: MealPlanMeal;
+  snack: MealPlanMeal;
+}
+
+export interface MealPlanGroceryCategory {
+  category: string;
+  items: string[];
+}
+
+export interface MealPlan {
+  /** YYYY-MM-DD (Monday) */
+  weekStart: string;
+  /** YYYY-MM-DD (Sunday) */
+  weekEnd: string;
+  days: MealPlanDay[];
+  grocery: MealPlanGroceryCategory[];
+  notes: string | null;
+  generatedAt: string;
 }
 
 export interface RedeemRewardInput {
@@ -2227,6 +2355,20 @@ export type ListTipsParams = {
 category?: string;
 };
 
+export type GetWeeklyReport200 = {
+  report: WeeklyReport | null;
+};
+
+export type GetMealPlan200 = {
+  plan: MealPlan | null;
+  generationsRemaining: number;
+};
+
+export type GenerateMealPlan200 = {
+  plan: MealPlan;
+  generationsRemaining: number;
+};
+
 export type ListIngredientScans200 = {
   scans: IngredientScanResult[];
 };
@@ -2270,6 +2412,14 @@ export type GetCommunityPosts200 = {
 export type ToggleCommunityHeart200 = {
   hearted: boolean;
   heartCount: number;
+};
+
+export type GetChallenges200 = {
+  challenges: Challenge[];
+};
+
+export type JoinChallenge200 = {
+  challenge: Challenge;
 };
 
 export type AdminListCommunityPosts200 = {

@@ -78,13 +78,17 @@ import type {
   FoodLog,
   FoodLogInput,
   FriendJourneysResponse,
+  GenerateMealPlan200,
   GetActivitySummaryParams,
+  GetChallenges200,
   GetCommunityPosts200,
   GetCurrentDoctorTip200,
   GetDailySummaryParams,
+  GetMealPlan200,
   GetMindSummary200,
   GetPassport200,
   GetVapidPublicKey200,
+  GetWeeklyReport200,
   GlowCheckin,
   GlowCheckinInput,
   GlowSummary,
@@ -94,6 +98,8 @@ import type {
   HealthStatus,
   ImportResult,
   IngredientScanResult,
+  JoinChallenge200,
+  JourneySummary,
   ListAnnouncements200,
   ListFoodLogsParams,
   ListIngredientScans200,
@@ -157,6 +163,7 @@ import type {
   StaffAccessInput,
   StaffCode,
   StaffMember,
+  StreakSummary,
   SyncResult,
   ToggleCommunityHeart200,
   UnsubscribePushInput,
@@ -3561,6 +3568,384 @@ export function useListMissions<TData = Awaited<ReturnType<typeof listMissions>>
 
 
 
+export const getGetStreakUrl = () => {
+
+
+
+
+  return `/api/streak`
+}
+
+/**
+ * @summary Overall daily wellness streak across all tracking (auto-awards milestones)
+ */
+export const getStreak = async ( options?: RequestInit): Promise<StreakSummary> => {
+
+  return customFetch<StreakSummary>(getGetStreakUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetStreakQueryKey = () => {
+    return [
+    `/api/streak`
+    ] as const;
+    }
+
+
+export const getGetStreakQueryOptions = <TData = Awaited<ReturnType<typeof getStreak>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStreak>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetStreakQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getStreak>>> = ({ signal }) => getStreak({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getStreak>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetStreakQueryResult = NonNullable<Awaited<ReturnType<typeof getStreak>>>
+export type GetStreakQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Overall daily wellness streak across all tracking (auto-awards milestones)
+ */
+
+export function useGetStreak<TData = Awaited<ReturnType<typeof getStreak>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getStreak>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetStreakQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetJourneyUrl = () => {
+
+
+
+
+  return `/api/journey`
+}
+
+/**
+ * @summary Private chronological journey (photos, weight, glow) — patient-private
+ */
+export const getJourney = async ( options?: RequestInit): Promise<JourneySummary> => {
+
+  return customFetch<JourneySummary>(getGetJourneyUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetJourneyQueryKey = () => {
+    return [
+    `/api/journey`
+    ] as const;
+    }
+
+
+export const getGetJourneyQueryOptions = <TData = Awaited<ReturnType<typeof getJourney>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getJourney>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetJourneyQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getJourney>>> = ({ signal }) => getJourney({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getJourney>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetJourneyQueryResult = NonNullable<Awaited<ReturnType<typeof getJourney>>>
+export type GetJourneyQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Private chronological journey (photos, weight, glow) — patient-private
+ */
+
+export function useGetJourney<TData = Awaited<ReturnType<typeof getJourney>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getJourney>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetJourneyQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetWeeklyReportUrl = () => {
+
+
+
+
+  return `/api/weekly-report`
+}
+
+/**
+ * @summary AI progress report for the previous Mon-Sun week — patient-private
+ */
+export const getWeeklyReport = async ( options?: RequestInit): Promise<GetWeeklyReport200> => {
+
+  return customFetch<GetWeeklyReport200>(getGetWeeklyReportUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetWeeklyReportQueryKey = () => {
+    return [
+    `/api/weekly-report`
+    ] as const;
+    }
+
+
+export const getGetWeeklyReportQueryOptions = <TData = Awaited<ReturnType<typeof getWeeklyReport>>, TError = ErrorType<OpenaiError>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWeeklyReport>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetWeeklyReportQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getWeeklyReport>>> = ({ signal }) => getWeeklyReport({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getWeeklyReport>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetWeeklyReportQueryResult = NonNullable<Awaited<ReturnType<typeof getWeeklyReport>>>
+export type GetWeeklyReportQueryError = ErrorType<OpenaiError>
+
+
+/**
+ * @summary AI progress report for the previous Mon-Sun week — patient-private
+ */
+
+export function useGetWeeklyReport<TData = Awaited<ReturnType<typeof getWeeklyReport>>, TError = ErrorType<OpenaiError>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getWeeklyReport>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetWeeklyReportQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetMealPlanUrl = () => {
+
+
+
+
+  return `/api/meal-plan/current`
+}
+
+/**
+ * @summary This week's AI meal plan — patient-private
+ */
+export const getMealPlan = async ( options?: RequestInit): Promise<GetMealPlan200> => {
+
+  return customFetch<GetMealPlan200>(getGetMealPlanUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetMealPlanQueryKey = () => {
+    return [
+    `/api/meal-plan/current`
+    ] as const;
+    }
+
+
+export const getGetMealPlanQueryOptions = <TData = Awaited<ReturnType<typeof getMealPlan>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMealPlan>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetMealPlanQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getMealPlan>>> = ({ signal }) => getMealPlan({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getMealPlan>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetMealPlanQueryResult = NonNullable<Awaited<ReturnType<typeof getMealPlan>>>
+export type GetMealPlanQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary This week's AI meal plan — patient-private
+ */
+
+export function useGetMealPlan<TData = Awaited<ReturnType<typeof getMealPlan>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getMealPlan>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetMealPlanQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGenerateMealPlanUrl = () => {
+
+
+
+
+  return `/api/meal-plan/generate`
+}
+
+/**
+ * @summary Generate (or regenerate) this week's AI meal plan — max 2 per week
+ */
+export const generateMealPlan = async ( options?: RequestInit): Promise<GenerateMealPlan200> => {
+
+  return customFetch<GenerateMealPlan200>(getGenerateMealPlanUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getGenerateMealPlanMutationOptions = <TError = ErrorType<void | OpenaiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateMealPlan>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof generateMealPlan>>, TError,void, TContext> => {
+
+const mutationKey = ['generateMealPlan'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof generateMealPlan>>, void> = () => {
+
+
+          return  generateMealPlan(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GenerateMealPlanMutationResult = NonNullable<Awaited<ReturnType<typeof generateMealPlan>>>
+
+    export type GenerateMealPlanMutationError = ErrorType<void | OpenaiError>
+
+    /**
+ * @summary Generate (or regenerate) this week's AI meal plan — max 2 per week
+ */
+export const useGenerateMealPlan = <TError = ErrorType<void | OpenaiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateMealPlan>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof generateMealPlan>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getGenerateMealPlanMutationOptions(options));
+    }
+
 export const getRequestUploadUrlUrl = () => {
 
 
@@ -6165,6 +6550,153 @@ export const useToggleCommunityHeart = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getToggleCommunityHeartMutationOptions(options));
+    }
+
+export const getGetChallengesUrl = () => {
+
+
+
+
+  return `/api/community/challenges`
+}
+
+/**
+ * @summary This month's community challenge (aggregate counts only)
+ */
+export const getChallenges = async ( options?: RequestInit): Promise<GetChallenges200> => {
+
+  return customFetch<GetChallenges200>(getGetChallengesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetChallengesQueryKey = () => {
+    return [
+    `/api/community/challenges`
+    ] as const;
+    }
+
+
+export const getGetChallengesQueryOptions = <TData = Awaited<ReturnType<typeof getChallenges>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getChallenges>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetChallengesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getChallenges>>> = ({ signal }) => getChallenges({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getChallenges>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetChallengesQueryResult = NonNullable<Awaited<ReturnType<typeof getChallenges>>>
+export type GetChallengesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary This month's community challenge (aggregate counts only)
+ */
+
+export function useGetChallenges<TData = Awaited<ReturnType<typeof getChallenges>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getChallenges>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetChallengesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getJoinChallengeUrl = (id: number,) => {
+
+
+
+
+  return `/api/community/challenges/${id}/join`
+}
+
+/**
+ * @summary Join a current-month community challenge
+ */
+export const joinChallenge = async (id: number, options?: RequestInit): Promise<JoinChallenge200> => {
+
+  return customFetch<JoinChallenge200>(getJoinChallengeUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getJoinChallengeMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof joinChallenge>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof joinChallenge>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['joinChallenge'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof joinChallenge>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  joinChallenge(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type JoinChallengeMutationResult = NonNullable<Awaited<ReturnType<typeof joinChallenge>>>
+
+    export type JoinChallengeMutationError = ErrorType<void>
+
+    /**
+ * @summary Join a current-month community challenge
+ */
+export const useJoinChallenge = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof joinChallenge>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof joinChallenge>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getJoinChallengeMutationOptions(options));
     }
 
 export const getAdminListCommunityPostsUrl = () => {

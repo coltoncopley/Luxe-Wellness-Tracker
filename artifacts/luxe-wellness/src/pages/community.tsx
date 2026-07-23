@@ -4,8 +4,11 @@ import {
   useCreateCommunityPost,
   useDeleteCommunityPost,
   useToggleCommunityHeart,
+  useGetChallenges,
+  useJoinChallenge,
   getGetCommunityPostsQueryKey,
   getGetRewardsSummaryQueryKey,
+  getGetChallengesQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,7 +25,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Heart, Megaphone, Plus, Trash2, Lock, Sparkles } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
+import { Heart, Megaphone, Plus, Trash2, Lock, Sparkles, Trophy, Users, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 
@@ -37,6 +41,123 @@ const CATEGORIES: { value: string; label: string; emoji: string }[] = [
 
 function categoryInfo(value: string) {
   return CATEGORIES.find((c) => c.value === value) ?? CATEGORIES[CATEGORIES.length - 1];
+}
+
+const METRIC_UNITS: Record<string, string> = {
+  log_days: "days",
+  meals: "meals",
+  glow_checkins: "check-ins",
+  weigh_ins: "weigh-ins",
+  active_minutes: "minutes",
+};
+
+function monthName(month: string): string {
+  return new Date(`${month}-15T12:00:00`).toLocaleDateString(undefined, {
+    month: "long",
+  });
+}
+
+function ChallengesSection() {
+  const queryClient = useQueryClient();
+  const { data, isLoading } = useGetChallenges({
+    query: { queryKey: getGetChallengesQueryKey() },
+  });
+  const joinChallenge = useJoinChallenge();
+  const challenges = data?.challenges ?? [];
+  if (isLoading || challenges.length === 0) return null;
+
+  const invalidate = () => {
+    void queryClient.invalidateQueries({ queryKey: getGetChallengesQueryKey() });
+    void queryClient.invalidateQueries({ queryKey: getGetRewardsSummaryQueryKey() });
+  };
+
+  const now = new Date().toISOString().slice(0, 7);
+
+  return (
+    <div className="space-y-3">
+      {challenges.map((ch) => {
+        const isCurrent = ch.month === now;
+        const isUpcoming = ch.month > now;
+        const unit = METRIC_UNITS[ch.metric] ?? "";
+        const pct = ch.target > 0 ? Math.round((ch.progress / ch.target) * 100) : 0;
+        return (
+          <Card
+            key={ch.id}
+            className={ch.completed ? "border-primary/40 bg-primary/5" : "bg-gradient-to-br from-accent/10 via-card to-primary/5"}
+          >
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between gap-2">
+                <CardTitle className="flex items-center gap-2 text-base font-serif">
+                  <Trophy className="h-4 w-4 text-primary" />
+                  {ch.title}
+                </CardTitle>
+                <Badge variant="secondary" className="text-xs">
+                  {isUpcoming ? `Coming in ${monthName(ch.month)}` : `${monthName(ch.month)} challenge`}
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-3 pt-0">
+              <p className="text-sm text-muted-foreground">{ch.description}</p>
+              <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                <span className="flex items-center gap-1">
+                  <Users className="h-3.5 w-3.5" />
+                  {ch.participantCount} joined
+                </span>
+                {ch.completedCount > 0 && (
+                  <span className="flex items-center gap-1">
+                    <CheckCircle2 className="h-3.5 w-3.5" />
+                    {ch.completedCount} completed
+                  </span>
+                )}
+                <span className="ml-auto font-medium text-primary">+{ch.points} pts</span>
+              </div>
+              {ch.completed ? (
+                <div className="flex items-center gap-2 rounded-lg bg-primary/10 px-3 py-2 text-sm font-medium text-primary">
+                  <CheckCircle2 className="h-4 w-4" />
+                  Challenge complete — {ch.points} points earned!
+                </div>
+              ) : ch.joined ? (
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-muted-foreground">Your progress (only you can see this)</span>
+                    <span className="font-medium">
+                      {ch.progress}/{ch.target} {unit}
+                    </span>
+                  </div>
+                  <Progress value={pct} className="h-2" />
+                </div>
+              ) : isCurrent ? (
+                <Button
+                  size="sm"
+                  className="w-full"
+                  disabled={joinChallenge.isPending}
+                  data-testid="button-join-challenge"
+                  onClick={() =>
+                    joinChallenge.mutate(
+                      { id: ch.id },
+                      {
+                        onSuccess: () => {
+                          invalidate();
+                          toast.success(`You're in! Good luck with ${ch.title}.`);
+                        },
+                        onError: () => toast.error("Couldn't join. Please try again."),
+                      },
+                    )
+                  }
+                >
+                  {joinChallenge.isPending ? "Joining…" : "Join this month's challenge"}
+                </Button>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Joins open on the 1st — get ready!
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        );
+      })}
+    </div>
+  );
 }
 
 export default function Community() {
@@ -153,6 +274,8 @@ export default function Community() {
         <Lock className="h-3.5 w-3.5 shrink-0" />
         Every post is anonymous. Your name is never shown to other members or staff.
       </div>
+
+      <ChallengesSection />
 
       {isLoading ? (
         <div className="space-y-3">

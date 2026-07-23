@@ -807,6 +807,100 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/MissionsResponse"
+  /streak:
+    get:
+      operationId: getStreak
+      tags: [streak]
+      summary: Overall daily wellness streak across all tracking (auto-awards milestones)
+      responses:
+        "200":
+          description: Streak summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StreakSummary"
+  /journey:
+    get:
+      operationId: getJourney
+      tags: [journey]
+      summary: Private chronological journey (photos, weight, glow) — patient-private
+      responses:
+        "200":
+          description: Journey timeline
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/JourneySummary"
+  /weekly-report:
+    get:
+      operationId: getWeeklyReport
+      tags: [reports]
+      summary: AI progress report for the previous Mon-Sun week — patient-private
+      responses:
+        "200":
+          description: Weekly report (null when there was no data to report on)
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [report]
+                properties:
+                  report:
+                    oneOf:
+                      - $ref: "#/components/schemas/WeeklyReport"
+                      - type: "null"
+        "503":
+          description: Report generation temporarily unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenaiError"
+  /meal-plan/current:
+    get:
+      operationId: getMealPlan
+      tags: [mealplan]
+      summary: This week's AI meal plan — patient-private
+      responses:
+        "200":
+          description: Current week's meal plan (null when none generated yet)
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [plan, generationsRemaining]
+                properties:
+                  plan:
+                    oneOf:
+                      - $ref: "#/components/schemas/MealPlan"
+                      - type: "null"
+                  generationsRemaining:
+                    type: integer
+  /meal-plan/generate:
+    post:
+      operationId: generateMealPlan
+      tags: [mealplan]
+      summary: Generate (or regenerate) this week's AI meal plan — max 2 per week
+      responses:
+        "200":
+          description: Freshly generated meal plan
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [plan, generationsRemaining]
+                properties:
+                  plan:
+                    $ref: "#/components/schemas/MealPlan"
+                  generationsRemaining:
+                    type: integer
+        "429":
+          description: Weekly generation limit reached
+        "503":
+          description: Meal plan generation temporarily unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenaiError"
   /storage/uploads/request-url:
     post:
       operationId: requestUploadUrl
@@ -1495,6 +1589,48 @@ paths:
                     type: integer
         "404":
           description: Post not found
+  /community/challenges:
+    get:
+      operationId: getChallenges
+      tags: [community]
+      summary: This month's community challenge (aggregate counts only)
+      responses:
+        "200":
+          description: Current challenge with the user's own progress
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [challenges]
+                properties:
+                  challenges:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Challenge"
+  /community/challenges/{id}/join:
+    post:
+      operationId: joinChallenge
+      tags: [community]
+      summary: Join a current-month community challenge
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Joined (idempotent)
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [challenge]
+                properties:
+                  challenge:
+                    $ref: "#/components/schemas/Challenge"
+        "404":
+          description: Challenge not found or no longer joinable
   /admin/community/posts:
     get:
       operationId: adminListCommunityPosts
@@ -4325,6 +4461,56 @@ components:
           type: string
           minLength: 10
           maxLength: 500
+    Challenge:
+      type: object
+      required:
+        [
+          id,
+          month,
+          title,
+          description,
+          metric,
+          target,
+          points,
+          endsOn,
+          joined,
+          progress,
+          completed,
+          participantCount,
+          completedCount,
+        ]
+      properties:
+        id:
+          type: integer
+        month:
+          type: string
+          description: YYYY-MM
+        title:
+          type: string
+        description:
+          type: string
+        metric:
+          type: string
+          enum: [log_days, meals, glow_checkins, weigh_ins, active_minutes]
+        target:
+          type: integer
+        points:
+          type: integer
+        endsOn:
+          type: string
+          description: Last day of the challenge month (YYYY-MM-DD)
+        joined:
+          type: boolean
+        progress:
+          type: integer
+          description: The current user's own progress toward the target
+        completed:
+          type: boolean
+        participantCount:
+          type: integer
+          description: Aggregate count only — no participant identities
+        completedCount:
+          type: integer
     ModerateCommunityPostInput:
       type: object
       required: [hidden]
@@ -4636,6 +4822,212 @@ components:
             $ref: "#/components/schemas/Mission"
         completedCount:
           type: integer
+    StreakMilestone:
+      type: object
+      required: [days, points, achieved]
+      properties:
+        days:
+          type: integer
+        points:
+          type: integer
+        achieved:
+          type: boolean
+    StreakSummary:
+      type: object
+      required: [current, longest, todayCounted, milestones, nextMilestone]
+      properties:
+        current:
+          type: integer
+          description: Consecutive days (ending today or yesterday, ET) with any logged activity
+        longest:
+          type: integer
+        todayCounted:
+          type: boolean
+        milestones:
+          type: array
+          items:
+            $ref: "#/components/schemas/StreakMilestone"
+        nextMilestone:
+          oneOf:
+            - type: object
+              required: [days, points]
+              properties:
+                days:
+                  type: integer
+                points:
+                  type: integer
+            - type: "null"
+    JourneyPhoto:
+      type: object
+      required: [id, objectPath, category, note]
+      properties:
+        id:
+          type: integer
+        objectPath:
+          type: string
+        category:
+          type: string
+        note:
+          oneOf:
+            - type: string
+            - type: "null"
+    JourneyDay:
+      type: object
+      required: [date, photos, weightLbs, glowScore]
+      properties:
+        date:
+          type: string
+          description: YYYY-MM-DD
+        photos:
+          type: array
+          items:
+            $ref: "#/components/schemas/JourneyPhoto"
+        weightLbs:
+          oneOf:
+            - type: number
+            - type: "null"
+        glowScore:
+          oneOf:
+            - type: integer
+            - type: "null"
+    JourneySummary:
+      type: object
+      required: [days, startWeightLbs, currentWeightLbs, firstDate]
+      properties:
+        days:
+          type: array
+          description: Ascending by date; only days with at least one item
+          items:
+            $ref: "#/components/schemas/JourneyDay"
+        startWeightLbs:
+          oneOf:
+            - type: number
+            - type: "null"
+        currentWeightLbs:
+          oneOf:
+            - type: number
+            - type: "null"
+        firstDate:
+          oneOf:
+            - type: string
+            - type: "null"
+    WeeklyReportStats:
+      type: object
+      required:
+        [
+          mealsLogged,
+          avgCalories,
+          weighIns,
+          weightChangeLbs,
+          glowCheckins,
+          avgGlowScore,
+          activeMinutes,
+          steps,
+        ]
+      properties:
+        mealsLogged:
+          type: integer
+        avgCalories:
+          oneOf:
+            - type: number
+            - type: "null"
+        weighIns:
+          type: integer
+        weightChangeLbs:
+          oneOf:
+            - type: number
+            - type: "null"
+        glowCheckins:
+          type: integer
+        avgGlowScore:
+          oneOf:
+            - type: integer
+            - type: "null"
+        activeMinutes:
+          type: integer
+        steps:
+          type: integer
+    WeeklyReport:
+      type: object
+      required: [weekStart, weekEnd, summary, highlights, focus, stats, generatedAt]
+      properties:
+        weekStart:
+          type: string
+          description: YYYY-MM-DD (Monday)
+        weekEnd:
+          type: string
+          description: YYYY-MM-DD (Sunday)
+        summary:
+          type: string
+        highlights:
+          type: array
+          items:
+            type: string
+        focus:
+          type: string
+        stats:
+          $ref: "#/components/schemas/WeeklyReportStats"
+        generatedAt:
+          type: string
+    MealPlanMeal:
+      type: object
+      required: [name, description, calories]
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        calories:
+          type: integer
+    MealPlanDay:
+      type: object
+      required: [date, breakfast, lunch, dinner, snack]
+      properties:
+        date:
+          type: string
+          description: YYYY-MM-DD
+        breakfast:
+          $ref: "#/components/schemas/MealPlanMeal"
+        lunch:
+          $ref: "#/components/schemas/MealPlanMeal"
+        dinner:
+          $ref: "#/components/schemas/MealPlanMeal"
+        snack:
+          $ref: "#/components/schemas/MealPlanMeal"
+    MealPlanGroceryCategory:
+      type: object
+      required: [category, items]
+      properties:
+        category:
+          type: string
+        items:
+          type: array
+          items:
+            type: string
+    MealPlan:
+      type: object
+      required: [weekStart, weekEnd, days, grocery, notes, generatedAt]
+      properties:
+        weekStart:
+          type: string
+          description: YYYY-MM-DD (Monday)
+        weekEnd:
+          type: string
+          description: YYYY-MM-DD (Sunday)
+        days:
+          type: array
+          items:
+            $ref: "#/components/schemas/MealPlanDay"
+        grocery:
+          type: array
+          items:
+            $ref: "#/components/schemas/MealPlanGroceryCategory"
+        notes:
+          oneOf:
+            - type: string
+            - type: "null"
+        generatedAt:
+          type: string
     RedeemRewardInput:
       type: object
       properties:

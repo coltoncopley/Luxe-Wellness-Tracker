@@ -5,7 +5,7 @@ Expo + expo-router patient-only native app reusing api-server. The always-loaded
 ## Structure & parity
 
 - 5 tabs (Home/Track/Chat/Rewards/Book) + settings modal. Full web-feature parity (2026-07).
-- Home has an 8-tile "Explore" grid → stack screens under `app/explore/` (Skin Scan, Product Scan, Progress Photos, Beauty Passport, Dining Out Guide, Friends, Community, Hormone Health/BHRT).
+- Home has an 11-tile "Explore" grid → stack screens under `app/explore/` (Skin Scan, Product Scan, Progress Photos, My Journey, Weekly Report, Meal Plan, Beauty Passport, Dining Out Guide, Friends, Community, Hormone Health/BHRT). Home also shows the Wellness Streak card (milestone progress); Community screen includes the monthly challenges section (join + private progress bar).
 - Friends has an "Invite friends" card (expo-contacts picker → prefilled SMS with sanitized phone + `?ref=CODE` referral link, Share/clipboard fallback on web; contacts permission prompt skipped on iOS since the system picker doesn't need it; invite link lives only in the outgoing message — no in-app purchase CTA, Apple 3.1.1-safe).
 - Track tab has 5 segments (Weight/Glow/Food/Mind/Move — Mind keeps the 988 disclaimer; Food includes the AI meal-photo scanner with camera/library chooser and the barcode scanner card; Move is `components/track/MoveTab.tsx`).
 - Settings modal includes notification prefs (push is web-only, email via Resend) + birthday.

@@ -10,6 +10,7 @@ import {
   useClaimOffer,
   useGetBriefing,
   useGetCurrentDoctorTip,
+  useGetStreak,
   useListAnnouncements,
   useListOffers,
 } from "@workspace/api-client-react";
@@ -24,6 +25,7 @@ export default function HomeScreen() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const briefing = useGetBriefing();
+  const streak = useGetStreak();
   const announcements = useListAnnouncements();
   const doctorTip = useGetCurrentDoctorTip();
   const offers = useListOffers();
@@ -104,6 +106,44 @@ export default function HomeScreen() {
         </View>
       </Card>
 
+      {streak.data ? (
+        <Card style={{ marginTop: 12, flexDirection: "row", alignItems: "center", gap: 12 }}>
+          <View
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 20,
+              backgroundColor: c.secondary,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Feather name="zap" size={17} color={c.tint} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 14, color: c.foreground }}>
+              {streak.data.current}-day wellness streak
+            </Text>
+            <Text
+              style={{
+                fontFamily: "Inter_400Regular",
+                fontSize: 12,
+                color: c.mutedForeground,
+                marginTop: 2,
+              }}
+            >
+              {!streak.data.todayCounted
+                ? "Log anything today to keep it going"
+                : streak.data.nextMilestone
+                  ? `${streak.data.nextMilestone.days - streak.data.current} more ${
+                      streak.data.nextMilestone.days - streak.data.current === 1 ? "day" : "days"
+                    } to +${streak.data.nextMilestone.points} pts`
+                  : `Longest ever: ${streak.data.longest} days`}
+            </Text>
+          </View>
+        </Card>
+      ) : null}
+
       {b?.aiBriefing ? (
         <Card style={{ marginTop: 12, borderColor: c.accent, borderWidth: 1 }}>
           <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 8 }}>
@@ -164,6 +204,9 @@ export default function HomeScreen() {
           { label: "Skin Scan", icon: "aperture" as const, href: "/explore/skin" },
           { label: "Product Scan", icon: "search" as const, href: "/explore/ingredients" },
           { label: "Progress Photos", icon: "camera" as const, href: "/explore/photos" },
+          { label: "My Journey", icon: "trending-up" as const, href: "/explore/journey" },
+          { label: "Weekly Report", icon: "file-text" as const, href: "/explore/report" },
+          { label: "Meal Plan", icon: "coffee" as const, href: "/explore/meal-plan" },
           { label: "Beauty Passport", icon: "book-open" as const, href: "/explore/passport" },
           { label: "Dining Out Guide", icon: "map-pin" as const, href: "/explore/restaurants" },
           { label: "Friends", icon: "users" as const, href: "/explore/friends" },

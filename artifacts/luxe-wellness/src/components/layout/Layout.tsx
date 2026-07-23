@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { User, Calendar, Activity, Utensils, MapPin, Menu, X, Sparkles, Sun, Gift, BadgeCheck, LogOut, HeartPulse, Users, Images, ScanFace, FlaskConical, BookHeart, HeartHandshake, Megaphone, Bell, Footprints } from "lucide-react";
+import { User, Calendar, Activity, Utensils, MapPin, Menu, X, Sparkles, Sun, Gift, BadgeCheck, LogOut, HeartPulse, Users, Images, ScanFace, FlaskConical, BookHeart, HeartHandshake, Megaphone, Bell, Footprints, Milestone, FileHeart, CalendarRange } from "lucide-react";
 import { useState } from "react";
 import { Show, useClerk, useUser } from "@clerk/react";
 import {
@@ -85,6 +85,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { href: "/bhrt", label: "Hormone Replacement", icon: HeartPulse },
     { href: "/rewards", label: "Rewards", icon: Gift },
     { href: "/photos", label: "Progress Photos", icon: Images },
+    { href: "/journey", label: "My Journey", icon: Milestone },
+    { href: "/weekly-report", label: "Weekly Report", icon: FileHeart },
+    { href: "/meal-plan", label: "Meal Plan", icon: CalendarRange },
     ...(isStaff ? [] : [{ href: "/friends", label: "Friends", icon: Users }]),
     ...(isStaff ? [] : [{ href: "/community", label: "Community", icon: Megaphone }]),
     { href: "/luxe-ai", label: "Luxe AI", icon: Sparkles },

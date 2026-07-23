@@ -983,6 +983,153 @@ export const ListMissionsResponse = zod.object({
 
 
 /**
+ * @summary Overall daily wellness streak across all tracking (auto-awards milestones)
+ */
+export const GetStreakResponse = zod.object({
+  "current": zod.number().describe('Consecutive days (ending today or yesterday, ET) with any logged activity'),
+  "longest": zod.number(),
+  "todayCounted": zod.boolean(),
+  "milestones": zod.array(zod.object({
+  "days": zod.number(),
+  "points": zod.number(),
+  "achieved": zod.boolean()
+})),
+  "nextMilestone": zod.union([zod.object({
+  "days": zod.number(),
+  "points": zod.number()
+}),zod.null()])
+})
+
+
+/**
+ * @summary Private chronological journey (photos, weight, glow) — patient-private
+ */
+export const GetJourneyResponse = zod.object({
+  "days": zod.array(zod.object({
+  "date": zod.string().describe('YYYY-MM-DD'),
+  "photos": zod.array(zod.object({
+  "id": zod.number(),
+  "objectPath": zod.string(),
+  "category": zod.string(),
+  "note": zod.union([zod.string(),zod.null()])
+})),
+  "weightLbs": zod.union([zod.number(),zod.null()]),
+  "glowScore": zod.union([zod.number(),zod.null()])
+})).describe('Ascending by date; only days with at least one item'),
+  "startWeightLbs": zod.union([zod.number(),zod.null()]),
+  "currentWeightLbs": zod.union([zod.number(),zod.null()]),
+  "firstDate": zod.union([zod.string(),zod.null()])
+})
+
+
+/**
+ * @summary AI progress report for the previous Mon-Sun week — patient-private
+ */
+export const GetWeeklyReportResponse = zod.object({
+  "report": zod.union([zod.object({
+  "weekStart": zod.string().describe('YYYY-MM-DD (Monday)'),
+  "weekEnd": zod.string().describe('YYYY-MM-DD (Sunday)'),
+  "summary": zod.string(),
+  "highlights": zod.array(zod.string()),
+  "focus": zod.string(),
+  "stats": zod.object({
+  "mealsLogged": zod.number(),
+  "avgCalories": zod.union([zod.number(),zod.null()]),
+  "weighIns": zod.number(),
+  "weightChangeLbs": zod.union([zod.number(),zod.null()]),
+  "glowCheckins": zod.number(),
+  "avgGlowScore": zod.union([zod.number(),zod.null()]),
+  "activeMinutes": zod.number(),
+  "steps": zod.number()
+}),
+  "generatedAt": zod.string()
+}),zod.null()])
+})
+
+
+/**
+ * @summary This week's AI meal plan — patient-private
+ */
+export const GetMealPlanResponse = zod.object({
+  "plan": zod.union([zod.object({
+  "weekStart": zod.string().describe('YYYY-MM-DD (Monday)'),
+  "weekEnd": zod.string().describe('YYYY-MM-DD (Sunday)'),
+  "days": zod.array(zod.object({
+  "date": zod.string().describe('YYYY-MM-DD'),
+  "breakfast": zod.object({
+  "name": zod.string(),
+  "description": zod.string(),
+  "calories": zod.number()
+}),
+  "lunch": zod.object({
+  "name": zod.string(),
+  "description": zod.string(),
+  "calories": zod.number()
+}),
+  "dinner": zod.object({
+  "name": zod.string(),
+  "description": zod.string(),
+  "calories": zod.number()
+}),
+  "snack": zod.object({
+  "name": zod.string(),
+  "description": zod.string(),
+  "calories": zod.number()
+})
+})),
+  "grocery": zod.array(zod.object({
+  "category": zod.string(),
+  "items": zod.array(zod.string())
+})),
+  "notes": zod.union([zod.string(),zod.null()]),
+  "generatedAt": zod.string()
+}),zod.null()]),
+  "generationsRemaining": zod.number()
+})
+
+
+/**
+ * @summary Generate (or regenerate) this week's AI meal plan — max 2 per week
+ */
+export const GenerateMealPlanResponse = zod.object({
+  "plan": zod.object({
+  "weekStart": zod.string().describe('YYYY-MM-DD (Monday)'),
+  "weekEnd": zod.string().describe('YYYY-MM-DD (Sunday)'),
+  "days": zod.array(zod.object({
+  "date": zod.string().describe('YYYY-MM-DD'),
+  "breakfast": zod.object({
+  "name": zod.string(),
+  "description": zod.string(),
+  "calories": zod.number()
+}),
+  "lunch": zod.object({
+  "name": zod.string(),
+  "description": zod.string(),
+  "calories": zod.number()
+}),
+  "dinner": zod.object({
+  "name": zod.string(),
+  "description": zod.string(),
+  "calories": zod.number()
+}),
+  "snack": zod.object({
+  "name": zod.string(),
+  "description": zod.string(),
+  "calories": zod.number()
+})
+})),
+  "grocery": zod.array(zod.object({
+  "category": zod.string(),
+  "items": zod.array(zod.string())
+})),
+  "notes": zod.union([zod.string(),zod.null()]),
+  "generatedAt": zod.string()
+}),
+  "generationsRemaining": zod.number()
+})
+
+
+/**
  * @summary Request a presigned URL for file upload
  */
 
@@ -1780,6 +1927,54 @@ export const ToggleCommunityHeartParams = zod.object({
 export const ToggleCommunityHeartResponse = zod.object({
   "hearted": zod.boolean(),
   "heartCount": zod.number()
+})
+
+
+/**
+ * @summary This month's community challenge (aggregate counts only)
+ */
+export const GetChallengesResponse = zod.object({
+  "challenges": zod.array(zod.object({
+  "id": zod.number(),
+  "month": zod.string().describe('YYYY-MM'),
+  "title": zod.string(),
+  "description": zod.string(),
+  "metric": zod.enum(['log_days', 'meals', 'glow_checkins', 'weigh_ins', 'active_minutes']),
+  "target": zod.number(),
+  "points": zod.number(),
+  "endsOn": zod.string().describe('Last day of the challenge month (YYYY-MM-DD)'),
+  "joined": zod.boolean(),
+  "progress": zod.number().describe('The current user\'s own progress toward the target'),
+  "completed": zod.boolean(),
+  "participantCount": zod.number().describe('Aggregate count only — no participant identities'),
+  "completedCount": zod.number()
+}))
+})
+
+
+/**
+ * @summary Join a current-month community challenge
+ */
+export const JoinChallengeParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const JoinChallengeResponse = zod.object({
+  "challenge": zod.object({
+  "id": zod.number(),
+  "month": zod.string().describe('YYYY-MM'),
+  "title": zod.string(),
+  "description": zod.string(),
+  "metric": zod.enum(['log_days', 'meals', 'glow_checkins', 'weigh_ins', 'active_minutes']),
+  "target": zod.number(),
+  "points": zod.number(),
+  "endsOn": zod.string().describe('Last day of the challenge month (YYYY-MM-DD)'),
+  "joined": zod.boolean(),
+  "progress": zod.number().describe('The current user\'s own progress toward the target'),
+  "completed": zod.boolean(),
+  "participantCount": zod.number().describe('Aggregate count only — no participant identities'),
+  "completedCount": zod.number()
+})
 })
 
 

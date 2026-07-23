@@ -20,3 +20,6 @@ export * from "./accessCodes";
 export * from "./tips";
 export * from "./offers";
 export * from "./activity";
+export * from "./reports";
+export * from "./challenges";
+export * from "./mealPlans";

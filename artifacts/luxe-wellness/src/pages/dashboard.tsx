@@ -8,6 +8,7 @@ import {
   getListOffersQueryKey,
   useClaimOffer,
   useGetMe,
+  useGetStreak,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -143,6 +144,7 @@ export default function Dashboard() {
   const { data: dailyTip } = useGetDailyTip();
   const { data: announcementsData } = useListAnnouncements();
   const { data: doctorTipData } = useGetCurrentDoctorTip();
+  const { data: streak } = useGetStreak();
   const announcements = announcementsData?.announcements ?? [];
   const doctorTip = doctorTipData?.tip ?? null;
 
@@ -394,15 +396,40 @@ export default function Dashboard() {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-sans font-medium text-muted-foreground flex items-center gap-2">
               <Flame className="h-4 w-4 text-orange-500" />
-              Logging Streak
+              Wellness Streak
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-serif">
-              {summary.loggingStreakDays}{" "}
-              <span className="text-lg text-muted-foreground font-sans">days</span>
+            <div className="text-3xl font-serif" data-testid="text-streak-days">
+              {streak ? streak.current : summary.loggingStreakDays}{" "}
+              <span className="text-lg text-muted-foreground font-sans">
+                {(streak ? streak.current : summary.loggingStreakDays) === 1 ? "day" : "days"}
+              </span>
             </div>
-            <p className="text-sm text-muted-foreground mt-1">Keep it up!</p>
+            {streak?.nextMilestone ? (
+              <>
+                <Progress
+                  value={Math.min(100, (streak.current / streak.nextMilestone.days) * 100)}
+                  className="h-2 mt-3"
+                />
+                <p className="text-sm text-muted-foreground mt-1">
+                  {streak.nextMilestone.days - streak.current} more{" "}
+                  {streak.nextMilestone.days - streak.current === 1 ? "day" : "days"} to +
+                  {streak.nextMilestone.points} pts
+                </p>
+              </>
+            ) : streak ? (
+              <p className="text-sm text-muted-foreground mt-1">
+                All milestones earned — longest: {streak.longest} days
+              </p>
+            ) : (
+              <p className="text-sm text-muted-foreground mt-1">Keep it up!</p>
+            )}
+            {streak && !streak.todayCounted && (
+              <p className="text-xs text-orange-600/80 mt-1">
+                Log anything today to keep your streak alive
+              </p>
+            )}
           </CardContent>
         </Card>
 

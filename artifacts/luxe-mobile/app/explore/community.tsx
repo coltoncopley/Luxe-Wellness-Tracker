@@ -7,12 +7,16 @@ import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import type { CommunityPost, CreateCommunityPostInputCategory } from "@workspace/api-client-react";
+import type { Challenge } from "@workspace/api-client-react";
 import {
+  getGetChallengesQueryKey,
   getGetCommunityPostsQueryKey,
   getGetRewardsSummaryQueryKey,
   useCreateCommunityPost,
   useDeleteCommunityPost,
+  useGetChallenges,
   useGetCommunityPosts,
+  useJoinChallenge,
   useToggleCommunityHeart,
 } from "@workspace/api-client-react";
 
@@ -112,6 +116,8 @@ export default function CommunityScreen() {
         </Text>
       </View>
 
+      <ChallengesSection />
+
       {list.length === 0 ? (
         <Card style={{ marginTop: 8 }}>
           <EmptyState
@@ -150,6 +156,146 @@ export default function CommunityScreen() {
         }}
       />
     </StackScreen>
+  );
+}
+
+const METRIC_UNITS: Record<string, string> = {
+  log_days: "days",
+  meals: "meals",
+  glow_checkins: "check-ins",
+  weigh_ins: "weigh-ins",
+  active_minutes: "minutes",
+};
+
+function monthName(month: string): string {
+  return new Date(`${month}-15T12:00:00`).toLocaleDateString(undefined, { month: "long" });
+}
+
+function ChallengesSection() {
+  const c = useColors();
+  const queryClient = useQueryClient();
+  const challengesQuery = useGetChallenges();
+  const joinChallenge = useJoinChallenge();
+  const challenges = challengesQuery.data?.challenges ?? [];
+  if (challengesQuery.isLoading || challenges.length === 0) return null;
+
+  const currentMonth = new Date().toISOString().slice(0, 7);
+
+  const join = (ch: Challenge) => {
+    joinChallenge.mutate(
+      { id: ch.id },
+      {
+        onSuccess: () => {
+          void queryClient.invalidateQueries({ queryKey: getGetChallengesQueryKey() });
+          void queryClient.invalidateQueries({ queryKey: getGetRewardsSummaryQueryKey() });
+          Alert.alert("You're in!", `Good luck with ${ch.title}.`);
+        },
+        onError: () => Alert.alert("Couldn't join", "Please try again."),
+      },
+    );
+  };
+
+  return (
+    <View style={{ gap: 12, marginBottom: 8 }}>
+      {challenges.map((ch) => {
+        const isCurrent = ch.month === currentMonth;
+        const isUpcoming = ch.month > currentMonth;
+        const unit = METRIC_UNITS[ch.metric] ?? "";
+        const pct =
+          ch.target > 0 ? Math.min(100, Math.round((ch.progress / ch.target) * 100)) : 0;
+        return (
+          <Card key={ch.id} style={{ gap: 10, borderColor: ch.completed ? c.accent : c.border, borderWidth: 1 }}>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flex: 1 }}>
+                <Feather name="award" size={16} color={c.tint} />
+                <Text
+                  style={{
+                    fontFamily: "PlayfairDisplay_600SemiBold",
+                    fontSize: 16,
+                    color: c.foreground,
+                    flexShrink: 1,
+                  }}
+                >
+                  {ch.title}
+                </Text>
+              </View>
+              <View style={{ backgroundColor: c.secondary, borderRadius: 999, paddingVertical: 4, paddingHorizontal: 10 }}>
+                <Text style={{ fontFamily: "Inter_500Medium", fontSize: 11, color: c.secondaryForeground }}>
+                  {isUpcoming ? `Coming in ${monthName(ch.month)}` : monthName(ch.month)}
+                </Text>
+              </View>
+            </View>
+
+            <Text style={{ fontFamily: "Inter_400Regular", fontSize: 13, lineHeight: 19, color: c.mutedForeground }}>
+              {ch.description}
+            </Text>
+
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                <Feather name="users" size={12} color={c.mutedForeground} />
+                <Text style={{ fontFamily: "Inter_400Regular", fontSize: 12, color: c.mutedForeground }}>
+                  {ch.participantCount} joined
+                </Text>
+              </View>
+              {ch.completedCount > 0 ? (
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
+                  <Feather name="check-circle" size={12} color={c.mutedForeground} />
+                  <Text style={{ fontFamily: "Inter_400Regular", fontSize: 12, color: c.mutedForeground }}>
+                    {ch.completedCount} completed
+                  </Text>
+                </View>
+              ) : null}
+              <Text style={{ marginLeft: "auto", fontFamily: "Inter_600SemiBold", fontSize: 12, color: c.tint }}>
+                +{ch.points} pts
+              </Text>
+            </View>
+
+            {ch.completed ? (
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 8,
+                  backgroundColor: c.secondary,
+                  borderRadius: 12,
+                  paddingVertical: 10,
+                  paddingHorizontal: 12,
+                }}
+              >
+                <Feather name="check-circle" size={15} color={c.success} />
+                <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 13, color: c.foreground }}>
+                  Challenge complete — {ch.points} points earned!
+                </Text>
+              </View>
+            ) : ch.joined ? (
+              <View style={{ gap: 6 }}>
+                <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                  <Text style={{ fontFamily: "Inter_400Regular", fontSize: 12, color: c.mutedForeground }}>
+                    Your progress (only you can see this)
+                  </Text>
+                  <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 12, color: c.foreground }}>
+                    {ch.progress}/{ch.target} {unit}
+                  </Text>
+                </View>
+                <View style={{ height: 8, backgroundColor: c.secondary, borderRadius: 999, overflow: "hidden" }}>
+                  <View style={{ width: `${pct}%`, height: "100%", backgroundColor: c.tint, borderRadius: 999 }} />
+                </View>
+              </View>
+            ) : isCurrent ? (
+              <LuxeButton
+                label={joinChallenge.isPending ? "Joining…" : "Join this month's challenge"}
+                disabled={joinChallenge.isPending}
+                onPress={() => join(ch)}
+              />
+            ) : (
+              <Text style={{ fontFamily: "Inter_400Regular", fontSize: 12, color: c.mutedForeground }}>
+                Joins open on the 1st — get ready!
+              </Text>
+            )}
+          </Card>
+        );
+      })}
+    </View>
   );
 }
 
