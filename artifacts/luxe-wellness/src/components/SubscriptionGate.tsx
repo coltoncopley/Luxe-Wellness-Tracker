@@ -147,7 +147,12 @@ export function SubscriptionGate({ children }: { children: React.ReactNode }) {
 
   const status = statusQuery.data?.status;
   const exempt = statusQuery.data?.exempt === true;
-  const isMember = exempt || status === "trialing" || status === "active";
+  // Past-due grace: a failed renewal keeps access for a few days while Stripe
+  // retries the card; the server decides and reports the deadline.
+  const graceUntil = statusQuery.data?.graceUntil ?? null;
+  const inGrace =
+    status === "past_due" && !!graceUntil && new Date(graceUntil).getTime() > Date.now();
+  const isMember = exempt || status === "trialing" || status === "active" || inGrace;
 
   // Just returned from Stripe checkout: webhook sync can lag a few seconds,
   // so poll until the membership shows up (max 60s).
@@ -265,7 +270,31 @@ export function SubscriptionGate({ children }: { children: React.ReactNode }) {
   }
 
   if (isMember) {
-    return <>{children}</>;
+    return (
+      <>
+        {inGrace && (
+          <div
+            className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 bg-amber-100 px-4 py-2.5 text-center text-sm text-amber-900 dark:bg-amber-950 dark:text-amber-200"
+            data-testid="banner-past-due-grace"
+          >
+            <span>
+              Your last membership payment didn't go through — update your card to keep your
+              access.
+            </span>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => portal.mutate()}
+              disabled={portal.isPending}
+              data-testid="button-grace-update-payment"
+            >
+              Update payment
+            </Button>
+          </div>
+        )}
+        {children}
+      </>
+    );
   }
 
   if (waitingForActivation) {

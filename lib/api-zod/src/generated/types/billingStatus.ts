@@ -20,4 +20,6 @@ export interface BillingStatus {
   currentPeriodEnd?: string | null;
   /** True when the subscription is set to cancel at period end */
   cancelAtPeriodEnd?: boolean;
+  /** ISO timestamp when past-due grace access ends; set only while a failed payment is within the grace window */
+  graceUntil?: string | null;
 }

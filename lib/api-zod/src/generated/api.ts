@@ -17,7 +17,8 @@ export const GetBillingStatusResponse = zod.object({
   "priceCents": zod.number().describe('Monthly membership price in cents'),
   "trialEndsAt": zod.string().nullish().describe('ISO timestamp when the free trial ends, if trialing'),
   "currentPeriodEnd": zod.string().nullish().describe('ISO timestamp when the current billing period ends'),
-  "cancelAtPeriodEnd": zod.boolean().optional().describe('True when the subscription is set to cancel at period end')
+  "cancelAtPeriodEnd": zod.boolean().optional().describe('True when the subscription is set to cancel at period end'),
+  "graceUntil": zod.string().nullish().describe('ISO timestamp when past-due grace access ends; set only while a failed payment is within the grace window')
 })
 
 

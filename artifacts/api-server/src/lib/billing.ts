@@ -8,10 +8,18 @@ export const TRIAL_DAYS = 30;
 
 const ACTIVE_STATUSES = new Set(["trialing", "active"]);
 
+/**
+ * Days of continued access after a renewal charge first fails. Stripe keeps
+ * retrying the card during this window; if Stripe eventually cancels the
+ * subscription, access ends immediately regardless of the window.
+ */
+export const PAST_DUE_GRACE_DAYS = 7;
+
 export interface SubscriptionInfo {
   id: string;
   status: string;
   trialEnd: Date | null;
+  currentPeriodStart: Date | null;
   currentPeriodEnd: Date | null;
   cancelAtPeriodEnd: boolean;
 }
@@ -36,6 +44,7 @@ function rowToInfo(row: Record<string, unknown>): SubscriptionInfo {
     id: String(row["id"]),
     status: String(row["status"] ?? "canceled"),
     trialEnd: toDate(row["trial_end"]),
+    currentPeriodStart: toDate(row["current_period_start"]),
     currentPeriodEnd: toDate(row["current_period_end"]),
     cancelAtPeriodEnd: row["cancel_at_period_end"] === true,
   };
@@ -58,8 +67,23 @@ export async function getSubscriptionForCustomer(
   return rowToInfo(active ?? rows[0]!);
 }
 
+/**
+ * When a past_due subscription is still within the grace window, returns the
+ * moment grace access ends; otherwise null. The unpaid period starts at
+ * current_period_start, which is when the failed renewal charge was first
+ * attempted. If the mirror row lacks that timestamp, no grace is granted.
+ */
+export function pastDueGraceUntil(sub: SubscriptionInfo | null): Date | null {
+  if (!sub || sub.status !== "past_due" || !sub.currentPeriodStart) return null;
+  const until = new Date(
+    sub.currentPeriodStart.getTime() + PAST_DUE_GRACE_DAYS * 24 * 60 * 60 * 1000,
+  );
+  return until > new Date() ? until : null;
+}
+
 export function isSubscriptionActive(sub: SubscriptionInfo | null): boolean {
-  return sub !== null && ACTIVE_STATUSES.has(sub.status);
+  if (sub === null) return false;
+  return ACTIVE_STATUSES.has(sub.status) || pastDueGraceUntil(sub) !== null;
 }
 
 let cachedPriceId: string | null = null;

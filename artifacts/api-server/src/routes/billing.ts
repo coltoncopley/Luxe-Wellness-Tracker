@@ -14,6 +14,7 @@ import {
   TRIAL_DAYS,
   getMembershipPriceId,
   getSubscriptionForCustomer,
+  pastDueGraceUntil,
 } from "../lib/billing";
 import { clearSubscriptionCache } from "../middlewares/subscription";
 
@@ -75,6 +76,7 @@ router.get("/billing/status", async (_req, res, next): Promise<void> => {
     let trialEndsAt: string | null = null;
     let currentPeriodEnd: string | null = null;
     let cancelAtPeriodEnd = false;
+    let graceUntil: string | null = null;
 
     if (user.stripeCustomerId) {
       const sub = await getSubscriptionForCustomer(user.stripeCustomerId);
@@ -83,6 +85,7 @@ router.get("/billing/status", async (_req, res, next): Promise<void> => {
         trialEndsAt = sub.trialEnd?.toISOString() ?? null;
         currentPeriodEnd = sub.currentPeriodEnd?.toISOString() ?? null;
         cancelAtPeriodEnd = sub.cancelAtPeriodEnd;
+        graceUntil = pastDueGraceUntil(sub)?.toISOString() ?? null;
         if (user.stripeSubscriptionId !== sub.id) {
           await db
             .update(usersTable)
@@ -103,6 +106,7 @@ router.get("/billing/status", async (_req, res, next): Promise<void> => {
         trialEndsAt,
         currentPeriodEnd,
         cancelAtPeriodEnd,
+        graceUntil,
       }),
     );
   } catch (err) {

@@ -230,7 +230,15 @@ function Gate({ children }: { children: React.ReactElement }) {
   if (!me.data.privacyAcknowledged) return <PrivacyAckModal />;
 
   const b = billing.data;
-  const hasAccess = !!b && (b.exempt || b.status === "active" || b.status === "trialing");
+  // Past-due grace: the server keeps access for a few days after a failed
+  // renewal while Stripe retries the card (graceUntil reports the deadline).
+  const inGrace =
+    !!b &&
+    b.status === "past_due" &&
+    !!b.graceUntil &&
+    new Date(b.graceUntil).getTime() > Date.now();
+  const hasAccess =
+    !!b && (b.exempt || b.status === "active" || b.status === "trialing" || inGrace);
   if (!hasAccess) return <MembershipGate />;
 
   return children;

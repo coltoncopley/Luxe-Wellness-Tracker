@@ -3173,6 +3173,10 @@ components:
         cancelAtPeriodEnd:
           type: boolean
           description: True when the subscription is set to cancel at period end
+        graceUntil:
+          type: string
+          nullable: true
+          description: ISO timestamp when past-due grace access ends; set only while a failed payment is within the grace window
     CompAccess:
       type: object
       required: [userId, email, firstName, lifetime, until]
