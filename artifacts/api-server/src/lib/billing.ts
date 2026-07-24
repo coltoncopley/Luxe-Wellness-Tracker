@@ -44,8 +44,8 @@ function rowToInfo(row: Record<string, unknown>): SubscriptionInfo {
     id: String(row["id"]),
     status: String(row["status"] ?? "canceled"),
     trialEnd: toDate(row["trial_end"]),
-    currentPeriodStart: toDate(row["current_period_start"]),
-    currentPeriodEnd: toDate(row["current_period_end"]),
+    currentPeriodStart: toDate(row["current_period_start"]) ?? toDate(row["item_period_start"]),
+    currentPeriodEnd: toDate(row["current_period_end"]) ?? toDate(row["item_period_end"]),
     cancelAtPeriodEnd: row["cancel_at_period_end"] === true,
   };
 }
@@ -54,12 +54,20 @@ function rowToInfo(row: Record<string, unknown>): SubscriptionInfo {
  * Returns the most relevant subscription for a Stripe customer from the synced
  * stripe.subscriptions table: an active/trialing one if present, otherwise the
  * most recently created one. Returns null if the customer has none.
+ *
+ * Newer Stripe API versions moved current_period_start/end onto subscription
+ * items, leaving the subscription-level columns NULL in the mirror (verified
+ * against a live test subscription). The item-level values are selected as a
+ * fallback so the past-due grace window can be computed.
  */
 export async function getSubscriptionForCustomer(
   customerId: string,
 ): Promise<SubscriptionInfo | null> {
   const result = await db.execute(
-    sql`SELECT * FROM stripe.subscriptions WHERE customer = ${customerId} ORDER BY created DESC NULLS LAST LIMIT 20`,
+    sql`SELECT s.*,
+      (SELECT MIN(si.current_period_start) FROM stripe.subscription_items si WHERE si.subscription = s.id) AS item_period_start,
+      (SELECT MAX(si.current_period_end) FROM stripe.subscription_items si WHERE si.subscription = s.id) AS item_period_end
+    FROM stripe.subscriptions s WHERE s.customer = ${customerId} ORDER BY s.created DESC NULLS LAST LIMIT 20`,
   );
   const rows = result.rows as Array<Record<string, unknown>>;
   if (rows.length === 0) return null;
