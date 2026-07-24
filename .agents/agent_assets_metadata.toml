@@ -77,3 +77,9 @@ id = "rHKtXUFz7nQdE5Iu_Hf4B"
 uri = "file://attached_assets/stock_images/test_face.jpg"
 type = "image"
 title = "clear front facing portrait of a person's face, natural light, no makeup, plain background"
+
+[[outputs]]
+id = "xlJm9WAj4sHcL-pkq7yqH"
+uri = "file://docs/luxe-app-overview-for-ai-feedback.md"
+type = "text"
+title = "LUXE App Overview — for AI feedback"
