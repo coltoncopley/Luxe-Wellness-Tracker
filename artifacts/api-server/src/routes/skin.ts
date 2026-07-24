@@ -1,7 +1,7 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import { asc, eq } from "drizzle-orm";
 import { db, skinScansTable } from "@workspace/db";
-import { openai } from "@workspace/integrations-openai-ai-server";
+import { openrouter as openai } from "@workspace/integrations-openrouter-ai";
 import { z } from "zod/v4";
 import {
   AnalyzeSkinScanBody,
@@ -82,7 +82,7 @@ router.post("/skin-scan/analyze", async (req: Request, res: Response) => {
   }
 
   const completion = await openai.chat.completions.create({
-    model: "gpt-5.4",
+    model: "x-ai/grok-4.5",
     messages: [
       {
         role: "system",

@@ -1,7 +1,10 @@
 import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
 import { eq, asc, ilike, and, desc, or, isNull, inArray, sql } from "drizzle-orm";
 import { db, restaurantsTable, menuItemsTable, foodLogsTable, goalsTable } from "@workspace/db";
-import { openai } from "@workspace/integrations-openai-ai-server";
+import { openrouter as openai } from "@workspace/integrations-openrouter-ai";
+// Web-search grounding (responses API) is only available on the OpenAI proxy —
+// OpenRouter/Grok via AI Integrations supports chat completions only.
+import { openai as openaiWebSearch } from "@workspace/integrations-openai-ai-server";
 import { z } from "zod/v4";
 import { awardWithDailyCap, POINTS, FOOD_LOG_DAILY_CAP } from "../lib/rewards";
 import { userIdOf, requirePatient } from "../middlewares/auth";
@@ -417,7 +420,7 @@ async function generateGroundedMenu(
   cuisine?: string,
   location?: string,
 ): Promise<string | null> {
-  const response = await openai.responses.create({
+  const response = await openaiWebSearch.responses.create({
     model: "gpt-5.4",
     tools: [{ type: "web_search" }],
     instructions:
@@ -438,7 +441,7 @@ async function generateTypicalMenu(
   location?: string,
 ): Promise<string | null> {
   const completion = await openai.chat.completions.create({
-    model: "gpt-5.4",
+    model: "x-ai/grok-4.5",
     messages: [
       {
         role: "system",
@@ -466,7 +469,7 @@ const DISCOVER_JSON_SHAPE =
 async function generateDiscovery(
   location: string,
 ): Promise<{ raw: string | null; searched: boolean }> {
-  const response = await openai.responses.create({
+  const response = await openaiWebSearch.responses.create({
     model: "gpt-5.4",
     tools: [{ type: "web_search" }],
     instructions:
@@ -1025,7 +1028,7 @@ router.post("/food/analyze-photo", async (req, res): Promise<void> => {
   }
 
   const completion = await openai.chat.completions.create({
-    model: "gpt-5.4",
+    model: "x-ai/grok-4.5",
     messages: [
       {
         role: "system",

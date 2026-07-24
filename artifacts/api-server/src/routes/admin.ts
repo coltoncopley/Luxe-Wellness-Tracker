@@ -8,7 +8,7 @@ import {
 import crypto from "node:crypto";
 import { z } from "zod/v4";
 import { and, asc, desc, eq, gt, inArray, isNull, or, sql } from "drizzle-orm";
-import { openai } from "@workspace/integrations-openai-ai-server";
+import { openrouter as openai } from "@workspace/integrations-openrouter-ai";
 import {
   db,
   servicesTable,
@@ -1155,7 +1155,7 @@ router.post("/admin/doctor-tips/generate", requireAdmin, async (req, res): Promi
     .orderBy(desc(doctorTipsTable.createdAt))
     .limit(50);
   const completion = await openai.chat.completions.create({
-    model: "gpt-5.4",
+    model: "x-ai/grok-4.5",
     messages: [
       {
         role: "system",

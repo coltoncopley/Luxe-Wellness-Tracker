@@ -10,7 +10,7 @@ import {
   weeklyReportsTable,
   type WeeklyReportContent,
 } from "@workspace/db";
-import { openai } from "@workspace/integrations-openai-ai-server";
+import { openrouter as openai } from "@workspace/integrations-openrouter-ai";
 import { userIdOf } from "../middlewares/auth";
 import { computeGlowScore } from "./glow";
 import { todayET, addDays, weekOfET } from "../lib/dates";
@@ -156,7 +156,7 @@ async function generateReport(stats: WeekStats): Promise<WeeklyReportContent | n
 
   const completion = await Promise.race([
     openai.chat.completions.create({
-      model: "gpt-5.4",
+      model: "x-ai/grok-4.5",
       response_format: { type: "json_object" },
       messages: [
         {

@@ -12,7 +12,7 @@ import {
   sleepEntriesTable,
 } from "@workspace/db";
 import { GetBriefingResponse } from "@workspace/api-zod";
-import { openai } from "@workspace/integrations-openai-ai-server";
+import { openrouter as openai } from "@workspace/integrations-openrouter-ai";
 import { userIdOf } from "../middlewares/auth";
 import { computeGlowScore } from "./glow";
 
@@ -102,7 +102,7 @@ async function generateAiBriefing(stats: BriefingStats): Promise<string | null> 
 
   const completion = await Promise.race([
     openai.chat.completions.create({
-      model: "gpt-5.4",
+      model: "x-ai/grok-4.5",
       messages: [
         {
           role: "system",

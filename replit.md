@@ -22,7 +22,7 @@ Patient companion app for LUXE Wellness and Aesthetics (physician-owned med spa 
 
 ## Stack & layout
 
-- pnpm workspaces, Node 24, TS 5.9. API: Express 5. DB: Postgres + Drizzle. Zod (`zod/v4`). Orval codegen from `lib/api-spec/openapi.yaml` (source of truth). Frontend: React + Vite (artifacts/luxe-wellness), wouter, TanStack Query, shadcn/ui, recharts. Mobile: Expo (artifacts/luxe-mobile). AI: Replit AI Integrations OpenAI proxy (gpt-5.4, `lib/integrations-openai-ai-server`).
+- pnpm workspaces, Node 24, TS 5.9. API: Express 5. DB: Postgres + Drizzle. Zod (`zod/v4`). Orval codegen from `lib/api-spec/openapi.yaml` (source of truth). Frontend: React + Vite (artifacts/luxe-wellness), wouter, TanStack Query, shadcn/ui, recharts. Mobile: Expo (artifacts/luxe-mobile). AI: Replit AI Integrations — Grok 4.5 via OpenRouter proxy (`x-ai/grok-4.5`, `lib/integrations-openrouter-ai`) for ALL AI features (chat, briefing, reports, meal plans, photo/skin/product scans, admin tip drafts); EXCEPTION: web-search-grounded calls (restaurant menu/discovery `responses.create` in routes/food.ts, enrich-menus + gen-menus scripts) stay on the OpenAI proxy (gpt-5.4, `lib/integrations-openai-ai-server`) — OpenRouter AI Integrations supports chat completions only, no responses API/web_search.
 - Schemas in `lib/db/src/schema/`, routes in `artifacts/api-server/src/routes/`, seed in `scripts/src/seed.ts`, logo at `attached_assets/brand/luxe_logo.jpeg`. File names map 1:1 to features — grep is reliable.
 
 ## Architecture (summary — full detail in `docs/architecture.md`)

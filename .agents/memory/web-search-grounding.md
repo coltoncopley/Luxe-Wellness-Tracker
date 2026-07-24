@@ -27,3 +27,6 @@ was verified against the live proxy before shipping.
 **How to apply:** any new "find real X near me / online" AI feature. Diverge from the older
 `/restaurants/custom` "typical menu" flow, which intentionally has a non-grounded fallback —
 discovery-style features must NOT fall back to ungrounded generation.
+
+## Provider routing constraint (2026-07)
+The OpenRouter AI Integrations proxy supports chat completions ONLY — no responses API, no web_search tool. Any web-grounded feature must stay on the OpenAI proxy even if the rest of the app uses another model. Also: xAI/Grok rejects vision inputs smaller than 8x8 px — use a ≥8px real PNG for vision smoke tests, not a 1x1 data URL.

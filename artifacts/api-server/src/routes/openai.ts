@@ -19,7 +19,7 @@ import {
   CreateOpenaiConversationBody,
   SendOpenaiMessageBody,
 } from "@workspace/api-zod";
-import { openai } from "@workspace/integrations-openai-ai-server";
+import { openrouter as openai } from "@workspace/integrations-openrouter-ai";
 import { userIdOf } from "../middlewares/auth";
 import { computeGlowScore } from "./glow";
 
@@ -331,7 +331,7 @@ router.post("/openai/conversations/:id/messages", async (req, res): Promise<void
   try {
     let fullResponse = "";
     const stream = await openai.chat.completions.create({
-      model: "gpt-5.4",
+      model: "x-ai/grok-4.5",
       max_completion_tokens: 8192,
       messages: chatMessages,
       stream: true,

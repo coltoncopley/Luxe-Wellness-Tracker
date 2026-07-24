@@ -9,7 +9,7 @@ import {
   type MealPlanContent,
   type MealPlanDay,
 } from "@workspace/db";
-import { openai } from "@workspace/integrations-openai-ai-server";
+import { openrouter as openai } from "@workspace/integrations-openrouter-ai";
 import { userIdOf } from "../middlewares/auth";
 import { todayET, addDays, weekOfET } from "../lib/dates";
 
@@ -103,7 +103,7 @@ async function generatePlan(
 
   const completion = await Promise.race([
     openai.chat.completions.create({
-      model: "gpt-5.4",
+      model: "x-ai/grok-4.5",
       response_format: { type: "json_object" },
       messages: [
         {
