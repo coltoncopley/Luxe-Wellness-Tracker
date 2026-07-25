@@ -12,6 +12,7 @@ import {
 } from "./schema";
 import { RESTAURANT_MENU_EXTRA } from "./restaurant-menu-extra";
 import { EXERCISE_LIBRARY } from "./seed-exercises";
+import { EXERCISE_VIDEO_IDS } from "./exercise-videos";
 
 const BOOKING_URL = "https://hklqy.myaestheticrecord.com/online-booking";
 
@@ -398,11 +399,20 @@ async function seedTips(tx: Tx, log: LogFn) {
 }
 
 async function seedExercises(tx: Tx, log: LogFn) {
-  const existing = await tx.select().from(exercisesTable).limit(1);
-  if (existing.length === 0) {
-    await tx.insert(exercisesTable).values(EXERCISE_LIBRARY);
-    log(`Seeded ${EXERCISE_LIBRARY.length} exercises.`);
-  }
+  // Upsert (not insert-once) so curated how-to video ids backfill onto rows
+  // that were seeded before the howToVideoId column existed (dev + prod).
+  const values = EXERCISE_LIBRARY.map((e) => ({
+    ...e,
+    howToVideoId: EXERCISE_VIDEO_IDS[e.name] ?? null,
+  }));
+  await tx
+    .insert(exercisesTable)
+    .values(values)
+    .onConflictDoUpdate({
+      target: exercisesTable.name,
+      set: { howToVideoId: sql`excluded.how_to_video_id` },
+    });
+  log(`Seeded/updated ${values.length} exercises.`);
 }
 
 /**

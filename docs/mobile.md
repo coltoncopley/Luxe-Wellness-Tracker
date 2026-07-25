@@ -29,3 +29,4 @@ Expo + expo-router patient-only native app reusing api-server. The always-loaded
 - **Apple 3.1.1 Netflix model:** no IAP, no purchase links; MembershipGate says membership is managed on the website + access-code redemption only.
 - Gate order: privacy ack → membership (staff/admin/comp exempt).
 - App Store submission kit in exports/app-store/, screenshots in screenshots/appstore/. App Store Connect ID 6788731422.
+- **Native modules need a fresh native build, never OTA:** `react-native-webview` (exercise "Watch how-to" player, `components/HowToVideoPlayer.native.tsx`) is a native module — it must ship in a full EAS build. Do NOT push an OTA/EAS Update containing its JS to an already-installed binary that lacks it (the player would crash with "module not found"). Expo Go and Expo web are unaffected (web uses the DOM-iframe variant `HowToVideoPlayer.tsx`).

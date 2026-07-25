@@ -5806,6 +5806,9 @@ components:
         category: { type: string }
         difficulty: { type: string }
         instructions: { type: string }
+        howToVideoId:
+          type: ["string", "null"]
+          description: YouTube video id for the in-app how-to demo player. Null falls back to a YouTube search link.
     WorkoutPreferences:
       type: object
       required: [goal, experienceLevel, equipment, targetDurationMins, daysPerWeek, limitations]

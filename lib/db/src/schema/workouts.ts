@@ -51,6 +51,7 @@ export const exercisesTable = pgTable("exercises", {
   category: text("category").notNull(),
   difficulty: text("difficulty").notNull().default("beginner"),
   instructions: text("instructions").notNull(),
+  howToVideoId: text("how_to_video_id"),
 });
 
 export type Exercise = typeof exercisesTable.$inferSelect;

@@ -14,3 +14,4 @@
 - [Drizzle push dev drift](drizzle-push-dev-drift.md) — push prompts on index-vs-constraint drift; diagnose and fix with `ADD CONSTRAINT ... USING INDEX`, never pipe blind answers.
 - [Expo config-plugin permission strings](expo-camera-plugin-permissions.md) — expo-camera injects mic permissions unless disabled; later plugins overwrite earlier iOS purpose strings, so the last one must cover all camera uses.
 - [External quota-limited API endpoints](external-api-quota-endpoints.md) — rate-limit the detail/`:id` fetch too (not just search); detect fetch timeouts via `controller.signal.aborted`, not `instanceof Error`.
+- [Expo native-only modules on web + OTA](expo-native-only-modules.md) — native-only RN libs (react-native-webview) need a `.native.tsx`/`.tsx` platform-file split so web bundles an iframe alt; verify via web entry.bundle grep; adding one forces a fresh EAS build before any OTA.

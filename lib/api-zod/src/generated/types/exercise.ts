@@ -15,4 +15,9 @@ export interface Exercise {
   category: string;
   difficulty: string;
   instructions: string;
+  /**
+     * YouTube video id for the in-app how-to demo player. Null falls back to a YouTube search link.
+     * @nullable
+     */
+  howToVideoId?: string | null;
 }

@@ -1,7 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import { useQueryClient } from "@tanstack/react-query";
 import React, { useMemo, useState } from "react";
-import { Linking, Modal, Pressable, ScrollView, Text, View } from "react-native";
+import { Modal, Pressable, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Alert } from "@/lib/alert";
 
@@ -50,6 +50,7 @@ import {
   Stepper,
 } from "@/components/ui";
 import { useColors } from "@/hooks/useColors";
+import { HowToVideo } from "@/components/HowToVideo";
 
 const MUSCLE_LABELS: Record<string, string> = {
   chest: "Chest",
@@ -118,12 +119,6 @@ const ENERGY_OPTIONS: { key: string; label: string }[] = [
 
 function muscleLabel(key: string): string {
   return MUSCLE_LABELS[key] ?? key;
-}
-
-/** Deep-link to a YouTube search for a proper-form demo of the given exercise. */
-function openHowToVideo(exerciseName: string): void {
-  const query = encodeURIComponent(`how to ${exerciseName} proper form technique`);
-  void Linking.openURL(`https://www.youtube.com/results?search_query=${query}`);
 }
 
 function fmtWorkoutDate(date: string): string {
@@ -287,13 +282,7 @@ function ExerciseLibraryList({
                     ? `\n\nAlso works: ${e.secondaryMuscles.map(muscleLabel).join(", ")}`
                     : ""}
                 </Text>
-                <LuxeButton
-                  label="Watch how-to"
-                  small
-                  variant="outline"
-                  icon="play-circle"
-                  onPress={() => openHowToVideo(e.name)}
-                />
+                <HowToVideo exerciseName={e.name} videoId={e.howToVideoId} variant="button" />
               </View>
             ) : null}
           </Card>
@@ -598,16 +587,11 @@ function ExerciseBlock({
 
       {!completed ? <SuggestionHint exerciseId={we.exerciseId} /> : null}
 
-      <Pressable
-        onPress={() => openHowToVideo(we.exercise.name)}
-        hitSlop={6}
-        style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
-      >
-        <Feather name="play-circle" size={13} color={c.accent} />
-        <Text style={{ fontFamily: "Inter_500Medium", fontSize: 12, color: c.accent }}>
-          Watch how-to
-        </Text>
-      </Pressable>
+      <HowToVideo
+        exerciseName={we.exercise.name}
+        videoId={we.exercise.howToVideoId}
+        variant="link"
+      />
 
       {we.sets.length > 0 ? (
         <View style={{ gap: 6 }}>

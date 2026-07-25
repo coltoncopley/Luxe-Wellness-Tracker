@@ -66,6 +66,7 @@
     "expo-clipboard": "~8.0.8",
     "expo-contacts": "~15.0.11",
     "expo-sensors": "~15.0.8",
-    "react-native-nitro-modules": "0.36.1"
+    "react-native-nitro-modules": "0.36.1",
+    "react-native-webview": "13.15.0"
   }
 }

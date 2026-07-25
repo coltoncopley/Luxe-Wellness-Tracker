@@ -36,10 +36,10 @@ import {
   Sparkles,
   Lightbulb,
   X,
-  PlayCircle,
 } from "lucide-react";
 import { toast } from "sonner";
-import { muscleLabel, equipmentLabel, howToVideoUrl } from "./labels";
+import { muscleLabel, equipmentLabel } from "./labels";
+import { HowToVideo } from "./HowToVideo";
 import { LibraryTab } from "./LibraryTab";
 
 function SuggestionHint({ exerciseId }: { exerciseId: number }) {
@@ -119,16 +119,12 @@ function ExerciseBlock({
             </div>
             {target && <p className="text-xs text-muted-foreground mt-1">{target}</p>}
             {!completed && <SuggestionHint exerciseId={we.exerciseId} />}
-            <a
-              href={howToVideoUrl(we.exercise.name)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs text-primary hover:underline inline-flex items-center gap-1 mt-1.5"
-              data-testid={`link-how-to-${we.id}`}
-            >
-              <PlayCircle className="h-3.5 w-3.5" />
-              Watch how-to
-            </a>
+            <HowToVideo
+              exerciseName={we.exercise.name}
+              videoId={we.exercise.howToVideoId}
+              variant="link"
+              testId={`link-how-to-${we.id}`}
+            />
           </div>
           {!completed && (
             <Button

@@ -1141,7 +1141,8 @@ export const ListExercisesResponseItem = zod.object({
   "equipment": zod.string(),
   "category": zod.string(),
   "difficulty": zod.string(),
-  "instructions": zod.string()
+  "instructions": zod.string(),
+  "howToVideoId": zod.string().nullish().describe('YouTube video id for the in-app how-to demo player. Null falls back to a YouTube search link.')
 })
 export const ListExercisesResponse = zod.array(ListExercisesResponseItem)
 
@@ -1260,7 +1261,8 @@ export const CreateWorkoutResponse = zod.object({
   "equipment": zod.string(),
   "category": zod.string(),
   "difficulty": zod.string(),
-  "instructions": zod.string()
+  "instructions": zod.string(),
+  "howToVideoId": zod.string().nullish().describe('YouTube video id for the in-app how-to demo player. Null falls back to a YouTube search link.')
 }),
   "sets": zod.array(zod.object({
   "id": zod.number(),
@@ -1346,7 +1348,8 @@ export const GenerateWorkoutResponse = zod.object({
   "equipment": zod.string(),
   "category": zod.string(),
   "difficulty": zod.string(),
-  "instructions": zod.string()
+  "instructions": zod.string(),
+  "howToVideoId": zod.string().nullish().describe('YouTube video id for the in-app how-to demo player. Null falls back to a YouTube search link.')
 }),
   "sets": zod.array(zod.object({
   "id": zod.number(),
@@ -1393,7 +1396,8 @@ export const GetWorkoutResponse = zod.object({
   "equipment": zod.string(),
   "category": zod.string(),
   "difficulty": zod.string(),
-  "instructions": zod.string()
+  "instructions": zod.string(),
+  "howToVideoId": zod.string().nullish().describe('YouTube video id for the in-app how-to demo player. Null falls back to a YouTube search link.')
 }),
   "sets": zod.array(zod.object({
   "id": zod.number(),
@@ -1451,7 +1455,8 @@ export const UpdateWorkoutResponse = zod.object({
   "equipment": zod.string(),
   "category": zod.string(),
   "difficulty": zod.string(),
-  "instructions": zod.string()
+  "instructions": zod.string(),
+  "howToVideoId": zod.string().nullish().describe('YouTube video id for the in-app how-to demo player. Null falls back to a YouTube search link.')
 }),
   "sets": zod.array(zod.object({
   "id": zod.number(),
@@ -1506,7 +1511,8 @@ export const CompleteWorkoutResponse = zod.object({
   "equipment": zod.string(),
   "category": zod.string(),
   "difficulty": zod.string(),
-  "instructions": zod.string()
+  "instructions": zod.string(),
+  "howToVideoId": zod.string().nullish().describe('YouTube video id for the in-app how-to demo player. Null falls back to a YouTube search link.')
 }),
   "sets": zod.array(zod.object({
   "id": zod.number(),
@@ -1559,7 +1565,8 @@ export const AddWorkoutExerciseResponse = zod.object({
   "equipment": zod.string(),
   "category": zod.string(),
   "difficulty": zod.string(),
-  "instructions": zod.string()
+  "instructions": zod.string(),
+  "howToVideoId": zod.string().nullish().describe('YouTube video id for the in-app how-to demo player. Null falls back to a YouTube search link.')
 }),
   "sets": zod.array(zod.object({
   "id": zod.number(),
@@ -1610,7 +1617,8 @@ export const UpdateWorkoutExerciseResponse = zod.object({
   "equipment": zod.string(),
   "category": zod.string(),
   "difficulty": zod.string(),
-  "instructions": zod.string()
+  "instructions": zod.string(),
+  "howToVideoId": zod.string().nullish().describe('YouTube video id for the in-app how-to demo player. Null falls back to a YouTube search link.')
 }),
   "sets": zod.array(zod.object({
   "id": zod.number(),
