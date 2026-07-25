@@ -6,6 +6,7 @@ import {
   useGenerateWorkout,
   getGetMuscleRecoveryQueryKey,
   type WorkoutListItem,
+  type GenerateWorkoutInput,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
@@ -27,6 +28,7 @@ import { RecoveryTab } from "@/components/workouts/RecoveryTab";
 import { LibraryTab } from "@/components/workouts/LibraryTab";
 import { PreferencesDialog } from "@/components/workouts/PreferencesDialog";
 import { WorkoutDetailView } from "@/components/workouts/WorkoutDetailView";
+import { GenerateWorkoutDialog } from "@/components/workouts/GenerateWorkoutDialog";
 
 function fmtDate(date: string): string {
   return new Date(`${date}T12:00:00`).toLocaleDateString(undefined, {
@@ -86,6 +88,7 @@ export default function Workouts() {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [prefsOpen, setPrefsOpen] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
+  const [generateOpen, setGenerateOpen] = useState(false);
   const [newTitle, setNewTitle] = useState("");
 
   const today = new Date().toLocaleDateString("en-CA");
@@ -97,22 +100,26 @@ export default function Workouts() {
     void queryClient.invalidateQueries({ queryKey: getGetMuscleRecoveryQueryKey() });
   };
 
-  const runGenerate = () => {
-    generate.mutate(undefined, {
-      onSuccess: (result) => {
-        refresh();
-        setSelectedId(result.workout.id);
-        toast.success("Your workout is ready!");
+  const runGenerate = (input: GenerateWorkoutInput) => {
+    generate.mutate(
+      { data: input },
+      {
+        onSuccess: (result) => {
+          refresh();
+          setGenerateOpen(false);
+          setSelectedId(result.workout.id);
+          toast.success("Your workout is ready!");
+        },
+        onError: (err) => {
+          const e = err as { status?: number; data?: { error?: string } };
+          if (e.status === 429) {
+            toast.error(e.data?.error ?? "You've used today's AI workouts — more unlock tomorrow!");
+          } else {
+            toast.error("Couldn't build your workout just now. Please try again in a moment.");
+          }
+        },
       },
-      onError: (err) => {
-        const e = err as { status?: number; data?: { error?: string } };
-        if (e.status === 429) {
-          toast.error(e.data?.error ?? "You've used today's AI workouts — more unlock tomorrow!");
-        } else {
-          toast.error("Couldn't build your workout just now. Please try again in a moment.");
-        }
-      },
-    });
+    );
   };
 
   const runCreate = () => {
@@ -176,7 +183,7 @@ export default function Workouts() {
         <Button
           className="rounded-full flex-1"
           disabled={generate.isPending}
-          onClick={runGenerate}
+          onClick={() => setGenerateOpen(true)}
           data-testid="button-generate-workout"
         >
           <Sparkles className="mr-2 h-4 w-4" />
@@ -252,6 +259,13 @@ export default function Workouts() {
           <LibraryTab />
         </TabsContent>
       </Tabs>
+
+      <GenerateWorkoutDialog
+        open={generateOpen}
+        onOpenChange={setGenerateOpen}
+        onGenerate={runGenerate}
+        isPending={generate.isPending}
+      />
 
       <PreferencesDialog open={prefsOpen} onOpenChange={setPrefsOpen} />
 

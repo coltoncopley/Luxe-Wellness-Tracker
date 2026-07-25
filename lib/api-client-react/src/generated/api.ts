@@ -82,6 +82,7 @@ import type {
   FriendJourneysResponse,
   GenerateMealPlan200,
   GenerateWorkout200,
+  GenerateWorkoutInput,
   GetActivitySummaryParams,
   GetChallenges200,
   GetCommunityPosts200,
@@ -4505,14 +4506,14 @@ export const getGenerateWorkoutUrl = () => {
 /**
  * @summary Generate an AI workout for today — max 3 per day
  */
-export const generateWorkout = async ( options?: RequestInit): Promise<GenerateWorkout200> => {
+export const generateWorkout = async (generateWorkoutInput?: GenerateWorkoutInput, options?: RequestInit): Promise<GenerateWorkout200> => {
 
   return customFetch<GenerateWorkout200>(getGenerateWorkoutUrl(),
   {
     ...options,
-    method: 'POST'
-
-
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(generateWorkoutInput)
   }
 );}
 
@@ -4520,8 +4521,8 @@ export const generateWorkout = async ( options?: RequestInit): Promise<GenerateW
 
 
 export const getGenerateWorkoutMutationOptions = <TError = ErrorType<void | OpenaiError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateWorkout>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
-): UseMutationOptions<Awaited<ReturnType<typeof generateWorkout>>, TError,void, TContext> => {
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateWorkout>>, TError,{data?: BodyType<GenerateWorkoutInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof generateWorkout>>, TError,{data?: BodyType<GenerateWorkoutInput>}, TContext> => {
 
 const mutationKey = ['generateWorkout'];
 const {mutation: mutationOptions, request: requestOptions} = options ?
@@ -4533,10 +4534,10 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
 
 
 
-      const mutationFn: MutationFunction<Awaited<ReturnType<typeof generateWorkout>>, void> = () => {
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof generateWorkout>>, {data?: BodyType<GenerateWorkoutInput>}> = (props) => {
+          const {data} = props ?? {};
 
-
-          return  generateWorkout(requestOptions)
+          return  generateWorkout(data,requestOptions)
         }
 
 
@@ -4547,18 +4548,18 @@ const {mutation: mutationOptions, request: requestOptions} = options ?
   return  { mutationFn, ...mutationOptions }}
 
     export type GenerateWorkoutMutationResult = NonNullable<Awaited<ReturnType<typeof generateWorkout>>>
-
+    export type GenerateWorkoutMutationBody = BodyType<GenerateWorkoutInput> | undefined
     export type GenerateWorkoutMutationError = ErrorType<void | OpenaiError>
 
     /**
  * @summary Generate an AI workout for today — max 3 per day
  */
 export const useGenerateWorkout = <TError = ErrorType<void | OpenaiError>,
-    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateWorkout>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof generateWorkout>>, TError,{data?: BodyType<GenerateWorkoutInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
  ): UseMutationResult<
         Awaited<ReturnType<typeof generateWorkout>>,
         TError,
-        void,
+        {data?: BodyType<GenerateWorkoutInput>},
         TContext
       > => {
       return useMutation(getGenerateWorkoutMutationOptions(options));

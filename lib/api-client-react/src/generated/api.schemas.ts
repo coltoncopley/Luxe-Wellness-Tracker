@@ -2554,6 +2554,49 @@ export type WorkoutDetail = Workout & {
   exercises: WorkoutExercise[];
 };
 
+export type GenerateWorkoutInputFocusArea = typeof GenerateWorkoutInputFocusArea[keyof typeof GenerateWorkoutInputFocusArea];
+
+
+export const GenerateWorkoutInputFocusArea = {
+  full_body: 'full_body',
+  upper_body: 'upper_body',
+  lower_body: 'lower_body',
+  core: 'core',
+  arms: 'arms',
+  back: 'back',
+  chest: 'chest',
+  shoulders: 'shoulders',
+  legs: 'legs',
+  glutes: 'glutes',
+} as const;
+
+export type GenerateWorkoutInputEnergy = typeof GenerateWorkoutInputEnergy[keyof typeof GenerateWorkoutInputEnergy];
+
+
+export const GenerateWorkoutInputEnergy = {
+  low: 'low',
+  medium: 'medium',
+  high: 'high',
+} as const;
+
+/**
+ * Optional per-session questionnaire to tailor today's AI workout. All fields optional.
+ */
+export interface GenerateWorkoutInput {
+  focusArea?: GenerateWorkoutInputFocusArea;
+  /**
+     * @minimum 10
+     * @maximum 120
+     */
+  durationMins?: number;
+  energy?: GenerateWorkoutInputEnergy;
+  /**
+     * @maxLength 300
+     * @nullable
+     */
+  avoidToday?: string | null;
+}
+
 export interface WorkoutInput {
   /** @pattern ^\d{4}-\d{2}-\d{2}$ */
   date: string;

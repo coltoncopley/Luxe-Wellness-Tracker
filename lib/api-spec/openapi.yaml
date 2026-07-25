@@ -1024,6 +1024,12 @@ paths:
       operationId: generateWorkout
       tags: [workouts]
       summary: Generate an AI workout for today — max 3 per day
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GenerateWorkoutInput"
       responses:
         "200":
           description: Freshly generated planned workout
@@ -5897,6 +5903,16 @@ components:
             exercises:
               type: array
               items: { $ref: "#/components/schemas/WorkoutExercise" }
+    GenerateWorkoutInput:
+      type: object
+      description: Optional per-session questionnaire to tailor today's AI workout. All fields optional.
+      properties:
+        focusArea:
+          type: string
+          enum: [full_body, upper_body, lower_body, core, arms, back, chest, shoulders, legs, glutes]
+        durationMins: { type: integer, minimum: 10, maximum: 120 }
+        energy: { type: string, enum: [low, medium, high] }
+        avoidToday: { type: ["string", "null"], maxLength: 300 }
     WorkoutInput:
       type: object
       required: [date, title]

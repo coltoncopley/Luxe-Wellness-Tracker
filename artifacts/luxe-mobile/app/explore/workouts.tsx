@@ -1,12 +1,13 @@
 import { Feather } from "@expo/vector-icons";
 import { useQueryClient } from "@tanstack/react-query";
 import React, { useMemo, useState } from "react";
-import { Modal, Pressable, ScrollView, Text, View } from "react-native";
+import { Linking, Modal, Pressable, ScrollView, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Alert } from "@/lib/alert";
 
 import type {
   Exercise,
+  GenerateWorkoutInput,
   WorkoutExercise,
   WorkoutListItem,
   WorkoutPreferencesInput,
@@ -88,8 +89,39 @@ const EXPERIENCE_OPTIONS: { key: string; label: string }[] = [
   { key: "advanced", label: "Advanced" },
 ];
 
+const FOCUS_AREA_OPTIONS: { key: string; label: string }[] = [
+  { key: "full_body", label: "Full body" },
+  { key: "upper_body", label: "Upper body" },
+  { key: "lower_body", label: "Lower body" },
+  { key: "core", label: "Core" },
+  { key: "arms", label: "Arms" },
+  { key: "back", label: "Back" },
+  { key: "chest", label: "Chest" },
+  { key: "shoulders", label: "Shoulders" },
+  { key: "legs", label: "Legs" },
+  { key: "glutes", label: "Glutes" },
+];
+
+const DURATION_OPTIONS: { key: number; label: string }[] = [
+  { key: 20, label: "Quick · ~20 min" },
+  { key: 40, label: "Standard · ~40 min" },
+  { key: 60, label: "Longer · ~60 min" },
+];
+
+const ENERGY_OPTIONS: { key: string; label: string }[] = [
+  { key: "low", label: "Low" },
+  { key: "medium", label: "Medium" },
+  { key: "high", label: "High" },
+];
+
 function muscleLabel(key: string): string {
   return MUSCLE_LABELS[key] ?? key;
+}
+
+/** Deep-link to a YouTube search for a proper-form demo of the given exercise. */
+function openHowToVideo(exerciseName: string): void {
+  const query = encodeURIComponent(`how to ${exerciseName} proper form technique`);
+  void Linking.openURL(`https://www.youtube.com/results?search_query=${query}`);
 }
 
 function fmtWorkoutDate(date: string): string {
@@ -239,19 +271,28 @@ function ExerciseLibraryList({
               )}
             </View>
             {openId === e.id ? (
-              <Text
-                style={{
-                  fontFamily: "Inter_400Regular",
-                  fontSize: 13,
-                  lineHeight: 19,
-                  color: c.mutedForeground,
-                }}
-              >
-                {e.instructions}
-                {e.secondaryMuscles.length > 0
-                  ? `\n\nAlso works: ${e.secondaryMuscles.map(muscleLabel).join(", ")}`
-                  : ""}
-              </Text>
+              <View style={{ gap: 10 }}>
+                <Text
+                  style={{
+                    fontFamily: "Inter_400Regular",
+                    fontSize: 13,
+                    lineHeight: 19,
+                    color: c.mutedForeground,
+                  }}
+                >
+                  {e.instructions}
+                  {e.secondaryMuscles.length > 0
+                    ? `\n\nAlso works: ${e.secondaryMuscles.map(muscleLabel).join(", ")}`
+                    : ""}
+                </Text>
+                <LuxeButton
+                  label="Watch how-to"
+                  small
+                  variant="outline"
+                  icon="play-circle"
+                  onPress={() => openHowToVideo(e.name)}
+                />
+              </View>
             ) : null}
           </Card>
         ))
@@ -555,6 +596,17 @@ function ExerciseBlock({
 
       {!completed ? <SuggestionHint exerciseId={we.exerciseId} /> : null}
 
+      <Pressable
+        onPress={() => openHowToVideo(we.exercise.name)}
+        hitSlop={6}
+        style={{ flexDirection: "row", alignItems: "center", gap: 6 }}
+      >
+        <Feather name="play-circle" size={13} color={c.accent} />
+        <Text style={{ fontFamily: "Inter_500Medium", fontSize: 12, color: c.accent }}>
+          Watch how-to
+        </Text>
+      </Pressable>
+
       {we.sets.length > 0 ? (
         <View style={{ gap: 6 }}>
           {we.sets.map((s) => (
@@ -809,7 +861,12 @@ export default function WorkoutsScreen() {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [prefsOpen, setPrefsOpen] = useState(false);
+  const [generateOpen, setGenerateOpen] = useState(false);
   const [newTitle, setNewTitle] = useState("");
+  const [focusArea, setFocusArea] = useState<string>("full_body");
+  const [durationMins, setDurationMins] = useState<number | null>(null);
+  const [energy, setEnergy] = useState<string | null>(null);
+  const [avoidToday, setAvoidToday] = useState("");
 
   const today = new Date().toLocaleDateString("en-CA");
   const workouts = query.data ?? [];
@@ -822,23 +879,34 @@ export default function WorkoutsScreen() {
   };
 
   const runGenerate = () => {
-    generate.mutate(undefined, {
-      onSuccess: (result) => {
-        refresh();
-        setSelectedId(result.workout.id);
+    const input: GenerateWorkoutInput = {
+      focusArea: focusArea as GenerateWorkoutInput["focusArea"],
+    };
+    if (durationMins != null) input.durationMins = durationMins;
+    if (energy != null) input.energy = energy as GenerateWorkoutInput["energy"];
+    const avoid = avoidToday.trim();
+    if (avoid.length > 0) input.avoidToday = avoid.slice(0, 300);
+    generate.mutate(
+      { data: input },
+      {
+        onSuccess: (result) => {
+          refresh();
+          setGenerateOpen(false);
+          setSelectedId(result.workout.id);
+        },
+        onError: (err) => {
+          const e = err as { status?: number; data?: { error?: string } };
+          if (e.status === 429) {
+            Alert.alert(
+              "Daily limit reached",
+              e.data?.error ?? "You've used today's AI workouts — more unlock tomorrow!",
+            );
+          } else {
+            Alert.alert("Couldn't build your workout", "Please try again in a moment.");
+          }
+        },
       },
-      onError: (err) => {
-        const e = err as { status?: number; data?: { error?: string } };
-        if (e.status === 429) {
-          Alert.alert(
-            "Daily limit reached",
-            e.data?.error ?? "You've used today's AI workouts — more unlock tomorrow!",
-          );
-        } else {
-          Alert.alert("Couldn't build your workout", "Please try again in a moment.");
-        }
-      },
-    });
+    );
   };
 
   const runCreate = () => {
@@ -950,7 +1018,7 @@ export default function WorkoutsScreen() {
           icon="zap"
           loading={generate.isPending}
           disabled={generate.isPending}
-          onPress={runGenerate}
+          onPress={() => setGenerateOpen(true)}
         />
         <LuxeButton
           label="Start from scratch"
@@ -1001,6 +1069,86 @@ export default function WorkoutsScreen() {
       ) : (
         <ExerciseLibraryList />
       )}
+
+      <ModalShell
+        visible={generateOpen}
+        title="Build me a workout"
+        onClose={() => setGenerateOpen(false)}
+      >
+        <View style={{ gap: 16 }}>
+          <Text style={{ fontFamily: "Inter_400Regular", fontSize: 13, color: c.mutedForeground }}>
+            A few quick questions so Luxe AI can tailor today's session. Everything's optional.
+          </Text>
+
+          <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 13, color: c.foreground }}>
+            What do you want to focus on?
+          </Text>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+            {FOCUS_AREA_OPTIONS.map((o) => (
+              <Chip
+                key={o.key}
+                label={o.label}
+                active={focusArea === o.key}
+                onPress={() => setFocusArea(o.key)}
+              />
+            ))}
+          </View>
+
+          <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 13, color: c.foreground }}>
+            How much time do you have?
+          </Text>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+            {DURATION_OPTIONS.map((o) => (
+              <Chip
+                key={o.key}
+                label={o.label}
+                active={durationMins === o.key}
+                onPress={() => setDurationMins(durationMins === o.key ? null : o.key)}
+              />
+            ))}
+          </View>
+          <Text style={{ fontFamily: "Inter_400Regular", fontSize: 12, color: c.mutedForeground }}>
+            Leave unselected to use your saved session length.
+          </Text>
+
+          <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 13, color: c.foreground }}>
+            How's your energy today?
+          </Text>
+          <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+            {ENERGY_OPTIONS.map((o) => (
+              <Chip
+                key={o.key}
+                label={o.label}
+                active={energy === o.key}
+                onPress={() => setEnergy(energy === o.key ? null : o.key)}
+              />
+            ))}
+          </View>
+
+          <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 13, color: c.foreground }}>
+            Anything to work around today? (optional)
+          </Text>
+          <LuxeInput
+            placeholder="e.g. sore knees, tight on time"
+            value={avoidToday}
+            onChangeText={setAvoidToday}
+            multiline
+            maxLength={300}
+            style={{ minHeight: 60, textAlignVertical: "top" }}
+          />
+          <Text style={{ fontFamily: "Inter_400Regular", fontSize: 12, color: c.mutedForeground }}>
+            For injuries or medical concerns, please check with Dr. Copley before training.
+          </Text>
+
+          <LuxeButton
+            label={generate.isPending ? "Building your workout…" : "Build my workout"}
+            icon="zap"
+            loading={generate.isPending}
+            disabled={generate.isPending}
+            onPress={runGenerate}
+          />
+        </View>
+      </ModalShell>
 
       <ModalShell
         visible={createOpen}

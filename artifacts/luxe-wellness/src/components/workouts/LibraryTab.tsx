@@ -8,8 +8,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Search, ChevronDown, ChevronUp, Plus } from "lucide-react";
-import { MUSCLE_LABELS, muscleLabel, equipmentLabel } from "./labels";
+import { Search, ChevronDown, ChevronUp, Plus, PlayCircle } from "lucide-react";
+import { MUSCLE_LABELS, muscleLabel, equipmentLabel, howToVideoUrl } from "./labels";
 
 export function LibraryTab({
   onAddToWorkout,
@@ -127,13 +127,25 @@ export function LibraryTab({
                   </div>
                 </div>
                 {openId === e.id && (
-                  <div className="mt-3 pt-3 border-t text-sm text-muted-foreground space-y-2">
+                  <div className="mt-3 pt-3 border-t text-sm text-muted-foreground space-y-3">
                     <p>{e.instructions}</p>
                     {e.secondaryMuscles.length > 0 && (
                       <p className="text-xs">
                         Also works: {e.secondaryMuscles.map(muscleLabel).join(", ")}
                       </p>
                     )}
+                    <Button
+                      asChild
+                      size="sm"
+                      variant="outline"
+                      className="rounded-full"
+                      data-testid={`button-how-to-${e.id}`}
+                    >
+                      <a href={howToVideoUrl(e.name)} target="_blank" rel="noopener noreferrer">
+                        <PlayCircle className="h-4 w-4 mr-1.5" />
+                        Watch how-to
+                      </a>
+                    </Button>
                   </div>
                 )}
               </CardContent>
