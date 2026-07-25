@@ -13,9 +13,11 @@ import type {
   WorkoutPreferencesInput,
 } from "@workspace/api-client-react";
 import {
+  getGetActivitySummaryQueryKey,
   getGetMuscleRecoveryQueryKey,
   getGetWorkoutPreferencesQueryKey,
   getGetWorkoutQueryKey,
+  getListActivitiesQueryKey,
   getListWorkoutsQueryKey,
   useAddWorkoutExercise,
   useCompleteWorkout,
@@ -732,6 +734,10 @@ function WorkoutDetail({ workoutId, onBack }: { workoutId: number; onBack: () =>
               onSuccess: () => {
                 void queryClient.invalidateQueries({ queryKey: getListWorkoutsQueryKey() });
                 void queryClient.invalidateQueries({ queryKey: getGetMuscleRecoveryQueryKey() });
+                void queryClient.invalidateQueries({ queryKey: getListActivitiesQueryKey() });
+                void queryClient.invalidateQueries({
+                  queryKey: getGetActivitySummaryQueryKey({ days: 7 }),
+                });
                 onBack();
               },
               onError: () => Alert.alert("Couldn't delete", "Please try again."),
@@ -808,6 +814,10 @@ function WorkoutDetail({ workoutId, onBack }: { workoutId: number; onBack: () =>
                 {
                   onSuccess: () => {
                     refresh();
+                    void queryClient.invalidateQueries({ queryKey: getListActivitiesQueryKey() });
+                    void queryClient.invalidateQueries({
+                      queryKey: getGetActivitySummaryQueryKey({ days: 7 }),
+                    });
                     Alert.alert("Workout complete!", "Nice work — you earned 25 LUXE points.");
                   },
                   onError: () => Alert.alert("Couldn't finish", "Please try again."),

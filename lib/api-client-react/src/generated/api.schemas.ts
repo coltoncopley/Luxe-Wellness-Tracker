@@ -2023,6 +2023,7 @@ export const ActivitySource = {
   oura: 'oura',
   phone: 'phone',
   apple_health: 'apple_health',
+  workout: 'workout',
 } as const;
 
 export interface Activity {

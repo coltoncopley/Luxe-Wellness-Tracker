@@ -4,6 +4,8 @@ import {
   getGetWorkoutQueryKey,
   getListWorkoutsQueryKey,
   getGetMuscleRecoveryQueryKey,
+  getListActivitiesQueryKey,
+  getGetActivitySummaryQueryKey,
   useCompleteWorkout,
   useDeleteWorkout,
   useRemoveWorkoutExercise,
@@ -293,6 +295,15 @@ export function WorkoutDetailView({
                   {
                     onSuccess: () => {
                       refresh();
+                      void queryClient.invalidateQueries({
+                        queryKey: getListActivitiesQueryKey(),
+                      });
+                      void queryClient.invalidateQueries({
+                        queryKey: getGetActivitySummaryQueryKey({ days: 7 }),
+                      });
+                      void queryClient.invalidateQueries({
+                        queryKey: getGetActivitySummaryQueryKey({ days: 30 }),
+                      });
                       toast.success("Workout complete — nice work! +25 LUXE points");
                     },
                     onError: () => toast.error("Couldn't complete the workout."),
@@ -316,6 +327,15 @@ export function WorkoutDetailView({
                     void queryClient.invalidateQueries({ queryKey: getListWorkoutsQueryKey() });
                     void queryClient.invalidateQueries({
                       queryKey: getGetMuscleRecoveryQueryKey(),
+                    });
+                    void queryClient.invalidateQueries({
+                      queryKey: getListActivitiesQueryKey(),
+                    });
+                    void queryClient.invalidateQueries({
+                      queryKey: getGetActivitySummaryQueryKey({ days: 7 }),
+                    });
+                    void queryClient.invalidateQueries({
+                      queryKey: getGetActivitySummaryQueryKey({ days: 30 }),
                     });
                     toast.success("Workout deleted");
                     onBack();

@@ -5647,7 +5647,7 @@ components:
         notes: { type: ["string", "null"] }
         source:
           type: string
-          enum: [manual, oura, phone, apple_health]
+          enum: [manual, oura, phone, apple_health, workout]
     ActivityInput:
       type: object
       required: [date, type, durationMin]

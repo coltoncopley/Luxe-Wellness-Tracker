@@ -1884,7 +1884,7 @@ export const ListActivitiesResponseItem = zod.object({
   "calories": zod.number().nullish(),
   "distanceMi": zod.number().nullish(),
   "notes": zod.string().nullish(),
-  "source": zod.enum(['manual', 'oura', 'phone', 'apple_health'])
+  "source": zod.enum(['manual', 'oura', 'phone', 'apple_health', 'workout'])
 })
 export const ListActivitiesResponse = zod.array(ListActivitiesResponseItem)
 
@@ -1927,7 +1927,7 @@ export const CreateActivityResponse = zod.object({
   "calories": zod.number().nullish(),
   "distanceMi": zod.number().nullish(),
   "notes": zod.string().nullish(),
-  "source": zod.enum(['manual', 'oura', 'phone', 'apple_health'])
+  "source": zod.enum(['manual', 'oura', 'phone', 'apple_health', 'workout'])
 })
 
 

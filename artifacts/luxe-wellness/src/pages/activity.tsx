@@ -605,7 +605,11 @@ export default function ActivityPage() {
                         {typeLabel(a.type)}
                         {a.source !== "manual" && (
                           <span className="text-[10px] uppercase tracking-wide text-primary font-semibold">
-                            {a.source === "oura" ? "Oura" : "Phone"}
+                            {a.source === "oura"
+                              ? "Oura"
+                              : a.source === "workout"
+                                ? "Workout"
+                                : "Phone"}
                           </span>
                         )}
                       </div>

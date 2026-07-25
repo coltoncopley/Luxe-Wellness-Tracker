@@ -737,7 +737,7 @@ export function MoveTab() {
                   {a.source !== "manual" ? (
                     <Text style={{ fontFamily: "Inter_400Regular", fontSize: 11, color: c.tint }}>
                       {"  "}
-                      {a.source === "oura" ? "OURA" : "PHONE"}
+                      {a.source === "oura" ? "OURA" : a.source === "workout" ? "WORKOUT" : "PHONE"}
                     </Text>
                   ) : null}
                 </Text>

@@ -3,6 +3,7 @@ import { and, asc, desc, eq, gte, inArray, isNotNull, sql } from "drizzle-orm";
 import { z } from "zod/v4";
 import {
   db,
+  activitiesTable,
   exercisesTable,
   workoutsTable,
   workoutExercisesTable,
@@ -718,6 +719,16 @@ router.delete("/workouts/:id", async (req, res): Promise<void> => {
     res.status(404).json({ error: "Workout not found" });
     return;
   }
+  // Remove the mirrored Move activity for this workout, if one was created.
+  await db
+    .delete(activitiesTable)
+    .where(
+      and(
+        eq(activitiesTable.userId, userId),
+        eq(activitiesTable.source, "workout"),
+        eq(activitiesTable.externalId, `workout:${params.data.id}`),
+      ),
+    );
   res.sendStatus(204);
 });
 
@@ -768,6 +779,31 @@ router.post("/workouts/:id/complete", async (req, res): Promise<void> => {
     POINTS.workoutComplete,
     "Workout completed",
   );
+  // Mirror the finished session into Track > Move as a strength activity so it
+  // shows alongside walks/runs. Idempotent per workout (unique on
+  // userId+source+externalId) and awards NO extra points — completion already
+  // did. Duration is estimated from logged sets (~4 min/set). A mirror hiccup
+  // must never fail an otherwise-successful completion.
+  try {
+    const estMin = Math.min(120, Math.max(10, setCount.count * 4));
+    await db
+      .insert(activitiesTable)
+      .values({
+        userId,
+        date: updated.date,
+        type: "strength",
+        durationMin: estMin,
+        notes: updated.title,
+        source: "workout",
+        externalId: `workout:${updated.id}`,
+      })
+      .onConflictDoNothing({
+        target: [activitiesTable.userId, activitiesTable.source, activitiesTable.externalId],
+        where: sql`external_id IS NOT NULL`,
+      });
+  } catch (err) {
+    req.log.warn({ err, workoutId: updated.id }, "Failed to mirror workout to activity log");
+  }
   const detail = await workoutDetail(userId, updated.id);
   res.json(CompleteWorkoutResponse.parse(detail));
 });
