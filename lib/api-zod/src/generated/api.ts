@@ -1131,6 +1131,528 @@ export const GenerateMealPlanResponse = zod.object({
 
 
 /**
+ * @summary Full exercise library
+ */
+export const ListExercisesResponseItem = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "primaryMuscle": zod.string(),
+  "secondaryMuscles": zod.array(zod.string()),
+  "equipment": zod.string(),
+  "category": zod.string(),
+  "difficulty": zod.string(),
+  "instructions": zod.string()
+})
+export const ListExercisesResponse = zod.array(ListExercisesResponseItem)
+
+
+/**
+ * @summary Get workout preferences (auto-created with defaults on first call)
+ */
+export const GetWorkoutPreferencesResponse = zod.object({
+  "goal": zod.enum(['strength', 'build_muscle', 'tone', 'endurance']),
+  "experienceLevel": zod.enum(['beginner', 'intermediate', 'advanced']),
+  "equipment": zod.array(zod.string()),
+  "targetDurationMins": zod.number(),
+  "daysPerWeek": zod.number(),
+  "limitations": zod.string().nullable()
+})
+
+
+/**
+ * @summary Update workout preferences
+ */
+export const setWorkoutPreferencesBodyTargetDurationMinsMin = 10;
+export const setWorkoutPreferencesBodyTargetDurationMinsMax = 120;
+
+export const setWorkoutPreferencesBodyDaysPerWeekMax = 7;
+
+export const setWorkoutPreferencesBodyLimitationsMax = 500;
+
+
+
+export const SetWorkoutPreferencesBody = zod.object({
+  "goal": zod.enum(['strength', 'build_muscle', 'tone', 'endurance']).optional(),
+  "experienceLevel": zod.enum(['beginner', 'intermediate', 'advanced']).optional(),
+  "equipment": zod.array(zod.enum(['bodyweight', 'dumbbell', 'barbell', 'machine', 'cable', 'band', 'kettlebell'])).optional(),
+  "targetDurationMins": zod.number().min(setWorkoutPreferencesBodyTargetDurationMinsMin).max(setWorkoutPreferencesBodyTargetDurationMinsMax).optional(),
+  "daysPerWeek": zod.number().min(1).max(setWorkoutPreferencesBodyDaysPerWeekMax).optional(),
+  "limitations": zod.string().max(setWorkoutPreferencesBodyLimitationsMax).nullish()
+})
+
+export const SetWorkoutPreferencesResponse = zod.object({
+  "goal": zod.enum(['strength', 'build_muscle', 'tone', 'endurance']),
+  "experienceLevel": zod.enum(['beginner', 'intermediate', 'advanced']),
+  "equipment": zod.array(zod.string()),
+  "targetDurationMins": zod.number(),
+  "daysPerWeek": zod.number(),
+  "limitations": zod.string().nullable()
+})
+
+
+/**
+ * @summary List workouts newest-first
+ */
+export const listWorkoutsQueryLimitMax = 200;
+
+
+
+export const ListWorkoutsQueryParams = zod.object({
+  "limit": zod.coerce.number().min(1).max(listWorkoutsQueryLimitMax).optional()
+})
+
+export const ListWorkoutsResponseItem = zod.object({
+  "id": zod.number(),
+  "date": zod.string().describe('YYYY-MM-DD'),
+  "title": zod.string(),
+  "source": zod.enum(['manual', 'ai']),
+  "status": zod.enum(['planned', 'completed']),
+  "notes": zod.string().nullable(),
+  "aiRationale": zod.string().nullable(),
+  "completedAt": zod.string().nullable().describe('ISO timestamp'),
+  "createdAt": zod.string().describe('ISO timestamp')
+}).and(zod.object({
+  "exerciseCount": zod.number(),
+  "setCount": zod.number()
+}))
+export const ListWorkoutsResponse = zod.array(ListWorkoutsResponseItem)
+
+
+/**
+ * @summary Create a manual workout
+ */
+export const createWorkoutBodyDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const createWorkoutBodyTitleMax = 120;
+
+export const createWorkoutBodyNotesMax = 1000;
+
+
+
+export const CreateWorkoutBody = zod.object({
+  "date": zod.string().regex(createWorkoutBodyDateRegExp),
+  "title": zod.string().min(1).max(createWorkoutBodyTitleMax),
+  "notes": zod.string().max(createWorkoutBodyNotesMax).nullish()
+})
+
+export const CreateWorkoutResponse = zod.object({
+  "id": zod.number(),
+  "date": zod.string().describe('YYYY-MM-DD'),
+  "title": zod.string(),
+  "source": zod.enum(['manual', 'ai']),
+  "status": zod.enum(['planned', 'completed']),
+  "notes": zod.string().nullable(),
+  "aiRationale": zod.string().nullable(),
+  "completedAt": zod.string().nullable().describe('ISO timestamp'),
+  "createdAt": zod.string().describe('ISO timestamp')
+}).and(zod.object({
+  "exercises": zod.array(zod.object({
+  "id": zod.number(),
+  "exerciseId": zod.number(),
+  "sortOrder": zod.number(),
+  "targetSets": zod.number().nullable(),
+  "targetReps": zod.number().nullable(),
+  "targetWeightLbs": zod.number().nullable(),
+  "exercise": zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "primaryMuscle": zod.string(),
+  "secondaryMuscles": zod.array(zod.string()),
+  "equipment": zod.string(),
+  "category": zod.string(),
+  "difficulty": zod.string(),
+  "instructions": zod.string()
+}),
+  "sets": zod.array(zod.object({
+  "id": zod.number(),
+  "setNumber": zod.number(),
+  "reps": zod.number(),
+  "weightLbs": zod.number().nullable()
+}))
+}))
+}))
+
+
+/**
+ * @summary Live-computed muscle recovery (72h decay per muscle group)
+ */
+export const GetMuscleRecoveryResponseItem = zod.object({
+  "muscle": zod.string(),
+  "recoveryPct": zod.number().describe('0 = just trained'),
+  "lastTrainedAt": zod.string().nullable().describe('ISO timestamp of last completed workout hitting this muscle')
+})
+export const GetMuscleRecoveryResponse = zod.array(GetMuscleRecoveryResponseItem)
+
+
+/**
+ * @summary Progressive overload suggestion based on last logged performance
+ */
+export const GetExerciseSuggestionParams = zod.object({
+  "exerciseId": zod.coerce.number()
+})
+
+export const GetExerciseSuggestionResponse = zod.object({
+  "exerciseId": zod.number(),
+  "suggestedSets": zod.number(),
+  "suggestedReps": zod.number(),
+  "suggestedWeightLbs": zod.number().nullable(),
+  "basis": zod.string().describe('Plain-language explanation of the suggestion'),
+  "lastPerformedAt": zod.string().nullable().describe('Date (YYYY-MM-DD) this exercise was last logged')
+})
+
+
+/**
+ * @summary Generate an AI workout for today — max 3 per day
+ */
+export const GenerateWorkoutResponse = zod.object({
+  "workout": zod.object({
+  "id": zod.number(),
+  "date": zod.string().describe('YYYY-MM-DD'),
+  "title": zod.string(),
+  "source": zod.enum(['manual', 'ai']),
+  "status": zod.enum(['planned', 'completed']),
+  "notes": zod.string().nullable(),
+  "aiRationale": zod.string().nullable(),
+  "completedAt": zod.string().nullable().describe('ISO timestamp'),
+  "createdAt": zod.string().describe('ISO timestamp')
+}).and(zod.object({
+  "exercises": zod.array(zod.object({
+  "id": zod.number(),
+  "exerciseId": zod.number(),
+  "sortOrder": zod.number(),
+  "targetSets": zod.number().nullable(),
+  "targetReps": zod.number().nullable(),
+  "targetWeightLbs": zod.number().nullable(),
+  "exercise": zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "primaryMuscle": zod.string(),
+  "secondaryMuscles": zod.array(zod.string()),
+  "equipment": zod.string(),
+  "category": zod.string(),
+  "difficulty": zod.string(),
+  "instructions": zod.string()
+}),
+  "sets": zod.array(zod.object({
+  "id": zod.number(),
+  "setNumber": zod.number(),
+  "reps": zod.number(),
+  "weightLbs": zod.number().nullable()
+}))
+}))
+})),
+  "generationsRemaining": zod.number()
+})
+
+
+/**
+ * @summary Workout detail with exercises and logged sets
+ */
+export const GetWorkoutParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const GetWorkoutResponse = zod.object({
+  "id": zod.number(),
+  "date": zod.string().describe('YYYY-MM-DD'),
+  "title": zod.string(),
+  "source": zod.enum(['manual', 'ai']),
+  "status": zod.enum(['planned', 'completed']),
+  "notes": zod.string().nullable(),
+  "aiRationale": zod.string().nullable(),
+  "completedAt": zod.string().nullable().describe('ISO timestamp'),
+  "createdAt": zod.string().describe('ISO timestamp')
+}).and(zod.object({
+  "exercises": zod.array(zod.object({
+  "id": zod.number(),
+  "exerciseId": zod.number(),
+  "sortOrder": zod.number(),
+  "targetSets": zod.number().nullable(),
+  "targetReps": zod.number().nullable(),
+  "targetWeightLbs": zod.number().nullable(),
+  "exercise": zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "primaryMuscle": zod.string(),
+  "secondaryMuscles": zod.array(zod.string()),
+  "equipment": zod.string(),
+  "category": zod.string(),
+  "difficulty": zod.string(),
+  "instructions": zod.string()
+}),
+  "sets": zod.array(zod.object({
+  "id": zod.number(),
+  "setNumber": zod.number(),
+  "reps": zod.number(),
+  "weightLbs": zod.number().nullable()
+}))
+}))
+}))
+
+
+/**
+ * @summary Update workout title, date, or notes
+ */
+export const UpdateWorkoutParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const updateWorkoutBodyDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const updateWorkoutBodyTitleMax = 120;
+
+export const updateWorkoutBodyNotesMax = 1000;
+
+
+
+export const UpdateWorkoutBody = zod.object({
+  "date": zod.string().regex(updateWorkoutBodyDateRegExp).optional(),
+  "title": zod.string().min(1).max(updateWorkoutBodyTitleMax).optional(),
+  "notes": zod.string().max(updateWorkoutBodyNotesMax).nullish()
+})
+
+export const UpdateWorkoutResponse = zod.object({
+  "id": zod.number(),
+  "date": zod.string().describe('YYYY-MM-DD'),
+  "title": zod.string(),
+  "source": zod.enum(['manual', 'ai']),
+  "status": zod.enum(['planned', 'completed']),
+  "notes": zod.string().nullable(),
+  "aiRationale": zod.string().nullable(),
+  "completedAt": zod.string().nullable().describe('ISO timestamp'),
+  "createdAt": zod.string().describe('ISO timestamp')
+}).and(zod.object({
+  "exercises": zod.array(zod.object({
+  "id": zod.number(),
+  "exerciseId": zod.number(),
+  "sortOrder": zod.number(),
+  "targetSets": zod.number().nullable(),
+  "targetReps": zod.number().nullable(),
+  "targetWeightLbs": zod.number().nullable(),
+  "exercise": zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "primaryMuscle": zod.string(),
+  "secondaryMuscles": zod.array(zod.string()),
+  "equipment": zod.string(),
+  "category": zod.string(),
+  "difficulty": zod.string(),
+  "instructions": zod.string()
+}),
+  "sets": zod.array(zod.object({
+  "id": zod.number(),
+  "setNumber": zod.number(),
+  "reps": zod.number(),
+  "weightLbs": zod.number().nullable()
+}))
+}))
+}))
+
+
+/**
+ * @summary Delete a workout and its logged data
+ */
+export const DeleteWorkoutParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DeleteWorkoutResponse = zod.void()
+
+
+/**
+ * @summary Mark a workout completed (awards daily workout points once per day)
+ */
+export const CompleteWorkoutParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const CompleteWorkoutResponse = zod.object({
+  "id": zod.number(),
+  "date": zod.string().describe('YYYY-MM-DD'),
+  "title": zod.string(),
+  "source": zod.enum(['manual', 'ai']),
+  "status": zod.enum(['planned', 'completed']),
+  "notes": zod.string().nullable(),
+  "aiRationale": zod.string().nullable(),
+  "completedAt": zod.string().nullable().describe('ISO timestamp'),
+  "createdAt": zod.string().describe('ISO timestamp')
+}).and(zod.object({
+  "exercises": zod.array(zod.object({
+  "id": zod.number(),
+  "exerciseId": zod.number(),
+  "sortOrder": zod.number(),
+  "targetSets": zod.number().nullable(),
+  "targetReps": zod.number().nullable(),
+  "targetWeightLbs": zod.number().nullable(),
+  "exercise": zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "primaryMuscle": zod.string(),
+  "secondaryMuscles": zod.array(zod.string()),
+  "equipment": zod.string(),
+  "category": zod.string(),
+  "difficulty": zod.string(),
+  "instructions": zod.string()
+}),
+  "sets": zod.array(zod.object({
+  "id": zod.number(),
+  "setNumber": zod.number(),
+  "reps": zod.number(),
+  "weightLbs": zod.number().nullable()
+}))
+}))
+}))
+
+
+/**
+ * @summary Add an exercise to a workout
+ */
+export const AddWorkoutExerciseParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const addWorkoutExerciseBodySortOrderMin = 0;
+
+export const addWorkoutExerciseBodyTargetSetsMax = 10;
+
+export const addWorkoutExerciseBodyTargetRepsMax = 100;
+
+export const addWorkoutExerciseBodyTargetWeightLbsMin = 0;
+export const addWorkoutExerciseBodyTargetWeightLbsMax = 1500;
+
+
+
+export const AddWorkoutExerciseBody = zod.object({
+  "exerciseId": zod.number(),
+  "sortOrder": zod.number().min(addWorkoutExerciseBodySortOrderMin).optional(),
+  "targetSets": zod.number().min(1).max(addWorkoutExerciseBodyTargetSetsMax).nullish(),
+  "targetReps": zod.number().min(1).max(addWorkoutExerciseBodyTargetRepsMax).nullish(),
+  "targetWeightLbs": zod.number().min(addWorkoutExerciseBodyTargetWeightLbsMin).max(addWorkoutExerciseBodyTargetWeightLbsMax).nullish()
+})
+
+export const AddWorkoutExerciseResponse = zod.object({
+  "id": zod.number(),
+  "exerciseId": zod.number(),
+  "sortOrder": zod.number(),
+  "targetSets": zod.number().nullable(),
+  "targetReps": zod.number().nullable(),
+  "targetWeightLbs": zod.number().nullable(),
+  "exercise": zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "primaryMuscle": zod.string(),
+  "secondaryMuscles": zod.array(zod.string()),
+  "equipment": zod.string(),
+  "category": zod.string(),
+  "difficulty": zod.string(),
+  "instructions": zod.string()
+}),
+  "sets": zod.array(zod.object({
+  "id": zod.number(),
+  "setNumber": zod.number(),
+  "reps": zod.number(),
+  "weightLbs": zod.number().nullable()
+}))
+})
+
+
+/**
+ * @summary Update target sets/reps/weight or order for a workout exercise
+ */
+export const UpdateWorkoutExerciseParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const updateWorkoutExerciseBodySortOrderMin = 0;
+
+export const updateWorkoutExerciseBodyTargetSetsMax = 10;
+
+export const updateWorkoutExerciseBodyTargetRepsMax = 100;
+
+export const updateWorkoutExerciseBodyTargetWeightLbsMin = 0;
+export const updateWorkoutExerciseBodyTargetWeightLbsMax = 1500;
+
+
+
+export const UpdateWorkoutExerciseBody = zod.object({
+  "sortOrder": zod.number().min(updateWorkoutExerciseBodySortOrderMin).optional(),
+  "targetSets": zod.number().min(1).max(updateWorkoutExerciseBodyTargetSetsMax).nullish(),
+  "targetReps": zod.number().min(1).max(updateWorkoutExerciseBodyTargetRepsMax).nullish(),
+  "targetWeightLbs": zod.number().min(updateWorkoutExerciseBodyTargetWeightLbsMin).max(updateWorkoutExerciseBodyTargetWeightLbsMax).nullish()
+})
+
+export const UpdateWorkoutExerciseResponse = zod.object({
+  "id": zod.number(),
+  "exerciseId": zod.number(),
+  "sortOrder": zod.number(),
+  "targetSets": zod.number().nullable(),
+  "targetReps": zod.number().nullable(),
+  "targetWeightLbs": zod.number().nullable(),
+  "exercise": zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "primaryMuscle": zod.string(),
+  "secondaryMuscles": zod.array(zod.string()),
+  "equipment": zod.string(),
+  "category": zod.string(),
+  "difficulty": zod.string(),
+  "instructions": zod.string()
+}),
+  "sets": zod.array(zod.object({
+  "id": zod.number(),
+  "setNumber": zod.number(),
+  "reps": zod.number(),
+  "weightLbs": zod.number().nullable()
+}))
+})
+
+
+/**
+ * @summary Remove an exercise (and its sets) from a workout
+ */
+export const RemoveWorkoutExerciseParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const RemoveWorkoutExerciseResponse = zod.void()
+
+
+/**
+ * @summary Log a completed set for a workout exercise
+ */
+export const LogWorkoutSetParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const logWorkoutSetBodyRepsMax = 100;
+
+export const logWorkoutSetBodyWeightLbsMin = 0;
+export const logWorkoutSetBodyWeightLbsMax = 1500;
+
+
+
+export const LogWorkoutSetBody = zod.object({
+  "reps": zod.number().min(1).max(logWorkoutSetBodyRepsMax),
+  "weightLbs": zod.number().min(logWorkoutSetBodyWeightLbsMin).max(logWorkoutSetBodyWeightLbsMax).nullish()
+})
+
+export const LogWorkoutSetResponse = zod.object({
+  "id": zod.number(),
+  "setNumber": zod.number(),
+  "reps": zod.number(),
+  "weightLbs": zod.number().nullable()
+})
+
+
+/**
+ * @summary Delete a logged set
+ */
+export const DeleteWorkoutSetParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DeleteWorkoutSetResponse = zod.void()
+
+
+/**
  * @summary Request a presigned URL for file upload
  */
 

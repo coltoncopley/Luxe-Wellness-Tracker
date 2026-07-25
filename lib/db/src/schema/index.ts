@@ -23,3 +23,4 @@ export * from "./activity";
 export * from "./reports";
 export * from "./challenges";
 export * from "./mealPlans";
+export * from "./workouts";

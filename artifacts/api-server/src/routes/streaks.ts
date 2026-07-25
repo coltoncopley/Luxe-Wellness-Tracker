@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import {
   db,
   foodLogsTable,
@@ -8,6 +8,7 @@ import {
   mindCheckinsTable,
   activitiesTable,
   rewardEventsTable,
+  workoutsTable,
 } from "@workspace/db";
 import { GetStreakResponse } from "@workspace/api-zod";
 import { userIdOf } from "../middlewares/auth";
@@ -26,7 +27,7 @@ const MILESTONES = [
 
 /** Distinct YYYY-MM-DD dates on which the user logged any qualifying activity. */
 async function activeDates(userId: string): Promise<Set<string>> {
-  const [food, weight, glow, mind, activity] = await Promise.all([
+  const [food, weight, glow, mind, activity, workouts] = await Promise.all([
     db
       .selectDistinct({ date: foodLogsTable.date })
       .from(foodLogsTable)
@@ -47,9 +48,13 @@ async function activeDates(userId: string): Promise<Set<string>> {
       .selectDistinct({ date: activitiesTable.date })
       .from(activitiesTable)
       .where(eq(activitiesTable.userId, userId)),
+    db
+      .selectDistinct({ date: workoutsTable.date })
+      .from(workoutsTable)
+      .where(and(eq(workoutsTable.userId, userId), eq(workoutsTable.status, "completed"))),
   ]);
   const dates = new Set<string>();
-  for (const rows of [food, weight, glow, mind, activity]) {
+  for (const rows of [food, weight, glow, mind, activity, workouts]) {
     for (const r of rows) dates.add(r.date);
   }
   return dates;

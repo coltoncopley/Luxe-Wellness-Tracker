@@ -207,6 +207,7 @@ export default function HomeScreen() {
           { label: "My Journey", icon: "trending-up" as const, href: "/explore/journey" },
           { label: "Weekly Report", icon: "file-text" as const, href: "/explore/report" },
           { label: "Meal Plan", icon: "coffee" as const, href: "/explore/meal-plan" },
+          { label: "Workouts", icon: "zap" as const, href: "/explore/workouts" },
           { label: "Beauty Passport", icon: "book-open" as const, href: "/explore/passport" },
           { label: "Dining Out Guide", icon: "map-pin" as const, href: "/explore/restaurants" },
           { label: "Friends", icon: "users" as const, href: "/explore/friends" },

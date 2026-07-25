@@ -8,8 +8,10 @@ import {
   tipsTable,
   appSettingsTable,
   rewardItemsTable,
+  exercisesTable,
 } from "./schema";
 import { RESTAURANT_MENU_EXTRA } from "./restaurant-menu-extra";
+import { EXERCISE_LIBRARY } from "./seed-exercises";
 
 const BOOKING_URL = "https://hklqy.myaestheticrecord.com/online-booking";
 
@@ -395,6 +397,14 @@ async function seedTips(tx: Tx, log: LogFn) {
   log("Seeded tips.");
 }
 
+async function seedExercises(tx: Tx, log: LogFn) {
+  const existing = await tx.select().from(exercisesTable).limit(1);
+  if (existing.length === 0) {
+    await tx.insert(exercisesTable).values(EXERCISE_LIBRARY);
+    log(`Seeded ${EXERCISE_LIBRARY.length} exercises.`);
+  }
+}
+
 /**
  * Idempotent core data seed: app settings, reward catalog, restaurants,
  * services, staff, and daily tips. Safe to run on every startup.
@@ -413,6 +423,7 @@ export async function seedCoreData(log: LogFn = () => {}): Promise<void> {
     await seedServices(tx, log);
     await seedStaff(tx, log);
     await seedTips(tx, log);
+    await seedExercises(tx, log);
   });
   log("Seed complete.");
 }

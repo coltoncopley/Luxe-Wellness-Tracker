@@ -2333,6 +2333,283 @@ export interface SyncResult {
   sleepImported: number;
 }
 
+export interface Exercise {
+  id: number;
+  name: string;
+  primaryMuscle: string;
+  secondaryMuscles: string[];
+  equipment: string;
+  category: string;
+  difficulty: string;
+  instructions: string;
+}
+
+export type WorkoutPreferencesGoal = typeof WorkoutPreferencesGoal[keyof typeof WorkoutPreferencesGoal];
+
+
+export const WorkoutPreferencesGoal = {
+  strength: 'strength',
+  build_muscle: 'build_muscle',
+  tone: 'tone',
+  endurance: 'endurance',
+} as const;
+
+export type WorkoutPreferencesExperienceLevel = typeof WorkoutPreferencesExperienceLevel[keyof typeof WorkoutPreferencesExperienceLevel];
+
+
+export const WorkoutPreferencesExperienceLevel = {
+  beginner: 'beginner',
+  intermediate: 'intermediate',
+  advanced: 'advanced',
+} as const;
+
+export interface WorkoutPreferences {
+  goal: WorkoutPreferencesGoal;
+  experienceLevel: WorkoutPreferencesExperienceLevel;
+  equipment: string[];
+  targetDurationMins: number;
+  daysPerWeek: number;
+  /** @nullable */
+  limitations: string | null;
+}
+
+export type WorkoutPreferencesInputGoal = typeof WorkoutPreferencesInputGoal[keyof typeof WorkoutPreferencesInputGoal];
+
+
+export const WorkoutPreferencesInputGoal = {
+  strength: 'strength',
+  build_muscle: 'build_muscle',
+  tone: 'tone',
+  endurance: 'endurance',
+} as const;
+
+export type WorkoutPreferencesInputExperienceLevel = typeof WorkoutPreferencesInputExperienceLevel[keyof typeof WorkoutPreferencesInputExperienceLevel];
+
+
+export const WorkoutPreferencesInputExperienceLevel = {
+  beginner: 'beginner',
+  intermediate: 'intermediate',
+  advanced: 'advanced',
+} as const;
+
+export type WorkoutPreferencesInputEquipmentItem = typeof WorkoutPreferencesInputEquipmentItem[keyof typeof WorkoutPreferencesInputEquipmentItem];
+
+
+export const WorkoutPreferencesInputEquipmentItem = {
+  bodyweight: 'bodyweight',
+  dumbbell: 'dumbbell',
+  barbell: 'barbell',
+  machine: 'machine',
+  cable: 'cable',
+  band: 'band',
+  kettlebell: 'kettlebell',
+} as const;
+
+export interface WorkoutPreferencesInput {
+  goal?: WorkoutPreferencesInputGoal;
+  experienceLevel?: WorkoutPreferencesInputExperienceLevel;
+  equipment?: WorkoutPreferencesInputEquipmentItem[];
+  /**
+     * @minimum 10
+     * @maximum 120
+     */
+  targetDurationMins?: number;
+  /**
+     * @minimum 1
+     * @maximum 7
+     */
+  daysPerWeek?: number;
+  /**
+     * @maxLength 500
+     * @nullable
+     */
+  limitations?: string | null;
+}
+
+export interface WorkoutSet {
+  id: number;
+  setNumber: number;
+  reps: number;
+  /** @nullable */
+  weightLbs: number | null;
+}
+
+export interface WorkoutSetInput {
+  /**
+     * @minimum 1
+     * @maximum 100
+     */
+  reps: number;
+  /**
+     * @minimum 0
+     * @maximum 1500
+     * @nullable
+     */
+  weightLbs?: number | null;
+}
+
+export interface WorkoutExercise {
+  id: number;
+  exerciseId: number;
+  sortOrder: number;
+  /** @nullable */
+  targetSets: number | null;
+  /** @nullable */
+  targetReps: number | null;
+  /** @nullable */
+  targetWeightLbs: number | null;
+  exercise: Exercise;
+  sets: WorkoutSet[];
+}
+
+export interface WorkoutExerciseInput {
+  exerciseId: number;
+  /** @minimum 0 */
+  sortOrder?: number;
+  /**
+     * @minimum 1
+     * @maximum 10
+     * @nullable
+     */
+  targetSets?: number | null;
+  /**
+     * @minimum 1
+     * @maximum 100
+     * @nullable
+     */
+  targetReps?: number | null;
+  /**
+     * @minimum 0
+     * @maximum 1500
+     * @nullable
+     */
+  targetWeightLbs?: number | null;
+}
+
+export interface WorkoutExerciseUpdateInput {
+  /** @minimum 0 */
+  sortOrder?: number;
+  /**
+     * @minimum 1
+     * @maximum 10
+     * @nullable
+     */
+  targetSets?: number | null;
+  /**
+     * @minimum 1
+     * @maximum 100
+     * @nullable
+     */
+  targetReps?: number | null;
+  /**
+     * @minimum 0
+     * @maximum 1500
+     * @nullable
+     */
+  targetWeightLbs?: number | null;
+}
+
+export type WorkoutSource = typeof WorkoutSource[keyof typeof WorkoutSource];
+
+
+export const WorkoutSource = {
+  manual: 'manual',
+  ai: 'ai',
+} as const;
+
+export type WorkoutStatus = typeof WorkoutStatus[keyof typeof WorkoutStatus];
+
+
+export const WorkoutStatus = {
+  planned: 'planned',
+  completed: 'completed',
+} as const;
+
+export interface Workout {
+  id: number;
+  /** YYYY-MM-DD */
+  date: string;
+  title: string;
+  source: WorkoutSource;
+  status: WorkoutStatus;
+  /** @nullable */
+  notes: string | null;
+  /** @nullable */
+  aiRationale: string | null;
+  /**
+     * ISO timestamp
+     * @nullable
+     */
+  completedAt: string | null;
+  /** ISO timestamp */
+  createdAt: string;
+}
+
+export type WorkoutListItem = Workout & {
+  exerciseCount: number;
+  setCount: number;
+};
+
+export type WorkoutDetail = Workout & {
+  exercises: WorkoutExercise[];
+};
+
+export interface WorkoutInput {
+  /** @pattern ^\d{4}-\d{2}-\d{2}$ */
+  date: string;
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  title: string;
+  /**
+     * @maxLength 1000
+     * @nullable
+     */
+  notes?: string | null;
+}
+
+export interface WorkoutUpdateInput {
+  /** @pattern ^\d{4}-\d{2}-\d{2}$ */
+  date?: string;
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  title?: string;
+  /**
+     * @maxLength 1000
+     * @nullable
+     */
+  notes?: string | null;
+}
+
+export interface MuscleRecovery {
+  muscle: string;
+  /** 0 = just trained */
+  recoveryPct: number;
+  /**
+     * ISO timestamp of last completed workout hitting this muscle
+     * @nullable
+     */
+  lastTrainedAt: string | null;
+}
+
+export interface ExerciseSuggestion {
+  exerciseId: number;
+  suggestedSets: number;
+  suggestedReps: number;
+  /** @nullable */
+  suggestedWeightLbs: number | null;
+  /** Plain-language explanation of the suggestion */
+  basis: string;
+  /**
+     * Date (YYYY-MM-DD) this exercise was last logged
+     * @nullable
+     */
+  lastPerformedAt: string | null;
+}
+
 export type SearchMenuItemsParams = {
 q: string;
 };
@@ -2368,6 +2645,19 @@ export type GetMealPlan200 = {
 
 export type GenerateMealPlan200 = {
   plan: MealPlan;
+  generationsRemaining: number;
+};
+
+export type ListWorkoutsParams = {
+/**
+ * @minimum 1
+ * @maximum 200
+ */
+limit?: number;
+};
+
+export type GenerateWorkout200 = {
+  workout: WorkoutDetail;
   generationsRemaining: number;
 };
 

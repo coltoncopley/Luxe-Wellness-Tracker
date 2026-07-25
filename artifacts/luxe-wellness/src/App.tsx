@@ -27,6 +27,7 @@ import Photos from "@/pages/photos";
 import Journey from "@/pages/journey";
 import WeeklyReport from "@/pages/weekly-report";
 import MealPlan from "@/pages/meal-plan";
+import Workouts from "@/pages/workouts";
 import Skin from "@/pages/skin";
 import Ingredients from "@/pages/ingredients";
 import Passport from "@/pages/passport";
@@ -307,6 +308,7 @@ function ClerkProviderWithRoutes() {
             <Route path="/passport">{() => <Protected component={Passport} />}</Route>
             <Route path="/mind">{() => <Protected component={Mind} />}</Route>
             <Route path="/activity">{() => <Protected component={ActivityPage} />}</Route>
+            <Route path="/workouts">{() => <Protected component={Workouts} />}</Route>
             <Route path="/community">{() => <Protected component={Community} />}</Route>
             <Route path="/settings">{() => <Protected component={Settings} />}</Route>
             <Route path="/staff">{() => <StaffProtected component={StaffVerify} />}</Route>
