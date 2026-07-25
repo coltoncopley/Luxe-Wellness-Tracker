@@ -162,3 +162,28 @@ export const mealPlanGroceryChecksTable = pgTable(
 );
 
 export type MealPlanGroceryCheckRow = typeof mealPlanGroceryChecksTable.$inferSelect;
+
+/**
+ * Meals the member opted OUT of shopping for this week. Row present =
+ * excluded: that meal's ingredients are left out of the derived shopping
+ * list (and email/Instacart handoff). Display-only filter — plan content
+ * is never touched, so this can't race the jsonb content writers.
+ */
+export const mealPlanMealExcludesTable = pgTable(
+  "meal_plan_meal_excludes",
+  {
+    id: serial("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => usersTable.id),
+    weekStart: date("week_start", { mode: "string" }).notNull(),
+    date: date("date", { mode: "string" }).notNull(),
+    mealType: text("meal_type").notNull(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (t) => [
+    unique("meal_plan_meal_excludes_unique").on(t.userId, t.weekStart, t.date, t.mealType),
+  ],
+);
+
+export type MealPlanMealExcludeRow = typeof mealPlanMealExcludesTable.$inferSelect;

@@ -1781,6 +1781,22 @@ export interface ShoppingListCategory {
   items: ShoppingListItem[];
 }
 
+export type ExcludedMealMealType = typeof ExcludedMealMealType[keyof typeof ExcludedMealMealType];
+
+
+export const ExcludedMealMealType = {
+  breakfast: 'breakfast',
+  lunch: 'lunch',
+  dinner: 'dinner',
+  snack: 'snack',
+} as const;
+
+export interface ExcludedMeal {
+  /** YYYY-MM-DD */
+  date: string;
+  mealType: ExcludedMealMealType;
+}
+
 export interface MealPlan {
   /** YYYY-MM-DD (Monday) */
   weekStart: string;
@@ -1791,10 +1807,51 @@ export interface MealPlan {
   grocery: MealPlanGroceryCategory[];
   /** Scaled, checkable shopping list aggregated from meal ingredients */
   shoppingList: ShoppingListCategory[];
+  /** Meals opted out of shopping — their ingredients are left out of shoppingList */
+  excludedMeals: ExcludedMeal[];
   /** Number of people the shopping list is scaled for */
   people: number;
   notes: string | null;
   generatedAt: string;
+  /** Whether the server is configured to create Instacart shopping links */
+  instacartEnabled: boolean;
+}
+
+export type SetMealShopInputMealType = typeof SetMealShopInputMealType[keyof typeof SetMealShopInputMealType];
+
+
+export const SetMealShopInputMealType = {
+  breakfast: 'breakfast',
+  lunch: 'lunch',
+  dinner: 'dinner',
+  snack: 'snack',
+} as const;
+
+export interface SetMealShopInput {
+  /** YYYY-MM-DD — a day in the current week's plan */
+  date: string;
+  mealType: SetMealShopInputMealType;
+  /** false leaves this meal's ingredients out of the shopping list */
+  shop: boolean;
+}
+
+export interface ShoppingLinkItem {
+  name: string;
+  quantity?: number | null;
+  unit?: string | null;
+}
+
+export interface ShoppingLinkInput {
+  /**
+     * @minItems 1
+     * @maxItems 200
+     */
+  items: ShoppingLinkItem[];
+}
+
+export interface ShoppingLinkResult {
+  /** Instacart shopping-list page URL to open in a browser */
+  url: string;
 }
 
 export interface MealPlanState {

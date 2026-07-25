@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { ExcludedMeal } from './excludedMeal';
 import type { MealPlanDay } from './mealPlanDay';
 import type { MealPlanGroceryCategory } from './mealPlanGroceryCategory';
 import type { ShoppingListCategory } from './shoppingListCategory';
@@ -19,8 +20,12 @@ export interface MealPlan {
   grocery: MealPlanGroceryCategory[];
   /** Scaled, checkable shopping list aggregated from meal ingredients */
   shoppingList: ShoppingListCategory[];
+  /** Meals opted out of shopping — their ingredients are left out of shoppingList */
+  excludedMeals: ExcludedMeal[];
   /** Number of people the shopping list is scaled for */
   people: number;
   notes: string | null;
   generatedAt: string;
+  /** Whether the server is configured to create Instacart shopping links */
+  instacartEnabled: boolean;
 }

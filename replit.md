@@ -17,7 +17,7 @@ Patient companion app for LUXE Wellness and Aesthetics (physician-owned med spa 
 - `pnpm --filter @workspace/db run push` — push DB schema (dev only)
 - `pnpm --filter @workspace/scripts run seed` — seed services/staff/restaurants/rewards/access code (idempotent)
 - `pnpm --filter @workspace/scripts run seed-membership` — seed Stripe product/price (idempotent)
-- Env: `DATABASE_URL`; Stripe keys via Replit Stripe connector (dev = test; live keys in Publish pane); Resend via connector; optional `NOTIFICATION_FROM_EMAIL`; `SPOONACULAR_API_KEY` for chain search
+- Env: `DATABASE_URL`; Stripe keys via Replit Stripe connector (dev = test; live keys in Publish pane); Resend via connector; optional `NOTIFICATION_FROM_EMAIL`; `SPOONACULAR_API_KEY` for chain search; optional `INSTACART_API_KEY` for shopping-list handoff (dev key works against Instacart's dev server; production also needs `INSTACART_API_URL=https://connect.instacart.com` + an approved production key)
 - Production: deploy target `vm` (schedulers need always-on); API server self-seeds on startup (see `docs/architecture.md` → Production bootstrap)
 
 ## Stack & layout

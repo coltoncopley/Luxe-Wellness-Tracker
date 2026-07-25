@@ -8,6 +8,7 @@ import {
   mealPlansTable,
   mealPlanPreferencesTable,
   mealPlanGroceryChecksTable,
+  mealPlanMealExcludesTable,
   MEAL_PLAN_UNITS,
   MEAL_PLAN_CATEGORIES,
   type MealPlanContent,
@@ -38,6 +39,7 @@ const RECIPE_TIMEOUT_MS = 60_000;
 const MAX_GENERATIONS_PER_WEEK = 2;
 const MAX_SUGGESTS_PER_DAY = 10;
 const MAX_EMAILS_PER_DAY = 5;
+const MAX_SHOPPING_LINKS_PER_DAY = 20;
 const MAX_INGREDIENTS_PER_MEAL = 8;
 const AVOID_DISHES_CAP = 30;
 
@@ -260,6 +262,7 @@ function deriveShoppingList(
   days: MealPlanDay[],
   people: number,
   checked: Map<string, boolean>,
+  excluded: Set<string>,
 ): ShoppingListCategoryOut[] {
   interface Agg {
     name: string;
@@ -272,6 +275,7 @@ function deriveShoppingList(
 
   for (const day of days) {
     for (const mt of MEAL_TYPES) {
+      if (excluded.has(`${day.date}:${mt}`)) continue;
       const meal = day[mt];
       const ingredients = meal?.ingredients;
       if (!ingredients) continue;
@@ -521,7 +525,7 @@ async function generatePlan(
     dinner: d.dinner,
     snack: d.snack,
   }));
-  const grocery = groceryFromShoppingList(deriveShoppingList(days, 1, new Map()));
+  const grocery = groceryFromShoppingList(deriveShoppingList(days, 1, new Map(), new Set()));
   return { days, grocery, notes: parsed.data.notes ?? null };
 }
 
@@ -761,27 +765,54 @@ async function getCheckedMap(userId: string, weekStart: string): Promise<Map<str
   return map;
 }
 
+/** Slot keys `${date}:${mealType}` the member opted out of shopping for. */
+async function getExcludedSlots(userId: string, weekStart: string): Promise<Set<string>> {
+  const rows = await db
+    .select({
+      date: mealPlanMealExcludesTable.date,
+      mealType: mealPlanMealExcludesTable.mealType,
+    })
+    .from(mealPlanMealExcludesTable)
+    .where(
+      and(
+        eq(mealPlanMealExcludesTable.userId, userId),
+        eq(mealPlanMealExcludesTable.weekStart, weekStart),
+      ),
+    );
+  return new Set(rows.map((r) => `${r.date}:${r.mealType}`));
+}
+
 function buildPlanResponse(
   row: MealPlanRow,
   weekStart: string,
   weekEnd: string,
   checked: Map<string, boolean>,
+  excluded: Set<string>,
 ) {
   // Until every meal has ingredients (a legacy plan mid-backfill), keep the
   // names-only legacy list: a scaled list covering only some meals reads as
   // "this is everything you need" and is worse than no amounts at all.
   const complete = !planNeedsIngredients(row);
-  const shoppingList = complete ? deriveShoppingList(row.content.days, row.people, checked) : [];
-  const grocery = shoppingList.length > 0 ? groceryFromShoppingList(shoppingList) : row.content.grocery;
+  const shoppingList = complete
+    ? deriveShoppingList(row.content.days, row.people, checked, excluded)
+    : [];
+  // Once ingredients are complete, the legacy names-only list mirrors the
+  // scaled list (so shipped mobile binaries respect meal opt-outs too).
+  const grocery = complete ? groceryFromShoppingList(shoppingList) : row.content.grocery;
   return {
     weekStart,
     weekEnd,
     days: row.content.days,
     grocery,
     shoppingList,
+    excludedMeals: [...excluded].map((k) => {
+      const idx = k.indexOf(":");
+      return { date: k.slice(0, idx), mealType: k.slice(idx + 1) };
+    }),
     people: row.people,
     notes: row.content.notes,
     generatedAt: row.createdAt.toISOString(),
+    instacartEnabled: instacartEnabled(),
   };
 }
 
@@ -806,9 +837,11 @@ router.get("/meal-plan/current", async (_req, res): Promise<void> => {
   // shopping list gains scalable quantities without burning a generation.
   if (row && planNeedsIngredients(row)) maybeBackfillIngredients(row);
 
-  const checked = row ? await getCheckedMap(userId, weekStart) : new Map<string, boolean>();
+  const [checked, excluded] = row
+    ? await Promise.all([getCheckedMap(userId, weekStart), getExcludedSlots(userId, weekStart)])
+    : [new Map<string, boolean>(), new Set<string>()];
   res.json({
-    plan: row ? buildPlanResponse(row, weekStart, weekEnd, checked) : null,
+    plan: row ? buildPlanResponse(row, weekStart, weekEnd, checked, excluded) : null,
     generationsRemaining: Math.max(0, MAX_GENERATIONS_PER_WEEK - (row?.generations ?? 0)),
     suggestsRemaining: suggestsRemainingOf(row),
   });
@@ -902,8 +935,19 @@ router.post("/meal-plan/generate", async (req, res): Promise<void> => {
   }
   const row = result;
 
+  // A regenerated week means new meals — per-meal shopping opt-outs from the
+  // previous plan would point at dishes that no longer exist, so clear them.
+  await db
+    .delete(mealPlanMealExcludesTable)
+    .where(
+      and(
+        eq(mealPlanMealExcludesTable.userId, userId),
+        eq(mealPlanMealExcludesTable.weekStart, weekStart),
+      ),
+    );
+
   res.json({
-    plan: buildPlanResponse(row, weekStart, weekEnd, new Map()),
+    plan: buildPlanResponse(row, weekStart, weekEnd, new Map(), new Set()),
     generationsRemaining: Math.max(0, MAX_GENERATIONS_PER_WEEK - row.generations),
     suggestsRemaining: suggestsRemainingOf(row),
   });
@@ -1080,7 +1124,7 @@ router.post("/meal-plan/meal/apply", async (req, res): Promise<void> => {
     nd[mealType] = chosen;
     return nd;
   });
-  const grocery = groceryFromShoppingList(deriveShoppingList(days, 1, new Map()));
+  const grocery = groceryFromShoppingList(deriveShoppingList(days, 1, new Map(), new Set()));
   const content: MealPlanContent = { days, grocery, notes: row.content.notes };
 
   const nextPending = { ...(row.pendingSuggestions ?? {}) };
@@ -1104,9 +1148,12 @@ router.post("/meal-plan/meal/apply", async (req, res): Promise<void> => {
     .set({ avoidDishes: nextAvoid, updatedAt: new Date() })
     .where(eq(mealPlanPreferencesTable.userId, userId));
 
-  const checked = await getCheckedMap(userId, weekStart);
+  const [checked, excluded] = await Promise.all([
+    getCheckedMap(userId, weekStart),
+    getExcludedSlots(userId, weekStart),
+  ]);
   res.json({
-    plan: buildPlanResponse(updated!, weekStart, weekEnd, checked),
+    plan: buildPlanResponse(updated!, weekStart, weekEnd, checked, excluded),
     generationsRemaining: Math.max(0, MAX_GENERATIONS_PER_WEEK - updated!.generations),
     suggestsRemaining: suggestsRemainingOf(updated),
   });
@@ -1252,9 +1299,12 @@ router.patch("/meal-plan/people", async (req, res): Promise<void> => {
     return;
   }
 
-  const checked = await getCheckedMap(userId, weekStart);
+  const [checked, excluded] = await Promise.all([
+    getCheckedMap(userId, weekStart),
+    getExcludedSlots(userId, weekStart),
+  ]);
   res.json({
-    plan: buildPlanResponse(updated, weekStart, weekEnd, checked),
+    plan: buildPlanResponse(updated, weekStart, weekEnd, checked, excluded),
     generationsRemaining: Math.max(0, MAX_GENERATIONS_PER_WEEK - updated.generations),
     suggestsRemaining: suggestsRemainingOf(updated),
   });
@@ -1287,6 +1337,202 @@ router.patch("/meal-plan/shopping-list/check", async (req, res): Promise<void> =
       set: { checked: parsed.data.checked, updatedAt: new Date() },
     });
   res.json({ ok: true });
+});
+
+/* ----- Shopping: per-meal opt-out & Instacart handoff ----- */
+
+const MealShopSchema = z.object({
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  mealType: z.enum(MEAL_TYPES),
+  shop: z.boolean(),
+});
+
+router.patch("/meal-plan/meal/shop", async (req, res): Promise<void> => {
+  const userId = userIdOf(res);
+  const parsed = MealShopSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid request" });
+    return;
+  }
+  const { weekStart, weekEnd } = weekOfET(todayET());
+  const [row] = await db
+    .select()
+    .from(mealPlansTable)
+    .where(and(eq(mealPlansTable.userId, userId), eq(mealPlansTable.weekStart, weekStart)));
+  if (!row || !row.content.days.some((d) => d.date === parsed.data.date)) {
+    res.status(404).json({ error: "No meal plan for this week yet." });
+    return;
+  }
+
+  if (parsed.data.shop) {
+    await db
+      .delete(mealPlanMealExcludesTable)
+      .where(
+        and(
+          eq(mealPlanMealExcludesTable.userId, userId),
+          eq(mealPlanMealExcludesTable.weekStart, weekStart),
+          eq(mealPlanMealExcludesTable.date, parsed.data.date),
+          eq(mealPlanMealExcludesTable.mealType, parsed.data.mealType),
+        ),
+      );
+  } else {
+    await db
+      .insert(mealPlanMealExcludesTable)
+      .values({ userId, weekStart, date: parsed.data.date, mealType: parsed.data.mealType })
+      .onConflictDoNothing();
+  }
+
+  const [checked, excluded] = await Promise.all([
+    getCheckedMap(userId, weekStart),
+    getExcludedSlots(userId, weekStart),
+  ]);
+  res.json({
+    plan: buildPlanResponse(row, weekStart, weekEnd, checked, excluded),
+    generationsRemaining: Math.max(0, MAX_GENERATIONS_PER_WEEK - row.generations),
+    suggestsRemaining: suggestsRemainingOf(row),
+  });
+});
+
+/* Instacart shopping-list handoff. The API key is optional config — until
+   it's set, plan responses advertise instacartEnabled=false and this
+   endpoint answers 503, so clients simply don't show the button. */
+const INSTACART_TIMEOUT_MS = 15_000;
+
+function instacartEnabled(): boolean {
+  return Boolean(process.env.INSTACART_API_KEY);
+}
+
+function instacartBaseUrl(): string {
+  return (
+    process.env.INSTACART_API_URL ??
+    (process.env.NODE_ENV === "production"
+      ? "https://connect.instacart.com"
+      : "https://connect.dev.instacart.tools")
+  );
+}
+
+/** Our bounded units → Instacart-supported measurement units. */
+const INSTACART_UNITS: Partial<Record<MealPlanUnit, string>> = {
+  g: "gram",
+  oz: "ounce",
+  lb: "pound",
+  ml: "milliliter",
+  cup: "cup",
+  tbsp: "tablespoon",
+  tsp: "teaspoon",
+  can: "can",
+  bunch: "bunch",
+  item: "each",
+};
+
+const ShoppingLinkSchema = z.object({
+  items: z
+    .array(
+      z.object({
+        name: z.string().trim().min(1).max(120),
+        quantity: z.number().positive().max(10_000).nullish(),
+        unit: z.enum(MEAL_PLAN_UNITS).nullish(),
+      }),
+    )
+    .min(1)
+    .max(200),
+});
+
+const linkRate = new Map<string, { date: string; count: number }>();
+/** IDP best practice: cache generated URLs, regenerate only when items change. */
+const linkCache = new Map<string, string>();
+
+router.post("/meal-plan/shopping-list/link", async (req, res): Promise<void> => {
+  const userId = userIdOf(res);
+  if (!instacartEnabled()) {
+    res.status(503).json({ error: "Instacart isn't connected yet." });
+    return;
+  }
+  const parsed = ShoppingLinkSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid request" });
+    return;
+  }
+
+  const today = todayET();
+  const rate = linkRate.get(userId);
+  const count = rate && rate.date === today ? rate.count : 0;
+  if (count >= MAX_SHOPPING_LINKS_PER_DAY) {
+    res.status(429).json({ error: "Daily limit reached — please try again tomorrow." });
+    return;
+  }
+
+  const { weekStart } = weekOfET(todayET());
+  const lineItems = parsed.data.items.map((it) => {
+    const unit = it.unit ? INSTACART_UNITS[it.unit] : undefined;
+    const quantity = it.quantity ?? undefined;
+    if (unit && quantity) return { name: it.name, quantity, unit };
+    // Unsupported units (clove, slice) and "to taste" items go through as
+    // countable, with the original measure kept visible in the display text.
+    const measure =
+      quantity && it.unit ? ` (${formatQuantity(quantity, it.unit)})` : "";
+    return { name: it.name, quantity: 1, unit: "each", display_text: `${it.name}${measure}` };
+  });
+
+  const payload = {
+    title: `LUXE Wellness — Week of ${weekStart}`,
+    link_type: "shopping_list",
+    expires_in: 30,
+    instructions: [
+      "Pick your favorite store — Walmart, Costco, Kroger and more are available on Instacart.",
+    ],
+    line_items: lineItems,
+    landing_page_configuration: { enable_pantry_items: true },
+  };
+
+  const cacheKey = JSON.stringify(payload);
+  const cached = linkCache.get(cacheKey);
+  if (cached) {
+    res.json({ url: cached });
+    return;
+  }
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), INSTACART_TIMEOUT_MS);
+  try {
+    const resp = await fetch(`${instacartBaseUrl()}/idp/v1/products/products_link`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.INSTACART_API_KEY}`,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+    if (!resp.ok) {
+      const body = await resp.text().catch(() => "");
+      req.log.error(
+        { status: resp.status, body: body.slice(0, 500) },
+        "Instacart link creation failed",
+      );
+      res.status(503).json({ error: "Couldn't reach Instacart right now. Please try again." });
+      return;
+    }
+    const data = (await resp.json()) as { products_link_url?: string };
+    if (!data.products_link_url) {
+      req.log.error({ keys: Object.keys(data) }, "Instacart link response missing URL");
+      res.status(503).json({ error: "Couldn't reach Instacart right now. Please try again." });
+      return;
+    }
+    linkRate.set(userId, { date: today, count: count + 1 });
+    if (linkCache.size > 300) linkCache.clear();
+    linkCache.set(cacheKey, data.products_link_url);
+    res.json({ url: data.products_link_url });
+  } catch (err) {
+    req.log.error(
+      { err, timedOut: controller.signal.aborted },
+      "Instacart link request errored",
+    );
+    res.status(503).json({ error: "Couldn't reach Instacart right now. Please try again." });
+  } finally {
+    clearTimeout(timer);
+  }
 });
 
 const emailRate = new Map<string, { date: string; count: number }>();
@@ -1322,12 +1568,15 @@ router.post("/meal-plan/shopping-list/email", async (req, res): Promise<void> =>
     return;
   }
 
-  const checked = await getCheckedMap(userId, weekStart);
+  const [checked, excluded] = await Promise.all([
+    getCheckedMap(userId, weekStart),
+    getExcludedSlots(userId, weekStart),
+  ]);
   // Same partial-backfill rule as buildPlanResponse: only email amounts once
   // every meal has ingredients; otherwise send the names-only legacy list.
   const shoppingList = planNeedsIngredients(row)
     ? []
-    : deriveShoppingList(row.content.days, row.people, checked);
+    : deriveShoppingList(row.content.days, row.people, checked, excluded);
   const categories =
     shoppingList.length > 0
       ? shoppingList.map((c) => ({ category: c.category, items: c.items.map(displayLine) }))

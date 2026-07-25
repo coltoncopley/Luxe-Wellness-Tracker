@@ -22,3 +22,6 @@ Rules to avoid false e2e failures:
   **How to apply:** confirm the transform is computed on read (grep the GET handler), pick round quantities so scaled display values are trivially assertable, keep the plan ~5 steps.
 
 **Why:** all of these caused failed/lost test runs (Activity & Sleep 2026-07, restaurant menus 2026-07) even though the features worked; each cost a full re-run to diagnose.
+
+- Shopping-list e2e: item COUNT is a useless assertion when ingredients merge across meals — assert a specific item's QUANTITY instead (e.g. salmon 1050→900 g after excluding one dinner). When a tester reports "list didn't change", verify server-side before believing it.
+- Curl-auth for Clerk-protected API routes: POST api.clerk.com/v1/sessions {user_id} (Bearer CLERK_SECRET_KEY), then POST /v1/sessions/<id>/tokens → short-lived JWT usable as Authorization: Bearer against localhost:80/api. No browser needed.

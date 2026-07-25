@@ -1,7 +1,16 @@
 import { Feather } from "@expo/vector-icons";
 import { useQueryClient } from "@tanstack/react-query";
 import React, { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Modal, Pressable, ScrollView, Share, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Linking,
+  Modal,
+  Pressable,
+  ScrollView,
+  Share,
+  Text,
+  View,
+} from "react-native";
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Alert } from "@/lib/alert";
@@ -26,6 +35,8 @@ import {
   useGetMealPlanPreferences,
   useGetMealRecipe,
   useSetMealPlanPeople,
+  useSetMealShop,
+  useCreateShoppingLink,
   useSuggestMeal,
   useUpdateMealPlanPreferences,
 } from "@workspace/api-client-react";
@@ -109,6 +120,18 @@ export default function MealPlanScreen() {
   const prefs = prefsQuery.data ?? null;
   const today = new Date().toLocaleDateString("en-CA");
   const canSwap = suggestsRemaining > 0;
+
+  const setShop = useSetMealShop();
+  const excludedKeys = new Set((plan?.excludedMeals ?? []).map((e) => `${e.date}:${e.mealType}`));
+  const toggleShop = (date: string, mealType: MealKey) => {
+    setShop.mutate(
+      { data: { date, mealType, shop: excludedKeys.has(`${date}:${mealType}`) } },
+      {
+        onSuccess: (result) => queryClient.setQueryData(getGetMealPlanQueryKey(), result),
+        onError: () => Alert.alert("Couldn't update that", "Please try again."),
+      },
+    );
+  };
 
   const runGenerate = () => {
     generate.mutate(undefined, {
@@ -278,6 +301,8 @@ export default function MealPlanScreen() {
               <DayCard
                 key={day.date}
                 day={day}
+                excludedKeys={excludedKeys}
+                onToggleShop={(mealType) => toggleShop(day.date, mealType)}
                 isToday={day.date === today}
                 expanded={openDay ? openDay === day.date : day.date === today}
                 canSwap={canSwap}
@@ -306,8 +331,8 @@ export default function MealPlanScreen() {
             }}
           >
             {canSwap
-              ? `Tap any meal for its step-by-step recipe. The shuffle icon swaps it — ${suggestsRemaining} swap${suggestsRemaining === 1 ? "" : "s"} left today.`
-              : "Tap any meal for its step-by-step recipe. You've used today's swaps — they refresh tomorrow."}
+              ? `Tap any meal for its step-by-step recipe. The shuffle icon swaps it — ${suggestsRemaining} swap${suggestsRemaining === 1 ? "" : "s"} left today. The cart icon leaves a meal out of your shopping list.`
+              : "Tap any meal for its step-by-step recipe. You've used today's swaps — they refresh tomorrow. The cart icon leaves a meal out of your shopping list."}
           </Text>
 
           <ShoppingListSection plan={plan} />
@@ -382,17 +407,21 @@ function DayCard({
   isToday,
   expanded,
   canSwap,
+  excludedKeys,
   onSwap,
   onRecipe,
   onToggle,
+  onToggleShop,
 }: {
   day: MealPlanDay;
   isToday: boolean;
   expanded: boolean;
   canSwap: boolean;
+  excludedKeys: Set<string>;
   onSwap: (mealType: MealKey, name: string) => void;
   onRecipe: (mealType: MealKey, meal: MealPlanMeal) => void;
   onToggle: () => void;
+  onToggleShop: (mealType: MealKey) => void;
 }) {
   const c = useColors();
   const total = MEAL_KEYS.reduce((s, m) => s + day[m.key].calories, 0);
@@ -422,6 +451,7 @@ function DayCard({
         <View style={{ gap: 12, marginTop: 12 }}>
           {MEAL_KEYS.map((m) => {
             const meal = day[m.key];
+            const mealExcluded = excludedKeys.has(`${day.date}:${m.key}`);
             return (
               <View key={m.key} style={{ flexDirection: "row", gap: 10, alignItems: "flex-start" }}>
                 <Text style={{ fontSize: 16, lineHeight: 22 }}>{m.emoji}</Text>
@@ -467,6 +497,17 @@ function DayCard({
                 >
                   <Feather name="shuffle" size={15} color={c.tint} />
                 </Pressable>
+                <Pressable
+                  onPress={() => onToggleShop(m.key)}
+                  hitSlop={8}
+                  style={{ opacity: mealExcluded ? 0.35 : 1, paddingTop: 2 }}
+                >
+                  <Feather
+                    name="shopping-cart"
+                    size={15}
+                    color={mealExcluded ? c.mutedForeground : c.tint}
+                  />
+                </Pressable>
               </View>
             );
           })}
@@ -483,6 +524,7 @@ function ShoppingListSection({ plan }: { plan: MealPlan }) {
   const check = useCheckShoppingListItem();
   const email = useEmailShoppingList();
   const [localChecks, setLocalChecks] = useState<Record<string, boolean>>({});
+  const [shopOpen, setShopOpen] = useState(false);
 
   useEffect(() => {
     setLocalChecks({});
@@ -549,6 +591,26 @@ function ShoppingListSection({ plan }: { plan: MealPlan }) {
       </View>
 
       <View style={{ flexDirection: "row", gap: 8, marginBottom: 10 }}>
+        {hasScaled ? (
+          <Pressable
+            onPress={() => setShopOpen(true)}
+            hitSlop={6}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 6,
+              backgroundColor: c.accent,
+              borderRadius: 999,
+              paddingVertical: 7,
+              paddingHorizontal: 14,
+            }}
+          >
+            <Feather name="shopping-cart" size={13} color="#0F1729" />
+            <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 13, color: "#0F1729" }}>
+              Shop
+            </Text>
+          </Pressable>
+        ) : null}
         <Pressable
           onPress={share}
           hitSlop={6}
@@ -674,7 +736,206 @@ function ShoppingListSection({ plan }: { plan: MealPlan }) {
               </View>
             ))}
       </Card>
+
+      <ShopModal plan={plan} checkedOverrides={localChecks} visible={shopOpen} onClose={() => setShopOpen(false)} />
     </>
+  );
+}
+
+/* ---------------- Shop handoff modal ---------------- */
+
+function ShopModal({
+  plan,
+  checkedOverrides,
+  visible,
+  onClose,
+}: {
+  plan: MealPlan;
+  /** In-session check toggles not yet reflected in the plan snapshot. */
+  checkedOverrides: Record<string, boolean>;
+  visible: boolean;
+  onClose: () => void;
+}) {
+  const c = useColors();
+  const insets = useSafeAreaInsets();
+  const link = useCreateShoppingLink();
+  const [selected, setSelected] = useState<Record<string, boolean>>({});
+
+  // Each time the sheet opens, preselect what's still needed (unchecked items),
+  // honoring checkbox changes made this session over the server snapshot.
+  useEffect(() => {
+    if (!visible) return;
+    const init: Record<string, boolean> = {};
+    for (const cat of plan.shoppingList)
+      for (const it of cat.items) init[it.itemKey] = !(checkedOverrides[it.itemKey] ?? it.checked);
+    setSelected(init);
+    link.reset();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [visible, plan.generatedAt]);
+
+  const allItems = plan.shoppingList.flatMap((cat) => cat.items);
+  const selectedItems = allItems.filter((i) => selected[i.itemKey]);
+
+  const openInstacart = () => {
+    link.mutate(
+      {
+        data: {
+          items: selectedItems.map((i) => ({ name: i.name, quantity: i.quantity, unit: i.unit })),
+        },
+      },
+      {
+        onSuccess: (result) => {
+          void Linking.openURL(result.url);
+        },
+        onError: (err) => {
+          const e = err as { status?: number; data?: { error?: string } };
+          Alert.alert("Couldn't reach Instacart", e.data?.error ?? "Please try again.");
+        },
+      },
+    );
+  };
+
+  const shareSelected = async () => {
+    const text = selectedItems.map((i) => `- ${displayLine(i)}`).join("\n");
+    try {
+      await Share.share({ message: `LUXE shopping list\n${text}` });
+    } catch {
+      Alert.alert("Couldn't share", "Please try again.");
+    }
+  };
+
+  return (
+    <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
+      <View style={{ flex: 1, backgroundColor: c.background, paddingTop: insets.top }}>
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            justifyContent: "space-between",
+            paddingHorizontal: 20,
+            paddingVertical: 14,
+            borderBottomWidth: 1,
+            borderBottomColor: c.border,
+          }}
+        >
+          <Text
+            style={{ fontFamily: "PlayfairDisplay_600SemiBold", fontSize: 19, color: c.foreground }}
+          >
+            Shop your list
+          </Text>
+          <Pressable onPress={onClose} hitSlop={10}>
+            <Feather name="x" size={20} color={c.mutedForeground} />
+          </Pressable>
+        </View>
+
+        <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 24, gap: 16 }}>
+          <Text
+            style={{
+              fontFamily: "Inter_400Regular",
+              fontSize: 13,
+              lineHeight: 19,
+              color: c.mutedForeground,
+            }}
+          >
+            {plan.instacartEnabled
+              ? "Untick anything you already have, then send the rest to Instacart — you can shop it at Walmart, Costco, Kroger and more."
+              : "Untick anything you already have, then share the rest to paste anywhere — Walmart's app, notes, or a text."}
+          </Text>
+
+          {plan.shoppingList.map((cat) => (
+            <View key={cat.category} style={{ gap: 8 }}>
+              <Text
+                style={{
+                  fontFamily: "Inter_600SemiBold",
+                  fontSize: 11,
+                  letterSpacing: 0.6,
+                  textTransform: "uppercase",
+                  color: c.mutedForeground,
+                }}
+              >
+                {cat.category}
+              </Text>
+              {cat.items.map((item) => {
+                const isOn = selected[item.itemKey] ?? false;
+                return (
+                  <Pressable
+                    key={item.itemKey}
+                    onPress={() => setSelected((m) => ({ ...m, [item.itemKey]: !isOn }))}
+                    style={{ flexDirection: "row", alignItems: "center", gap: 10 }}
+                  >
+                    <View
+                      style={{
+                        width: 20,
+                        height: 20,
+                        borderRadius: 6,
+                        borderWidth: 1.5,
+                        borderColor: isOn ? c.accent : c.border,
+                        backgroundColor: isOn ? c.accent : "transparent",
+                        alignItems: "center",
+                        justifyContent: "center",
+                      }}
+                    >
+                      {isOn ? <Feather name="check" size={13} color="#0F1729" /> : null}
+                    </View>
+                    <Text
+                      style={{
+                        flex: 1,
+                        fontFamily: "Inter_400Regular",
+                        fontSize: 14,
+                        color: isOn ? c.foreground : c.mutedForeground,
+                      }}
+                    >
+                      {displayLine(item)}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          ))}
+        </ScrollView>
+
+        <View
+          style={{
+            padding: 20,
+            paddingBottom: insets.bottom + 16,
+            gap: 10,
+            borderTopWidth: 1,
+            borderTopColor: c.border,
+          }}
+        >
+          <Text style={{ fontFamily: "Inter_400Regular", fontSize: 12, color: c.mutedForeground }}>
+            {selectedItems.length} of {allItems.length} items selected
+          </Text>
+          {plan.instacartEnabled ? (
+            <LuxeButton
+              label={link.isPending ? "Preparing…" : "Open in Instacart"}
+              disabled={selectedItems.length === 0 || link.isPending}
+              onPress={openInstacart}
+            />
+          ) : null}
+          <Pressable
+            onPress={shareSelected}
+            disabled={selectedItems.length === 0}
+            style={{
+              flexDirection: "row",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 6,
+              borderWidth: 1,
+              borderColor: c.border,
+              borderRadius: 999,
+              paddingVertical: 11,
+              opacity: selectedItems.length === 0 ? 0.5 : 1,
+            }}
+          >
+            <Feather name="share-2" size={14} color={c.foreground} />
+            <Text style={{ fontFamily: "Inter_500Medium", fontSize: 14, color: c.foreground }}>
+              Share this list
+            </Text>
+          </Pressable>
+        </View>
+      </View>
+    </Modal>
   );
 }
 

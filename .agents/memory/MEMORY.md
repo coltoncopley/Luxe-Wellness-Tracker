@@ -18,3 +18,4 @@
 - [External quota-limited API endpoints](external-api-quota-endpoints.md) — rate-limit the detail/`:id` fetch too (not just search); detect fetch timeouts via `controller.signal.aborted`, not `instanceof Error`.
 - [YouTube embed error 153 in RN WebView](youtube-embed-error-153.md) — bare `source={{ uri }}` sends no Referer and YouTube rejects it; wrap in HTML + `baseUrl` to the app domain.
 - [Expo native-only modules on web + OTA](expo-native-only-modules.md) — native-only RN libs (react-native-webview) need a `.native.tsx`/`.tsx` platform-file split so web bundles an iframe alt; verify via web entry.bundle grep; adding one forces a fresh EAS build before any OTA.
+- [Instacart handoff](instacart-handoff.md) — dev vs prod key/URL universes, closed unit vocabulary (else each+display_text), graceful no-key degradation, popup pre-open pattern.

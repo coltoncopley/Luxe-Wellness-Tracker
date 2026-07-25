@@ -10,6 +10,8 @@ import {
   useCheckShoppingListItem,
   useEmailShoppingList,
   useGetMealRecipe,
+  useSetMealShop,
+  useCreateShoppingLink,
   getGetMealPlanQueryKey,
   getGetMealPlanPreferencesQueryKey,
   type MealPlan,
@@ -52,6 +54,9 @@ import {
   Check,
   BookOpen,
   Clock,
+  ShoppingCart,
+  Copy,
+  ExternalLink,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -591,6 +596,7 @@ function ShoppingList({ plan }: { plan: MealPlan }) {
   const check = useCheckShoppingListItem();
   const email = useEmailShoppingList();
   const [localChecks, setLocalChecks] = useState<Record<string, boolean>>({});
+  const [shopOpen, setShopOpen] = useState(false);
 
   // Reset local check overrides whenever a new plan is generated.
   useEffect(() => {
@@ -648,6 +654,7 @@ function ShoppingList({ plan }: { plan: MealPlan }) {
   const hasScaled = plan.shoppingList.length > 0;
 
   return (
+    <>
     <Card className="shadow-sm border-border">
       <CardHeader className="pb-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -656,6 +663,17 @@ function ShoppingList({ plan }: { plan: MealPlan }) {
             Shopping list {hasScaled ? `· serves ${plan.people}` : ""}
           </CardTitle>
           <div className="flex gap-2">
+            {hasScaled && (
+              <Button
+                size="sm"
+                className="rounded-full"
+                onClick={() => setShopOpen(true)}
+                data-testid="button-shop-list"
+              >
+                <ShoppingCart className="mr-1.5 h-3.5 w-3.5" />
+                Shop
+              </Button>
+            )}
             <Button
               size="sm"
               variant="outline"
@@ -724,6 +742,147 @@ function ShoppingList({ plan }: { plan: MealPlan }) {
             ))}
       </CardContent>
     </Card>
+    <ShopDialog plan={plan} checkedOverrides={localChecks} open={shopOpen} onClose={() => setShopOpen(false)} />
+    </>
+  );
+}
+
+/* ---------------- Shop handoff dialog ---------------- */
+
+function ShopDialog({
+  plan,
+  checkedOverrides,
+  open,
+  onClose,
+}: {
+  plan: MealPlan;
+  /** In-session check toggles not yet reflected in the plan snapshot. */
+  checkedOverrides: Record<string, boolean>;
+  open: boolean;
+  onClose: () => void;
+}) {
+  const link = useCreateShoppingLink();
+  const [selected, setSelected] = useState<Record<string, boolean>>({});
+
+  // Each time the dialog opens, preselect what's still needed (unchecked items),
+  // honoring checkbox changes made this session over the server snapshot.
+  useEffect(() => {
+    if (!open) return;
+    const init: Record<string, boolean> = {};
+    for (const cat of plan.shoppingList)
+      for (const it of cat.items) init[it.itemKey] = !(checkedOverrides[it.itemKey] ?? it.checked);
+    setSelected(init);
+    link.reset();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, plan.generatedAt]);
+
+  const allItems = plan.shoppingList.flatMap((c) => c.items);
+  const selectedItems = allItems.filter((i) => selected[i.itemKey]);
+
+  const openInstacart = () => {
+    // Open the tab inside the click gesture so popup blockers allow it,
+    // then point it at the Instacart list once the link is ready.
+    const popup = window.open("", "_blank");
+    if (popup) popup.opener = null;
+    link.mutate(
+      {
+        data: {
+          items: selectedItems.map((i) => ({ name: i.name, quantity: i.quantity, unit: i.unit })),
+        },
+      },
+      {
+        onSuccess: (result) => {
+          if (popup) popup.location.href = result.url;
+          else window.open(result.url, "_blank", "noopener");
+        },
+        onError: (err) => {
+          popup?.close();
+          const e = err as { status?: number; data?: { error?: string } };
+          toast.error(e.data?.error ?? "Couldn't create your Instacart list. Please try again.");
+        },
+      },
+    );
+  };
+
+  const copySelected = async () => {
+    const text = selectedItems.map((i) => `- ${displayLine(i)}`).join("\n");
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success("List copied — paste it into Walmart's app, notes, or a text.");
+    } catch {
+      toast.error("Couldn't copy on this device.");
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="font-serif text-xl">Shop your list</DialogTitle>
+          <DialogDescription>
+            {plan.instacartEnabled
+              ? "Untick anything you already have, then send the rest to Instacart — you can shop it at Walmart, Costco, Kroger and more."
+              : "Untick anything you already have, then copy the rest to paste anywhere — Walmart's app, notes, or a text."}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          {plan.shoppingList.map((cat) => (
+            <div key={cat.category}>
+              <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                {cat.category}
+              </p>
+              <ul className="space-y-1.5">
+                {cat.items.map((item) => (
+                  <li key={item.itemKey} className="flex items-center gap-2.5">
+                    <Checkbox
+                      checked={selected[item.itemKey] ?? false}
+                      onCheckedChange={(v) =>
+                        setSelected((m) => ({ ...m, [item.itemKey]: v === true }))
+                      }
+                      data-testid={`shop-item-${item.itemKey}`}
+                    />
+                    <span
+                      className={`text-sm ${selected[item.itemKey] ? "" : "text-muted-foreground"}`}
+                    >
+                      {displayLine(item)}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+
+        <p className="text-xs text-muted-foreground" data-testid="text-shop-selected-count">
+          {selectedItems.length} of {allItems.length} items selected
+        </p>
+
+        <DialogFooter className="gap-2 sm:gap-2">
+          <Button
+            variant="outline"
+            className="rounded-full"
+            onClick={copySelected}
+            disabled={selectedItems.length === 0}
+            data-testid="button-copy-shop-list"
+          >
+            <Copy className="mr-1.5 h-3.5 w-3.5" />
+            Copy list
+          </Button>
+          {plan.instacartEnabled && (
+            <Button
+              className="rounded-full"
+              onClick={openInstacart}
+              disabled={selectedItems.length === 0 || link.isPending}
+              data-testid="button-open-instacart"
+            >
+              <ExternalLink className="mr-1.5 h-3.5 w-3.5" />
+              {link.isPending ? "Preparing…" : "Open in Instacart"}
+            </Button>
+          )}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -834,6 +993,18 @@ export default function MealPlan() {
   };
 
   const canSwap = suggestsRemaining > 0;
+
+  const setShop = useSetMealShop();
+  const excludedKeys = new Set((plan?.excludedMeals ?? []).map((e) => `${e.date}:${e.mealType}`));
+  const toggleShop = (date: string, mealType: MealKey) => {
+    setShop.mutate(
+      { data: { date, mealType, shop: excludedKeys.has(`${date}:${mealType}`) } },
+      {
+        onSuccess: (result) => queryClient.setQueryData(getGetMealPlanQueryKey(), result),
+        onError: () => toast.error("Couldn't update that. Please try again."),
+      },
+    );
+  };
 
   return (
     <div className="space-y-8 pb-12 max-w-3xl">
@@ -961,6 +1132,7 @@ export default function MealPlan() {
                     <CardContent className="pt-0 space-y-3">
                       {MEAL_LABELS.map((m) => {
                         const meal = day[m.key];
+                        const mealExcluded = excludedKeys.has(`${day.date}:${m.key}`);
                         return (
                           <div key={m.key} className="flex items-start gap-3 group">
                             <span aria-hidden className="text-lg leading-6">
@@ -1003,6 +1175,23 @@ export default function MealPlan() {
                             >
                               <Shuffle className="h-4 w-4" />
                             </button>
+                            <button
+                              type="button"
+                              onClick={() => toggleShop(day.date, m.key)}
+                              title={
+                                mealExcluded
+                                  ? "Left out of your shopping list — tap to include"
+                                  : "In your shopping list — tap to leave out"
+                              }
+                              className={`shrink-0 transition-colors ${
+                                mealExcluded
+                                  ? "text-muted-foreground/40 hover:text-muted-foreground"
+                                  : "text-primary/70 hover:text-primary"
+                              }`}
+                              data-testid={`toggle-shop-${day.date}-${m.key}`}
+                            >
+                              <ShoppingCart className="h-4 w-4" />
+                            </button>
                           </div>
                         );
                       })}
@@ -1015,8 +1204,8 @@ export default function MealPlan() {
 
           <p className="text-xs text-muted-foreground -mt-1">
             {canSwap
-              ? `Tap any meal for its step-by-step recipe. The shuffle icon swaps it — ${suggestsRemaining} swap${suggestsRemaining === 1 ? "" : "s"} left today.`
-              : "Tap any meal for its step-by-step recipe. You've used today's swaps — they refresh tomorrow."}
+              ? `Tap any meal for its step-by-step recipe. The shuffle icon swaps it — ${suggestsRemaining} swap${suggestsRemaining === 1 ? "" : "s"} left today. The cart icon leaves a meal out of your shopping list.`
+              : "Tap any meal for its step-by-step recipe. You've used today's swaps — they refresh tomorrow. The cart icon leaves a meal out of your shopping list."}
           </p>
 
           <ShoppingList plan={plan} />

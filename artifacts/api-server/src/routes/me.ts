@@ -45,6 +45,7 @@ import {
   mealPlansTable,
   mealPlanPreferencesTable,
   mealPlanGroceryChecksTable,
+  mealPlanMealExcludesTable,
   weeklyReportsTable,
   challengeParticipantsTable,
   routineItemsTable,
@@ -417,6 +418,9 @@ router.delete("/me", async (req, res, next): Promise<void> => {
       // Meal plans, weekly reports, and challenge participation all FK to users
       // without cascade — a member with any of them would otherwise 500 the whole
       // deletion. (challenges rows are global reference data and stay put.)
+      await tx
+        .delete(mealPlanMealExcludesTable)
+        .where(eq(mealPlanMealExcludesTable.userId, userId));
       await tx.delete(mealPlanGroceryChecksTable).where(eq(mealPlanGroceryChecksTable.userId, userId));
       await tx.delete(mealPlanPreferencesTable).where(eq(mealPlanPreferencesTable.userId, userId));
       await tx.delete(mealPlansTable).where(eq(mealPlansTable.userId, userId));

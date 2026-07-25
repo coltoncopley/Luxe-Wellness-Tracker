@@ -1141,9 +1141,14 @@ export const GetMealPlanResponse = zod.object({
   "checked": zod.boolean()
 }))
 })).describe('Scaled, checkable shopping list aggregated from meal ingredients'),
+  "excludedMeals": zod.array(zod.object({
+  "date": zod.string().describe('YYYY-MM-DD'),
+  "mealType": zod.enum(['breakfast', 'lunch', 'dinner', 'snack'])
+})).describe('Meals opted out of shopping — their ingredients are left out of shoppingList'),
   "people": zod.number().describe('Number of people the shopping list is scaled for'),
   "notes": zod.union([zod.string(),zod.null()]),
-  "generatedAt": zod.string()
+  "generatedAt": zod.string(),
+  "instacartEnabled": zod.boolean().describe('Whether the server is configured to create Instacart shopping links')
 }),zod.null()]),
   "generationsRemaining": zod.number(),
   "suggestsRemaining": zod.number()
@@ -1243,9 +1248,14 @@ export const GenerateMealPlanResponse = zod.object({
   "checked": zod.boolean()
 }))
 })).describe('Scaled, checkable shopping list aggregated from meal ingredients'),
+  "excludedMeals": zod.array(zod.object({
+  "date": zod.string().describe('YYYY-MM-DD'),
+  "mealType": zod.enum(['breakfast', 'lunch', 'dinner', 'snack'])
+})).describe('Meals opted out of shopping — their ingredients are left out of shoppingList'),
   "people": zod.number().describe('Number of people the shopping list is scaled for'),
   "notes": zod.union([zod.string(),zod.null()]),
-  "generatedAt": zod.string()
+  "generatedAt": zod.string(),
+  "instacartEnabled": zod.boolean().describe('Whether the server is configured to create Instacart shopping links')
 }),
   "generationsRemaining": zod.number(),
   "suggestsRemaining": zod.number()
@@ -1420,9 +1430,14 @@ export const ApplyMealResponse = zod.object({
   "checked": zod.boolean()
 }))
 })).describe('Scaled, checkable shopping list aggregated from meal ingredients'),
+  "excludedMeals": zod.array(zod.object({
+  "date": zod.string().describe('YYYY-MM-DD'),
+  "mealType": zod.enum(['breakfast', 'lunch', 'dinner', 'snack'])
+})).describe('Meals opted out of shopping — their ingredients are left out of shoppingList'),
   "people": zod.number().describe('Number of people the shopping list is scaled for'),
   "notes": zod.union([zod.string(),zod.null()]),
-  "generatedAt": zod.string()
+  "generatedAt": zod.string(),
+  "instacartEnabled": zod.boolean().describe('Whether the server is configured to create Instacart shopping links')
 }),
   "generationsRemaining": zod.number(),
   "suggestsRemaining": zod.number()
@@ -1553,9 +1568,14 @@ export const SetMealPlanPeopleResponse = zod.object({
   "checked": zod.boolean()
 }))
 })).describe('Scaled, checkable shopping list aggregated from meal ingredients'),
+  "excludedMeals": zod.array(zod.object({
+  "date": zod.string().describe('YYYY-MM-DD'),
+  "mealType": zod.enum(['breakfast', 'lunch', 'dinner', 'snack'])
+})).describe('Meals opted out of shopping — their ingredients are left out of shoppingList'),
   "people": zod.number().describe('Number of people the shopping list is scaled for'),
   "notes": zod.union([zod.string(),zod.null()]),
-  "generatedAt": zod.string()
+  "generatedAt": zod.string(),
+  "instacartEnabled": zod.boolean().describe('Whether the server is configured to create Instacart shopping links')
 }),
   "generationsRemaining": zod.number(),
   "suggestsRemaining": zod.number()
@@ -1580,6 +1600,139 @@ export const CheckShoppingListItemResponse = zod.object({
  */
 export const EmailShoppingListResponse = zod.object({
   "ok": zod.boolean()
+})
+
+
+/**
+ * @summary Include or exclude one meal's ingredients from the shopping list
+ */
+export const SetMealShopBody = zod.object({
+  "date": zod.string().describe('YYYY-MM-DD — a day in the current week\'s plan'),
+  "mealType": zod.enum(['breakfast', 'lunch', 'dinner', 'snack']),
+  "shop": zod.boolean().describe('false leaves this meal\'s ingredients out of the shopping list')
+})
+
+export const SetMealShopResponse = zod.object({
+  "plan": zod.object({
+  "weekStart": zod.string().describe('YYYY-MM-DD (Monday)'),
+  "weekEnd": zod.string().describe('YYYY-MM-DD (Sunday)'),
+  "days": zod.array(zod.object({
+  "date": zod.string().describe('YYYY-MM-DD'),
+  "breakfast": zod.object({
+  "name": zod.string(),
+  "description": zod.string(),
+  "calories": zod.number(),
+  "ingredients": zod.array(zod.object({
+  "name": zod.string(),
+  "quantity": zod.union([zod.number(),zod.null()]).describe('Amount for a single person; null means \"to taste\" \/ uncountable'),
+  "unit": zod.union([zod.enum(['g', 'oz', 'lb', 'ml', 'cup', 'tbsp', 'tsp', 'clove', 'slice', 'can', 'bunch', 'item']),zod.null()]),
+  "category": zod.enum(['Produce', 'Protein', 'Dairy', 'Grains', 'Pantry', 'Frozen', 'Other'])
+})).optional().describe('Per-person ingredients for this meal (absent on plans generated before the shopping-list overhaul)'),
+  "recipe": zod.object({
+  "steps": zod.array(zod.string()),
+  "prepMinutes": zod.union([zod.number(),zod.null()]),
+  "cookMinutes": zod.union([zod.number(),zod.null()]),
+  "tip": zod.union([zod.string(),zod.null()])
+}).optional().describe('Step-by-step cooking guide; steps intentionally carry no amounts so ingredient quantities can scale with servings')
+}),
+  "lunch": zod.object({
+  "name": zod.string(),
+  "description": zod.string(),
+  "calories": zod.number(),
+  "ingredients": zod.array(zod.object({
+  "name": zod.string(),
+  "quantity": zod.union([zod.number(),zod.null()]).describe('Amount for a single person; null means \"to taste\" \/ uncountable'),
+  "unit": zod.union([zod.enum(['g', 'oz', 'lb', 'ml', 'cup', 'tbsp', 'tsp', 'clove', 'slice', 'can', 'bunch', 'item']),zod.null()]),
+  "category": zod.enum(['Produce', 'Protein', 'Dairy', 'Grains', 'Pantry', 'Frozen', 'Other'])
+})).optional().describe('Per-person ingredients for this meal (absent on plans generated before the shopping-list overhaul)'),
+  "recipe": zod.object({
+  "steps": zod.array(zod.string()),
+  "prepMinutes": zod.union([zod.number(),zod.null()]),
+  "cookMinutes": zod.union([zod.number(),zod.null()]),
+  "tip": zod.union([zod.string(),zod.null()])
+}).optional().describe('Step-by-step cooking guide; steps intentionally carry no amounts so ingredient quantities can scale with servings')
+}),
+  "dinner": zod.object({
+  "name": zod.string(),
+  "description": zod.string(),
+  "calories": zod.number(),
+  "ingredients": zod.array(zod.object({
+  "name": zod.string(),
+  "quantity": zod.union([zod.number(),zod.null()]).describe('Amount for a single person; null means \"to taste\" \/ uncountable'),
+  "unit": zod.union([zod.enum(['g', 'oz', 'lb', 'ml', 'cup', 'tbsp', 'tsp', 'clove', 'slice', 'can', 'bunch', 'item']),zod.null()]),
+  "category": zod.enum(['Produce', 'Protein', 'Dairy', 'Grains', 'Pantry', 'Frozen', 'Other'])
+})).optional().describe('Per-person ingredients for this meal (absent on plans generated before the shopping-list overhaul)'),
+  "recipe": zod.object({
+  "steps": zod.array(zod.string()),
+  "prepMinutes": zod.union([zod.number(),zod.null()]),
+  "cookMinutes": zod.union([zod.number(),zod.null()]),
+  "tip": zod.union([zod.string(),zod.null()])
+}).optional().describe('Step-by-step cooking guide; steps intentionally carry no amounts so ingredient quantities can scale with servings')
+}),
+  "snack": zod.object({
+  "name": zod.string(),
+  "description": zod.string(),
+  "calories": zod.number(),
+  "ingredients": zod.array(zod.object({
+  "name": zod.string(),
+  "quantity": zod.union([zod.number(),zod.null()]).describe('Amount for a single person; null means \"to taste\" \/ uncountable'),
+  "unit": zod.union([zod.enum(['g', 'oz', 'lb', 'ml', 'cup', 'tbsp', 'tsp', 'clove', 'slice', 'can', 'bunch', 'item']),zod.null()]),
+  "category": zod.enum(['Produce', 'Protein', 'Dairy', 'Grains', 'Pantry', 'Frozen', 'Other'])
+})).optional().describe('Per-person ingredients for this meal (absent on plans generated before the shopping-list overhaul)'),
+  "recipe": zod.object({
+  "steps": zod.array(zod.string()),
+  "prepMinutes": zod.union([zod.number(),zod.null()]),
+  "cookMinutes": zod.union([zod.number(),zod.null()]),
+  "tip": zod.union([zod.string(),zod.null()])
+}).optional().describe('Step-by-step cooking guide; steps intentionally carry no amounts so ingredient quantities can scale with servings')
+})
+})),
+  "grocery": zod.array(zod.object({
+  "category": zod.string(),
+  "items": zod.array(zod.string())
+})).describe('Names-only grocery list (back-compat; prefer shoppingList)'),
+  "shoppingList": zod.array(zod.object({
+  "category": zod.string(),
+  "items": zod.array(zod.object({
+  "itemKey": zod.string(),
+  "name": zod.string(),
+  "quantity": zod.union([zod.number(),zod.null()]),
+  "unit": zod.union([zod.string(),zod.null()]),
+  "displayQuantity": zod.string().describe('Preformatted amount like \"2 lb\" or \"1½ cups\"; empty when uncountable'),
+  "checked": zod.boolean()
+}))
+})).describe('Scaled, checkable shopping list aggregated from meal ingredients'),
+  "excludedMeals": zod.array(zod.object({
+  "date": zod.string().describe('YYYY-MM-DD'),
+  "mealType": zod.enum(['breakfast', 'lunch', 'dinner', 'snack'])
+})).describe('Meals opted out of shopping — their ingredients are left out of shoppingList'),
+  "people": zod.number().describe('Number of people the shopping list is scaled for'),
+  "notes": zod.union([zod.string(),zod.null()]),
+  "generatedAt": zod.string(),
+  "instacartEnabled": zod.boolean().describe('Whether the server is configured to create Instacart shopping links')
+}),
+  "generationsRemaining": zod.number(),
+  "suggestsRemaining": zod.number()
+})
+
+
+/**
+ * @summary Create an Instacart shopping-list link for the selected items
+ */
+export const createShoppingLinkBodyItemsMax = 200;
+
+
+
+export const CreateShoppingLinkBody = zod.object({
+  "items": zod.array(zod.object({
+  "name": zod.string(),
+  "quantity": zod.union([zod.number(),zod.null()]).optional(),
+  "unit": zod.union([zod.string(),zod.null()]).optional()
+})).min(1).max(createShoppingLinkBodyItemsMax)
+})
+
+export const CreateShoppingLinkResponse = zod.object({
+  "url": zod.string().describe('Instacart shopping-list page URL to open in a browser')
 })
 
 

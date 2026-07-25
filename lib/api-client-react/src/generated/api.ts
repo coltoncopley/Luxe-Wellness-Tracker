@@ -175,8 +175,11 @@ import type {
   ServiceInput,
   ServiceUpdate,
   SetMealPlanPeopleInput,
+  SetMealShopInput,
   SetPhotoSharedInput,
   SharingSettings,
+  ShoppingLinkInput,
+  ShoppingLinkResult,
   SkinScanHistory,
   SkinScanResult,
   SleepEntry,
@@ -4546,6 +4549,146 @@ export const useEmailShoppingList = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getEmailShoppingListMutationOptions(options));
+    }
+
+export const getSetMealShopUrl = () => {
+
+
+
+
+  return `/api/meal-plan/meal/shop`
+}
+
+/**
+ * @summary Include or exclude one meal's ingredients from the shopping list
+ */
+export const setMealShop = async (setMealShopInput: SetMealShopInput, options?: RequestInit): Promise<MealPlanResult> => {
+
+  return customFetch<MealPlanResult>(getSetMealShopUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(setMealShopInput)
+  }
+);}
+
+
+
+
+export const getSetMealShopMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setMealShop>>, TError,{data: BodyType<SetMealShopInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setMealShop>>, TError,{data: BodyType<SetMealShopInput>}, TContext> => {
+
+const mutationKey = ['setMealShop'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setMealShop>>, {data: BodyType<SetMealShopInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  setMealShop(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetMealShopMutationResult = NonNullable<Awaited<ReturnType<typeof setMealShop>>>
+    export type SetMealShopMutationBody = BodyType<SetMealShopInput>
+    export type SetMealShopMutationError = ErrorType<void>
+
+    /**
+ * @summary Include or exclude one meal's ingredients from the shopping list
+ */
+export const useSetMealShop = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setMealShop>>, TError,{data: BodyType<SetMealShopInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setMealShop>>,
+        TError,
+        {data: BodyType<SetMealShopInput>},
+        TContext
+      > => {
+      return useMutation(getSetMealShopMutationOptions(options));
+    }
+
+export const getCreateShoppingLinkUrl = () => {
+
+
+
+
+  return `/api/meal-plan/shopping-list/link`
+}
+
+/**
+ * @summary Create an Instacart shopping-list link for the selected items
+ */
+export const createShoppingLink = async (shoppingLinkInput: ShoppingLinkInput, options?: RequestInit): Promise<ShoppingLinkResult> => {
+
+  return customFetch<ShoppingLinkResult>(getCreateShoppingLinkUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(shoppingLinkInput)
+  }
+);}
+
+
+
+
+export const getCreateShoppingLinkMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createShoppingLink>>, TError,{data: BodyType<ShoppingLinkInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createShoppingLink>>, TError,{data: BodyType<ShoppingLinkInput>}, TContext> => {
+
+const mutationKey = ['createShoppingLink'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createShoppingLink>>, {data: BodyType<ShoppingLinkInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createShoppingLink(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateShoppingLinkMutationResult = NonNullable<Awaited<ReturnType<typeof createShoppingLink>>>
+    export type CreateShoppingLinkMutationBody = BodyType<ShoppingLinkInput>
+    export type CreateShoppingLinkMutationError = ErrorType<void>
+
+    /**
+ * @summary Create an Instacart shopping-list link for the selected items
+ */
+export const useCreateShoppingLink = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createShoppingLink>>, TError,{data: BodyType<ShoppingLinkInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createShoppingLink>>,
+        TError,
+        {data: BodyType<ShoppingLinkInput>},
+        TContext
+      > => {
+      return useMutation(getCreateShoppingLinkMutationOptions(options));
     }
 
 export const getListExercisesUrl = () => {

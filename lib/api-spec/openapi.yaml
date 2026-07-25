@@ -1052,6 +1052,48 @@ paths:
           description: Too many emails today
         "503":
           description: Email not configured
+  /meal-plan/meal/shop:
+    patch:
+      operationId: setMealShop
+      tags: [mealplan]
+      summary: Include or exclude one meal's ingredients from the shopping list
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetMealShopInput"
+      responses:
+        "200":
+          description: Updated meal plan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MealPlanResult"
+        "404":
+          description: No current meal plan for this week
+  /meal-plan/shopping-list/link:
+    post:
+      operationId: createShoppingLink
+      tags: [mealplan]
+      summary: Create an Instacart shopping-list link for the selected items
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ShoppingLinkInput"
+      responses:
+        "200":
+          description: Link created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShoppingLinkResult"
+        "429":
+          description: Too many link requests today
+        "503":
+          description: Instacart is not configured or unreachable
   /exercises:
     get:
       operationId: listExercises
@@ -5694,7 +5736,19 @@ components:
             type: string
     MealPlan:
       type: object
-      required: [weekStart, weekEnd, days, grocery, shoppingList, people, notes, generatedAt]
+      required:
+        [
+          weekStart,
+          weekEnd,
+          days,
+          grocery,
+          shoppingList,
+          excludedMeals,
+          people,
+          notes,
+          generatedAt,
+          instacartEnabled,
+        ]
       properties:
         weekStart:
           type: string
@@ -5716,6 +5770,11 @@ components:
           description: Scaled, checkable shopping list aggregated from meal ingredients
           items:
             $ref: "#/components/schemas/ShoppingListCategory"
+        excludedMeals:
+          type: array
+          description: Meals opted out of shopping — their ingredients are left out of shoppingList
+          items:
+            $ref: "#/components/schemas/ExcludedMeal"
         people:
           type: integer
           description: Number of people the shopping list is scaled for
@@ -5725,6 +5784,9 @@ components:
             - type: "null"
         generatedAt:
           type: string
+        instacartEnabled:
+          type: boolean
+          description: Whether the server is configured to create Instacart shopping links
     ShoppingListItem:
       type: object
       required: [itemKey, name, quantity, unit, displayQuantity, checked]
@@ -5756,6 +5818,60 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ShoppingListItem"
+    ExcludedMeal:
+      type: object
+      required: [date, mealType]
+      properties:
+        date:
+          type: string
+          description: YYYY-MM-DD
+        mealType:
+          type: string
+          enum: [breakfast, lunch, dinner, snack]
+    SetMealShopInput:
+      type: object
+      required: [date, mealType, shop]
+      properties:
+        date:
+          type: string
+          description: YYYY-MM-DD — a day in the current week's plan
+        mealType:
+          type: string
+          enum: [breakfast, lunch, dinner, snack]
+        shop:
+          type: boolean
+          description: false leaves this meal's ingredients out of the shopping list
+    ShoppingLinkItem:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+        quantity:
+          oneOf:
+            - type: number
+            - type: "null"
+        unit:
+          oneOf:
+            - type: string
+            - type: "null"
+    ShoppingLinkInput:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          minItems: 1
+          maxItems: 200
+          items:
+            $ref: "#/components/schemas/ShoppingLinkItem"
+    ShoppingLinkResult:
+      type: object
+      required: [url]
+      properties:
+        url:
+          type: string
+          description: Instacart shopping-list page URL to open in a browser
     MealPlanState:
       type: object
       required: [plan, generationsRemaining, suggestsRemaining]
