@@ -970,6 +970,32 @@ paths:
                 $ref: "#/components/schemas/MealPlanResult"
         "409":
           description: No pending suggestions for this slot (regenerate or re-suggest)
+  /meal-plan/meal/recipe:
+    post:
+      operationId: getMealRecipe
+      tags: [mealplan]
+      summary: Step-by-step recipe for a meal slot (AI-written once, then cached in the plan)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MealRecipeInput"
+      responses:
+        "200":
+          description: Recipe with ingredient amounts scaled to the plan's people count
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MealRecipeResult"
+        "404":
+          description: No current plan, or that slot isn't in it
+        "503":
+          description: Recipe generation temporarily unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenaiError"
   /meal-plan/people:
     patch:
       operationId: setMealPlanPeople
@@ -5599,6 +5625,29 @@ components:
           description: Per-person ingredients for this meal (absent on plans generated before the shopping-list overhaul)
           items:
             $ref: "#/components/schemas/MealPlanIngredient"
+        recipe:
+          $ref: "#/components/schemas/MealPlanRecipe"
+    MealPlanRecipe:
+      type: object
+      description: Step-by-step cooking guide; steps intentionally carry no amounts so ingredient quantities can scale with servings
+      required: [steps, prepMinutes, cookMinutes, tip]
+      properties:
+        steps:
+          type: array
+          items:
+            type: string
+        prepMinutes:
+          oneOf:
+            - type: integer
+            - type: "null"
+        cookMinutes:
+          oneOf:
+            - type: integer
+            - type: "null"
+        tip:
+          oneOf:
+            - type: string
+            - type: "null"
     MealPlanIngredient:
       type: object
       required: [name, quantity, unit, category]
@@ -5804,6 +5853,37 @@ components:
         choiceIndex:
           type: integer
           minimum: 0
+    MealRecipeInput:
+      type: object
+      required: [date, mealType]
+      properties:
+        date:
+          type: string
+          description: YYYY-MM-DD of the day in the current plan
+        mealType:
+          type: string
+          enum: [breakfast, lunch, dinner, snack]
+    MealRecipeResult:
+      type: object
+      required: [mealName, description, calories, people, ingredientLines, recipe]
+      properties:
+        mealName:
+          type: string
+        description:
+          type: string
+        calories:
+          type: integer
+          description: Calories per single serving
+        people:
+          type: integer
+          description: Servings the ingredient amounts are scaled for
+        ingredientLines:
+          type: array
+          description: Preformatted ingredient amounts already scaled for `people` (e.g. "1½ cups spinach")
+          items:
+            type: string
+        recipe:
+          $ref: "#/components/schemas/MealPlanRecipe"
     SetMealPlanPeopleInput:
       type: object
       required: [people]

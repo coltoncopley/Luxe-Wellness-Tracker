@@ -9,11 +9,13 @@ import {
   useSetMealPlanPeople,
   useCheckShoppingListItem,
   useEmailShoppingList,
+  useGetMealRecipe,
   getGetMealPlanQueryKey,
   getGetMealPlanPreferencesQueryKey,
   type MealPlan,
   type MealPlanResult,
   type MealPlanMeal,
+  type MealRecipeResult,
   type ShoppingListItem,
   type MealPlanPreferences,
 } from "@workspace/api-client-react";
@@ -48,6 +50,8 @@ import {
   X,
   SlidersHorizontal,
   Check,
+  BookOpen,
+  Clock,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -441,6 +445,146 @@ function SwapDialog({
   );
 }
 
+/* ---------------- Recipe dialog ---------------- */
+
+type RecipeSlot = {
+  date: string;
+  mealType: MealKey;
+  name: string;
+  description: string;
+};
+
+function RecipeDialog({ slot, onClose }: { slot: RecipeSlot | null; onClose: () => void }) {
+  const queryClient = useQueryClient();
+  const recipe = useGetMealRecipe();
+  const requestedRef = useRef<string | null>(null);
+
+  const run = (date: string, mealType: MealKey) => {
+    recipe.reset();
+    recipe.mutate(
+      { data: { date, mealType } },
+      {
+        onSuccess: () => {
+          // Recipe (and any backfilled ingredient amounts) is now cached in
+          // the plan — refresh so reopening is instant and the list updates.
+          void queryClient.invalidateQueries({ queryKey: getGetMealPlanQueryKey() });
+        },
+      },
+    );
+  };
+
+  useEffect(() => {
+    if (!slot) {
+      requestedRef.current = null;
+      return;
+    }
+    const key = `${slot.date}:${slot.mealType}`;
+    if (requestedRef.current === key) return;
+    requestedRef.current = key;
+    run(slot.date, slot.mealType);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slot?.date, slot?.mealType]);
+
+  const data: MealRecipeResult | null = recipe.data ?? null;
+
+  return (
+    <Dialog open={slot != null} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle className="font-serif text-xl">{data?.mealName ?? slot?.name}</DialogTitle>
+          <DialogDescription>{data?.description ?? slot?.description}</DialogDescription>
+        </DialogHeader>
+
+        {recipe.isPending && (
+          <div className="flex flex-col items-center gap-3 py-10 text-center">
+            <ChefHat className="h-6 w-6 animate-bounce text-primary" />
+            <p className="text-sm text-muted-foreground">Writing your step-by-step recipe…</p>
+            <p className="text-xs text-muted-foreground/80">
+              First time takes a moment — after that it opens instantly.
+            </p>
+          </div>
+        )}
+
+        {recipe.isError && !recipe.isPending && (
+          <div className="py-8 text-center">
+            <p className="text-sm text-muted-foreground">Couldn't write the recipe just now.</p>
+            <Button
+              variant="outline"
+              className="mt-3 rounded-full"
+              onClick={() => slot && run(slot.date, slot.mealType)}
+              data-testid="button-retry-recipe"
+            >
+              Try again
+            </Button>
+          </div>
+        )}
+
+        {data && !recipe.isPending && (
+          <div className="space-y-5" data-testid="recipe-content">
+            <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+              <span className="rounded-full bg-secondary px-2.5 py-1">
+                {data.calories} cal / serving
+              </span>
+              <span className="flex items-center gap-1 rounded-full bg-secondary px-2.5 py-1">
+                <Users className="h-3 w-3" /> serves {data.people}
+              </span>
+              {data.recipe.prepMinutes != null && (
+                <span className="flex items-center gap-1 rounded-full bg-secondary px-2.5 py-1">
+                  <Clock className="h-3 w-3" /> prep {data.recipe.prepMinutes} min
+                </span>
+              )}
+              {data.recipe.cookMinutes != null && (
+                <span className="flex items-center gap-1 rounded-full bg-secondary px-2.5 py-1">
+                  <Clock className="h-3 w-3" /> cook {data.recipe.cookMinutes} min
+                </span>
+              )}
+            </div>
+
+            {data.ingredientLines.length > 0 && (
+              <div>
+                <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Ingredients · serves {data.people}
+                </p>
+                <ul className="space-y-1">
+                  {data.ingredientLines.map((line, i) => (
+                    <li key={i} className="flex gap-2 text-sm">
+                      <span className="text-primary">•</span>
+                      <span>{line}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            <div>
+              <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Steps
+              </p>
+              <ol className="space-y-3">
+                {data.recipe.steps.map((step, i) => (
+                  <li key={i} className="flex gap-3 text-sm leading-relaxed">
+                    <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-primary/10 text-[11px] font-medium text-primary">
+                      {i + 1}
+                    </span>
+                    <span>{step}</span>
+                  </li>
+                ))}
+              </ol>
+            </div>
+
+            {data.recipe.tip && (
+              <div className="flex items-start gap-2.5 rounded-lg bg-secondary/50 p-3">
+                <Lightbulb className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                <p className="text-xs leading-relaxed text-muted-foreground">{data.recipe.tip}</p>
+              </div>
+            )}
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 /* ---------------- Shopping list ---------------- */
 
 function ShoppingList({ plan }: { plan: MealPlan }) {
@@ -659,6 +803,7 @@ export default function MealPlan() {
     mealType: MealKey;
     name: string;
   } | null>(null);
+  const [recipeSlot, setRecipeSlot] = useState<RecipeSlot | null>(null);
 
   const plan = data?.plan ?? null;
   const remaining = data?.generationsRemaining ?? 0;
@@ -821,7 +966,19 @@ export default function MealPlan() {
                             <span aria-hidden className="text-lg leading-6">
                               {m.emoji}
                             </span>
-                            <div className="min-w-0 flex-1">
+                            <button
+                              type="button"
+                              className="min-w-0 flex-1 text-left"
+                              onClick={() =>
+                                setRecipeSlot({
+                                  date: day.date,
+                                  mealType: m.key,
+                                  name: meal.name,
+                                  description: meal.description,
+                                })
+                              }
+                              data-testid={`button-recipe-${day.date}-${m.key}`}
+                            >
                               <div className="flex items-baseline justify-between gap-2">
                                 <p className="text-sm font-medium">{meal.name}</p>
                                 <span className="shrink-0 text-xs text-muted-foreground">
@@ -829,7 +986,10 @@ export default function MealPlan() {
                                 </span>
                               </div>
                               <p className="text-xs text-muted-foreground">{meal.description}</p>
-                            </div>
+                              <span className="mt-1 inline-flex items-center gap-1 text-[11px] font-medium text-primary/70 transition-colors group-hover:text-primary">
+                                <BookOpen className="h-3 w-3" /> Recipe
+                              </span>
+                            </button>
                             <button
                               type="button"
                               onClick={() =>
@@ -855,8 +1015,8 @@ export default function MealPlan() {
 
           <p className="text-xs text-muted-foreground -mt-1">
             {canSwap
-              ? `Tap the shuffle icon to swap any meal — ${suggestsRemaining} swap${suggestsRemaining === 1 ? "" : "s"} left today.`
-              : "You've used today's meal swaps — they refresh tomorrow."}
+              ? `Tap any meal for its step-by-step recipe. The shuffle icon swaps it — ${suggestsRemaining} swap${suggestsRemaining === 1 ? "" : "s"} left today.`
+              : "Tap any meal for its step-by-step recipe. You've used today's swaps — they refresh tomorrow."}
           </p>
 
           <ShoppingList plan={plan} />
@@ -873,6 +1033,7 @@ export default function MealPlan() {
         <PreferencesDialog open={prefsOpen} onOpenChange={setPrefsOpen} prefs={prefs} />
       )}
       <SwapDialog slot={swapSlot} onClose={() => setSwapSlot(null)} onApplied={applyResult} />
+      <RecipeDialog slot={recipeSlot} onClose={() => setRecipeSlot(null)} />
     </div>
   );
 }

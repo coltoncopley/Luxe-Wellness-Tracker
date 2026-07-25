@@ -1733,12 +1733,23 @@ export interface MealPlanIngredient {
   category: MealPlanIngredientCategory;
 }
 
+/**
+ * Step-by-step cooking guide; steps intentionally carry no amounts so ingredient quantities can scale with servings
+ */
+export interface MealPlanRecipe {
+  steps: string[];
+  prepMinutes: number | null;
+  cookMinutes: number | null;
+  tip: string | null;
+}
+
 export interface MealPlanMeal {
   name: string;
   description: string;
   calories: number;
   /** Per-person ingredients for this meal (absent on plans generated before the shopping-list overhaul) */
   ingredients?: MealPlanIngredient[];
+  recipe?: MealPlanRecipe;
 }
 
 export interface MealPlanDay {
@@ -1854,6 +1865,34 @@ export interface ApplyMealInput {
   mealType: ApplyMealInputMealType;
   /** @minimum 0 */
   choiceIndex: number;
+}
+
+export type MealRecipeInputMealType = typeof MealRecipeInputMealType[keyof typeof MealRecipeInputMealType];
+
+
+export const MealRecipeInputMealType = {
+  breakfast: 'breakfast',
+  lunch: 'lunch',
+  dinner: 'dinner',
+  snack: 'snack',
+} as const;
+
+export interface MealRecipeInput {
+  /** YYYY-MM-DD of the day in the current plan */
+  date: string;
+  mealType: MealRecipeInputMealType;
+}
+
+export interface MealRecipeResult {
+  mealName: string;
+  description: string;
+  /** Calories per single serving */
+  calories: number;
+  /** Servings the ingredient amounts are scaled for */
+  people: number;
+  /** Preformatted ingredient amounts already scaled for `people` (e.g. "1½ cups spinach") */
+  ingredientLines: string[];
+  recipe: MealPlanRecipe;
 }
 
 export interface SetMealPlanPeopleInput {

@@ -118,6 +118,8 @@ import type {
   MealPlanPreferences,
   MealPlanResult,
   MealPlanState,
+  MealRecipeInput,
+  MealRecipeResult,
   MealSuggestions,
   Measurement,
   MeasurementInput,
@@ -4264,6 +4266,76 @@ export const useApplyMeal = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getApplyMealMutationOptions(options));
+    }
+
+export const getGetMealRecipeUrl = () => {
+
+
+
+
+  return `/api/meal-plan/meal/recipe`
+}
+
+/**
+ * @summary Step-by-step recipe for a meal slot (AI-written once, then cached in the plan)
+ */
+export const getMealRecipe = async (mealRecipeInput: MealRecipeInput, options?: RequestInit): Promise<MealRecipeResult> => {
+
+  return customFetch<MealRecipeResult>(getGetMealRecipeUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(mealRecipeInput)
+  }
+);}
+
+
+
+
+export const getGetMealRecipeMutationOptions = <TError = ErrorType<void | OpenaiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getMealRecipe>>, TError,{data: BodyType<MealRecipeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof getMealRecipe>>, TError,{data: BodyType<MealRecipeInput>}, TContext> => {
+
+const mutationKey = ['getMealRecipe'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof getMealRecipe>>, {data: BodyType<MealRecipeInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  getMealRecipe(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type GetMealRecipeMutationResult = NonNullable<Awaited<ReturnType<typeof getMealRecipe>>>
+    export type GetMealRecipeMutationBody = BodyType<MealRecipeInput>
+    export type GetMealRecipeMutationError = ErrorType<void | OpenaiError>
+
+    /**
+ * @summary Step-by-step recipe for a meal slot (AI-written once, then cached in the plan)
+ */
+export const useGetMealRecipe = <TError = ErrorType<void | OpenaiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof getMealRecipe>>, TError,{data: BodyType<MealRecipeInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof getMealRecipe>>,
+        TError,
+        {data: BodyType<MealRecipeInput>},
+        TContext
+      > => {
+      return useMutation(getGetMealRecipeMutationOptions(options));
     }
 
 export const getSetMealPlanPeopleUrl = () => {

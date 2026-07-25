@@ -1,7 +1,7 @@
 import { Feather } from "@expo/vector-icons";
 import { useQueryClient } from "@tanstack/react-query";
 import React, { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Modal, Pressable, Share, Text, View } from "react-native";
+import { ActivityIndicator, Modal, Pressable, ScrollView, Share, Text, View } from "react-native";
 import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Alert } from "@/lib/alert";
@@ -12,6 +12,7 @@ import type {
   MealPlanMeal,
   MealPlanPreferences,
   MealPlanResult,
+  MealRecipeResult,
   ShoppingListItem,
 } from "@workspace/api-client-react";
 import {
@@ -23,6 +24,7 @@ import {
   useGenerateMealPlan,
   useGetMealPlan,
   useGetMealPlanPreferences,
+  useGetMealRecipe,
   useSetMealPlanPeople,
   useSuggestMeal,
   useUpdateMealPlanPreferences,
@@ -99,6 +101,7 @@ export default function MealPlanScreen() {
     mealType: MealKey;
     name: string;
   } | null>(null);
+  const [recipeSlot, setRecipeSlot] = useState<RecipeSlot | null>(null);
 
   const plan = query.data?.plan ?? null;
   const remaining = query.data?.generationsRemaining ?? 0;
@@ -279,6 +282,14 @@ export default function MealPlanScreen() {
                 expanded={openDay ? openDay === day.date : day.date === today}
                 canSwap={canSwap}
                 onSwap={(mealType, name) => setSwapSlot({ date: day.date, mealType, name })}
+                onRecipe={(mealType, meal) =>
+                  setRecipeSlot({
+                    date: day.date,
+                    mealType,
+                    name: meal.name,
+                    description: meal.description,
+                  })
+                }
                 onToggle={() =>
                   setOpenDay((openDay ? openDay === day.date : day.date === today) ? "" : day.date)
                 }
@@ -295,8 +306,8 @@ export default function MealPlanScreen() {
             }}
           >
             {canSwap
-              ? `Tap the shuffle icon to swap any meal — ${suggestsRemaining} swap${suggestsRemaining === 1 ? "" : "s"} left today.`
-              : "You've used today's meal swaps — they refresh tomorrow."}
+              ? `Tap any meal for its step-by-step recipe. The shuffle icon swaps it — ${suggestsRemaining} swap${suggestsRemaining === 1 ? "" : "s"} left today.`
+              : "Tap any meal for its step-by-step recipe. You've used today's swaps — they refresh tomorrow."}
           </Text>
 
           <ShoppingListSection plan={plan} />
@@ -320,6 +331,7 @@ export default function MealPlanScreen() {
         <PreferencesModal visible={prefsOpen} onClose={() => setPrefsOpen(false)} prefs={prefs} />
       ) : null}
       <SwapModal slot={swapSlot} onClose={() => setSwapSlot(null)} onApplied={applyResult} />
+      <RecipeModal slot={recipeSlot} onClose={() => setRecipeSlot(null)} />
     </StackScreen>
   );
 }
@@ -371,6 +383,7 @@ function DayCard({
   expanded,
   canSwap,
   onSwap,
+  onRecipe,
   onToggle,
 }: {
   day: MealPlanDay;
@@ -378,6 +391,7 @@ function DayCard({
   expanded: boolean;
   canSwap: boolean;
   onSwap: (mealType: MealKey, name: string) => void;
+  onRecipe: (mealType: MealKey, meal: MealPlanMeal) => void;
   onToggle: () => void;
 }) {
   const c = useColors();
@@ -411,7 +425,7 @@ function DayCard({
             return (
               <View key={m.key} style={{ flexDirection: "row", gap: 10, alignItems: "flex-start" }}>
                 <Text style={{ fontSize: 16, lineHeight: 22 }}>{m.emoji}</Text>
-                <View style={{ flex: 1 }}>
+                <Pressable style={{ flex: 1 }} onPress={() => onRecipe(m.key, meal)} hitSlop={4}>
                   <View style={{ flexDirection: "row", justifyContent: "space-between", gap: 8 }}>
                     <Text
                       style={{
@@ -438,7 +452,13 @@ function DayCard({
                   >
                     {meal.description}
                   </Text>
-                </View>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 4, marginTop: 4 }}>
+                    <Feather name="book-open" size={11} color={c.tint} />
+                    <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 11, color: c.tint }}>
+                      Recipe
+                    </Text>
+                  </View>
+                </Pressable>
                 <Pressable
                   onPress={() => canSwap && onSwap(m.key, meal.name)}
                   disabled={!canSwap}
@@ -868,6 +888,216 @@ function PreferencesModal({
 }
 
 /* ---------------- Swap modal ---------------- */
+
+/* ---------------- Recipe modal ---------------- */
+
+type RecipeSlot = {
+  date: string;
+  mealType: MealKey;
+  name: string;
+  description: string;
+};
+
+function RecipeModal({ slot, onClose }: { slot: RecipeSlot | null; onClose: () => void }) {
+  const c = useColors();
+  const insets = useSafeAreaInsets();
+  const queryClient = useQueryClient();
+  const recipe = useGetMealRecipe();
+  const requestedRef = useRef<string | null>(null);
+
+  const run = (date: string, mealType: MealKey) => {
+    recipe.reset();
+    recipe.mutate(
+      { data: { date, mealType } },
+      {
+        onSuccess: () => {
+          // Recipe (and any backfilled ingredient amounts) is now cached in
+          // the plan — refresh so reopening is instant and the list updates.
+          void queryClient.invalidateQueries({ queryKey: getGetMealPlanQueryKey() });
+        },
+      },
+    );
+  };
+
+  useEffect(() => {
+    if (!slot) {
+      requestedRef.current = null;
+      return;
+    }
+    const key = `${slot.date}:${slot.mealType}`;
+    if (requestedRef.current === key) return;
+    requestedRef.current = key;
+    run(slot.date, slot.mealType);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slot?.date, slot?.mealType]);
+
+  const data: MealRecipeResult | null = recipe.data ?? null;
+
+  const sectionLabel = {
+    fontFamily: "Inter_600SemiBold",
+    fontSize: 11,
+    letterSpacing: 1,
+    textTransform: "uppercase" as const,
+    color: c.mutedForeground,
+  };
+
+  return (
+    <Modal visible={slot != null} transparent animationType="slide" onRequestClose={onClose}>
+      <View style={{ flex: 1 }}>
+        <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)" }} onPress={onClose} />
+        <View
+          style={{
+            backgroundColor: c.background,
+            borderTopLeftRadius: 24,
+            borderTopRightRadius: 24,
+            maxHeight: "85%",
+          }}
+        >
+          <View style={{ padding: 20, paddingBottom: 4, gap: 8 }}>
+            <View
+              style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}
+            >
+              <Text
+                style={{
+                  flex: 1,
+                  paddingRight: 12,
+                  fontFamily: "PlayfairDisplay_600SemiBold",
+                  fontSize: 20,
+                  color: c.foreground,
+                }}
+              >
+                {data?.mealName ?? slot?.name ?? ""}
+              </Text>
+              <Pressable onPress={onClose} hitSlop={8}>
+                <Feather name="x" size={22} color={c.mutedForeground} />
+              </Pressable>
+            </View>
+            <Text style={{ fontFamily: "Inter_400Regular", fontSize: 13, color: c.mutedForeground }}>
+              {data?.description ?? slot?.description ?? ""}
+            </Text>
+          </View>
+
+          <ScrollView
+            contentContainerStyle={{ padding: 20, paddingBottom: insets.bottom + 24, gap: 18 }}
+            showsVerticalScrollIndicator={false}
+          >
+            {recipe.isPending ? (
+              <View style={{ alignItems: "center", gap: 12, paddingVertical: 32 }}>
+                <ActivityIndicator color={c.tint} />
+                <Text style={{ fontFamily: "Inter_400Regular", fontSize: 13, color: c.mutedForeground }}>
+                  Writing your step-by-step recipe…
+                </Text>
+                <Text style={{ fontFamily: "Inter_400Regular", fontSize: 11, color: c.mutedForeground }}>
+                  First time takes a moment — after that it opens instantly.
+                </Text>
+              </View>
+            ) : null}
+
+            {recipe.isError && !recipe.isPending ? (
+              <View style={{ alignItems: "center", gap: 12, paddingVertical: 24 }}>
+                <Text style={{ fontFamily: "Inter_400Regular", fontSize: 13, color: c.mutedForeground }}>
+                  Couldn't write the recipe just now.
+                </Text>
+                <LuxeButton
+                  label="Try again"
+                  variant="outline"
+                  onPress={() => slot && run(slot.date, slot.mealType)}
+                />
+              </View>
+            ) : null}
+
+            {data && !recipe.isPending ? (
+              <>
+                <Text style={{ fontFamily: "Inter_400Regular", fontSize: 12, color: c.mutedForeground }}>
+                  {[
+                    `${data.calories} cal / serving`,
+                    `serves ${data.people}`,
+                    data.recipe.prepMinutes != null ? `prep ${data.recipe.prepMinutes} min` : null,
+                    data.recipe.cookMinutes != null ? `cook ${data.recipe.cookMinutes} min` : null,
+                  ]
+                    .filter(Boolean)
+                    .join("  ·  ")}
+                </Text>
+
+                {data.ingredientLines.length > 0 ? (
+                  <View style={{ gap: 6 }}>
+                    <Text style={sectionLabel}>Ingredients · serves {data.people}</Text>
+                    {data.ingredientLines.map((line, i) => (
+                      <View key={i} style={{ flexDirection: "row", gap: 8 }}>
+                        <Text style={{ fontFamily: "Inter_400Regular", fontSize: 13, color: c.tint }}>
+                          •
+                        </Text>
+                        <Text
+                          style={{
+                            flex: 1,
+                            fontFamily: "Inter_400Regular",
+                            fontSize: 13,
+                            lineHeight: 19,
+                            color: c.foreground,
+                          }}
+                        >
+                          {line}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                ) : null}
+
+                <View style={{ gap: 10 }}>
+                  <Text style={sectionLabel}>Steps</Text>
+                  {data.recipe.steps.map((step, i) => (
+                    <View key={i} style={{ flexDirection: "row", gap: 10 }}>
+                      <Text
+                        style={{
+                          width: 18,
+                          fontFamily: "Inter_600SemiBold",
+                          fontSize: 12,
+                          lineHeight: 19,
+                          color: c.tint,
+                        }}
+                      >
+                        {i + 1}.
+                      </Text>
+                      <Text
+                        style={{
+                          flex: 1,
+                          fontFamily: "Inter_400Regular",
+                          fontSize: 13,
+                          lineHeight: 19,
+                          color: c.foreground,
+                        }}
+                      >
+                        {step}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+
+                {data.recipe.tip ? (
+                  <View style={{ flexDirection: "row", gap: 8, alignItems: "flex-start" }}>
+                    <Feather name="info" size={13} color={c.tint} style={{ marginTop: 2 }} />
+                    <Text
+                      style={{
+                        flex: 1,
+                        fontFamily: "Inter_400Regular",
+                        fontSize: 12,
+                        lineHeight: 18,
+                        color: c.mutedForeground,
+                        fontStyle: "italic",
+                      }}
+                    >
+                      {data.recipe.tip}
+                    </Text>
+                  </View>
+                ) : null}
+              </>
+            ) : null}
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
+  );
+}
 
 function SwapModal({
   slot,

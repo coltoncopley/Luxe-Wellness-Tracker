@@ -13,6 +13,8 @@ import {
   type MealPlanContent,
   type MealPlanDay,
   type MealPlanMeal,
+  type MealPlanIngredient,
+  type MealPlanRecipe,
   type MealPlanUnit,
   type MealPlanCategory,
   type MealPlanRow,
@@ -26,11 +28,13 @@ import {
   isEmailConfigured,
   getAccountEmail,
 } from "../lib/notifications";
+import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
 
 const AI_TIMEOUT_MS = 90_000;
 const SUGGEST_TIMEOUT_MS = 60_000;
+const RECIPE_TIMEOUT_MS = 60_000;
 const MAX_GENERATIONS_PER_WEEK = 2;
 const MAX_SUGGESTS_PER_DAY = 10;
 const MAX_EMAILS_PER_DAY = 5;
@@ -142,6 +146,11 @@ function normalizeQuantity(raw: unknown): number | null {
   return Math.min(raw, 10_000);
 }
 
+function normalizeMinutes(raw: unknown): number | null {
+  if (typeof raw !== "number" || !Number.isFinite(raw) || raw < 0) return null;
+  return Math.round(Math.min(raw, 240));
+}
+
 /* ---------- AI schemas ---------- */
 
 const AiIngredientSchema = z
@@ -182,6 +191,14 @@ const AiPlanSchema = z.object({
 
 const AiSuggestSchema = z.object({
   options: z.array(AiMealSchema).min(1).max(5),
+});
+
+const AiRecipeSchema = z.object({
+  steps: z.array(z.string().min(1).max(400)).min(3).max(12),
+  prepMinutes: z.unknown(),
+  cookMinutes: z.unknown(),
+  tip: z.string().max(300).nullish(),
+  ingredients: z.array(AiIngredientSchema).nullish(),
 });
 
 /* ---------- Aggregation & formatting ---------- */
@@ -320,6 +337,16 @@ function groceryFromShoppingList(
 
 function displayLine(item: ShoppingListItemOut): string {
   return item.displayQuantity ? `${item.displayQuantity} ${item.name}` : item.name;
+}
+
+/** Preformatted "1½ cups spinach" lines for one meal, scaled for `people`. */
+function ingredientLinesOf(meal: MealPlanMeal, people: number): string[] {
+  return (meal.ingredients ?? []).map((ing) => {
+    const scaled =
+      ing.quantity != null && ing.quantity > 0 ? roundQuarter(ing.quantity * people) : null;
+    const display = formatQuantity(scaled, ing.unit ?? null);
+    return display ? `${display} ${ing.name}` : ing.name;
+  });
 }
 
 /* ---------- Preferences ---------- */
@@ -540,6 +567,183 @@ async function suggestMeals(
   return parsed.data.options.slice(0, 3);
 }
 
+/**
+ * Writes a step-by-step cooking guide for one meal. Steps deliberately carry
+ * no amounts (quantities live in `ingredients` and scale with people). When
+ * the meal predates the shopping-list overhaul, the same call also produces
+ * its per-person ingredients.
+ */
+async function generateRecipe(
+  meal: MealPlanMeal,
+  needIngredients: boolean,
+): Promise<{ recipe: MealPlanRecipe; ingredients: MealPlanIngredient[] | null } | null> {
+  const ingredientLines = (meal.ingredients ?? [])
+    .map(
+      (i) =>
+        `- ${i.name}${i.quantity != null ? ` — ${i.quantity}${i.unit ? ` ${i.unit}` : ""} per person` : ""}`,
+    )
+    .join("\n");
+
+  const completion = await Promise.race([
+    openai.chat.completions.create({
+      model: "x-ai/grok-4.5",
+      response_format: { type: "json_object" },
+      messages: [
+        {
+          role: "system",
+          content:
+            "You write a clear, beginner-friendly home-cooking guide for ONE meal from a wellness app member's weekly plan. " +
+            "Educational and general-wellness only — never medical advice. Everyday equipment, simple technique, realistic times. " +
+            "CRITICAL: steps must NOT contain ingredient amounts or counts (no cups, oz, or numbers of items). Refer to ingredients " +
+            'by name only (e.g. "add the spinach") — amounts are displayed separately and scale with servings. ' +
+            (needIngredients ? INGREDIENT_INSTRUCTION + " " : "") +
+            'Respond with JSON: {"steps": [4-10 short imperative strings in cooking order], "prepMinutes": integer, ' +
+            '"cookMinutes": integer, "tip": "one short optional tip or null"' +
+            (needIngredients ? ', "ingredients": [...]' : "") +
+            "}",
+        },
+        {
+          role: "user",
+          content:
+            `Write the cooking guide for this meal:\nName: ${meal.name}\nDescription: ${meal.description}\nCalories per serving: ${meal.calories}` +
+            (ingredientLines.length > 0 ? `\nPer-person ingredients:\n${ingredientLines}` : ""),
+        },
+      ],
+    }),
+    new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error("recipe timeout")), RECIPE_TIMEOUT_MS),
+    ),
+  ]);
+
+  const raw = completion.choices[0]?.message?.content;
+  if (!raw) return null;
+  const parsed = AiRecipeSchema.safeParse(JSON.parse(raw));
+  if (!parsed.success) return null;
+  const steps = parsed.data.steps.map((s) => s.trim()).filter((s) => s.length > 0);
+  if (steps.length < 3) return null;
+  const recipe: MealPlanRecipe = {
+    steps,
+    prepMinutes: normalizeMinutes(parsed.data.prepMinutes),
+    cookMinutes: normalizeMinutes(parsed.data.cookMinutes),
+    tip: parsed.data.tip?.trim() ? parsed.data.tip.trim() : null,
+  };
+  const ingredients =
+    parsed.data.ingredients && parsed.data.ingredients.length > 0 ? parsed.data.ingredients : null;
+  return { recipe, ingredients };
+}
+
+/* ---------- Legacy-plan ingredient backfill ---------- */
+
+const BACKFILL_RETRY_MS = 10 * 60 * 1000;
+const backfillInFlight = new Set<string>();
+const backfillLastAttempt = new Map<string, number>();
+
+function planNeedsIngredients(row: MealPlanRow): boolean {
+  return row.content.days.some((d) =>
+    MEAL_TYPES.some((mt) => {
+      const ing = d[mt]?.ingredients;
+      return !ing || ing.length === 0;
+    }),
+  );
+}
+
+const AiBackfillSchema = z.object({
+  meals: z.array(
+    z.object({
+      index: z.number().int().min(0),
+      ingredients: z.array(AiIngredientSchema).min(1),
+    }),
+  ),
+});
+
+/**
+ * Fire-and-forget: fills per-person ingredients into a plan generated before
+ * the shopping-list overhaul, so its list gains scalable amounts WITHOUT
+ * burning one of the member's weekly generations. Never blocks the request
+ * that triggered it; skips meals swapped while the AI call was in flight;
+ * retries at most every 10 minutes per plan.
+ */
+function maybeBackfillIngredients(row: MealPlanRow): void {
+  const key = `${row.userId}:${row.weekStart}`;
+  if (backfillInFlight.has(key)) return;
+  const last = backfillLastAttempt.get(key) ?? 0;
+  if (Date.now() - last < BACKFILL_RETRY_MS) return;
+  backfillLastAttempt.set(key, Date.now());
+  backfillInFlight.add(key);
+
+  void (async () => {
+    const slots: { date: string; mealType: MealType; name: string }[] = [];
+    const lines: string[] = [];
+    for (const d of row.content.days) {
+      for (const mt of MEAL_TYPES) {
+        const meal = d[mt];
+        if (!meal || (meal.ingredients && meal.ingredients.length > 0)) continue;
+        lines.push(`#${slots.length} ${mt}: ${meal.name} — ${meal.description}`);
+        slots.push({ date: d.date, mealType: mt, name: meal.name });
+      }
+    }
+    if (slots.length === 0) return;
+
+    const completion = await Promise.race([
+      openai.chat.completions.create({
+        model: "x-ai/grok-4.5",
+        response_format: { type: "json_object" },
+        messages: [
+          {
+            role: "system",
+            content:
+              "You list the raw ingredients needed to make ONE person's serving of each meal below. " +
+              INGREDIENT_INSTRUCTION +
+              ' Respond with JSON: {"meals": [{"index": <the #number>, "ingredients": [...]}]} — include every listed meal exactly once.',
+          },
+          { role: "user", content: `Meals:\n${lines.join("\n")}` },
+        ],
+      }),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("backfill timeout")), AI_TIMEOUT_MS),
+      ),
+    ]);
+    const raw = completion.choices[0]?.message?.content;
+    if (!raw) return;
+    const parsed = AiBackfillSchema.safeParse(JSON.parse(raw));
+    if (!parsed.success) return;
+
+    // Apply each slot atomically via jsonb_set, guarded on date + dish name
+    // + still-missing ingredients. A swap, regeneration, or recipe-endpoint
+    // write landing mid-flight turns that slot's update into a 0-row no-op,
+    // and we never rewrite the whole content column from a stale read.
+    let attempted = 0;
+    for (const m of parsed.data.meals) {
+      const slot = slots[m.index];
+      if (!slot) continue;
+      const di = row.content.days.findIndex((d) => d.date === slot.date);
+      if (di < 0) continue;
+      // di is server-computed and mealType a bounded enum — safe to inline.
+      const slotExpr = sql.raw(`content->'days'->${di}->'${slot.mealType}'`);
+      const ingPath = sql.raw(`ARRAY['days','${di}','${slot.mealType}','ingredients']::text[]`);
+      attempted += 1;
+      await db
+        .update(mealPlansTable)
+        .set({ content: sql`jsonb_set(content, ${ingPath}, ${JSON.stringify(m.ingredients)}::jsonb, true)` })
+        .where(
+          and(
+            eq(mealPlansTable.id, row.id),
+            sql`content->'days'->${sql.raw(String(di))}->>'date' = ${slot.date}`,
+            sql`${slotExpr}->>'name' = ${slot.name}`,
+            sql`NOT jsonb_exists(${slotExpr}, 'ingredients')`,
+          ),
+        );
+    }
+    if (attempted === 0) return;
+    logger.info(
+      { userId: row.userId, weekStart: row.weekStart, meals: attempted },
+      "Backfilled meal plan ingredients",
+    );
+  })()
+    .catch((err) => logger.warn({ err }, "Meal plan ingredient backfill failed"))
+    .finally(() => backfillInFlight.delete(key));
+}
+
 /* ---------- Response builders ---------- */
 
 async function getCheckedMap(userId: string, weekStart: string): Promise<Map<string, boolean>> {
@@ -563,7 +767,11 @@ function buildPlanResponse(
   weekEnd: string,
   checked: Map<string, boolean>,
 ) {
-  const shoppingList = deriveShoppingList(row.content.days, row.people, checked);
+  // Until every meal has ingredients (a legacy plan mid-backfill), keep the
+  // names-only legacy list: a scaled list covering only some meals reads as
+  // "this is everything you need" and is worse than no amounts at all.
+  const complete = !planNeedsIngredients(row);
+  const shoppingList = complete ? deriveShoppingList(row.content.days, row.people, checked) : [];
   const grocery = shoppingList.length > 0 ? groceryFromShoppingList(shoppingList) : row.content.grocery;
   return {
     weekStart,
@@ -593,6 +801,10 @@ router.get("/meal-plan/current", async (_req, res): Promise<void> => {
     .select()
     .from(mealPlansTable)
     .where(and(eq(mealPlansTable.userId, userId), eq(mealPlansTable.weekStart, weekStart)));
+
+  // Older plans carry no per-ingredient amounts; quietly fill them in so the
+  // shopping list gains scalable quantities without burning a generation.
+  if (row && planNeedsIngredients(row)) maybeBackfillIngredients(row);
 
   const checked = row ? await getCheckedMap(userId, weekStart) : new Map<string, boolean>();
   res.json({
@@ -900,6 +1112,122 @@ router.post("/meal-plan/meal/apply", async (req, res): Promise<void> => {
   });
 });
 
+/* ----- Recipe: written on first open, cached in the plan ----- */
+
+const recipeInFlight = new Map<
+  string,
+  Promise<{ recipe: MealPlanRecipe; ingredients: MealPlanIngredient[] | null } | null>
+>();
+
+router.post("/meal-plan/meal/recipe", async (req, res): Promise<void> => {
+  const userId = userIdOf(res);
+  const parsed = SuggestSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid request" });
+    return;
+  }
+  const { date, mealType } = parsed.data;
+  const { weekStart } = weekOfET(todayET());
+
+  const [row] = await db
+    .select()
+    .from(mealPlansTable)
+    .where(and(eq(mealPlansTable.userId, userId), eq(mealPlansTable.weekStart, weekStart)));
+  if (!row) {
+    res.status(404).json({ error: "No meal plan for this week yet." });
+    return;
+  }
+  const day = row.content.days.find((d) => d.date === date);
+  if (!day) {
+    res.status(404).json({ error: "That day isn't in this week's plan." });
+    return;
+  }
+  const meal = day[mealType];
+
+  const respond = (m: MealPlanMeal, recipe: MealPlanRecipe): void => {
+    res.json({
+      mealName: m.name,
+      description: m.description,
+      calories: m.calories,
+      people: row.people,
+      ingredientLines: ingredientLinesOf(m, row.people),
+      recipe,
+    });
+  };
+
+  if (meal.recipe) {
+    respond(meal, meal.recipe);
+    return;
+  }
+
+  // One AI call per slot even under a double-tap; keyed by dish name so a
+  // swap mid-flight never attaches the old recipe to the new meal.
+  const flightKey = `${userId}:${date}:${mealType}:${meal.name.toLowerCase()}`;
+  let out: { recipe: MealPlanRecipe; ingredients: MealPlanIngredient[] | null } | null = null;
+  try {
+    let pending = recipeInFlight.get(flightKey);
+    if (!pending) {
+      pending = (async () => {
+        const needIngredients = !meal.ingredients || meal.ingredients.length === 0;
+        const generated = await generateRecipe(meal, needIngredients);
+        if (!generated) return null;
+
+        // Persist atomically into just this slot's keys via jsonb_set,
+        // guarded on date + dish identity + no-recipe-yet. A swap,
+        // regeneration, or backfill committing mid-flight makes this a
+        // 0-row no-op instead of clobbering newer content — and we never
+        // rewrite the whole content column from a stale read.
+        const di = row.content.days.findIndex((d) => d.date === date);
+        if (di >= 0) {
+          // di is a server-computed index and mealType a zod-validated enum,
+          // so inlining them raw is safe; all values stay parameterized.
+          const slotExpr = sql.raw(`content->'days'->${di}->'${mealType}'`);
+          const recPath = sql.raw(`ARRAY['days','${di}','${mealType}','recipe']::text[]`);
+          const ingPath = sql.raw(`ARRAY['days','${di}','${mealType}','ingredients']::text[]`);
+          const recipeJson = JSON.stringify(generated.recipe);
+          // CASE preserves ingredients that a backfill/regeneration wrote
+          // during our AI call — never overwrite existing data from a stale
+          // read; the recipe key itself is guarded by NOT jsonb_exists below.
+          const contentExpr =
+            needIngredients && generated.ingredients
+              ? sql`jsonb_set(jsonb_set(content, ${ingPath}, CASE WHEN jsonb_exists(${slotExpr}, 'ingredients') THEN ${slotExpr}->'ingredients' ELSE ${JSON.stringify(generated.ingredients)}::jsonb END, true), ${recPath}, ${recipeJson}::jsonb, true)`
+              : sql`jsonb_set(content, ${recPath}, ${recipeJson}::jsonb, true)`;
+          await db
+            .update(mealPlansTable)
+            .set({ content: contentExpr })
+            .where(
+              and(
+                eq(mealPlansTable.id, row.id),
+                sql`content->'days'->${sql.raw(String(di))}->>'date' = ${date}`,
+                sql`${slotExpr}->>'name' = ${meal.name}`,
+                sql`${slotExpr}->>'description' = ${meal.description}`,
+                sql`NOT jsonb_exists(${slotExpr}, 'recipe')`,
+              ),
+            );
+        }
+        return generated;
+      })().finally(() => recipeInFlight.delete(flightKey));
+      recipeInFlight.set(flightKey, pending);
+    }
+    out = await pending;
+  } catch (err) {
+    req.log.warn({ err }, "Recipe generation failed");
+  }
+
+  if (!out) {
+    res.status(503).json({ error: "Couldn't write that recipe right now. Please try again." });
+    return;
+  }
+
+  const mealOut: MealPlanMeal =
+    meal.ingredients && meal.ingredients.length > 0
+      ? meal
+      : out.ingredients
+        ? { ...meal, ingredients: out.ingredients }
+        : meal;
+  respond(mealOut, out.recipe);
+});
+
 /* ----- People (scaling) ----- */
 
 const PeopleSchema = z.object({ people: z.number() });
@@ -995,7 +1323,11 @@ router.post("/meal-plan/shopping-list/email", async (req, res): Promise<void> =>
   }
 
   const checked = await getCheckedMap(userId, weekStart);
-  const shoppingList = deriveShoppingList(row.content.days, row.people, checked);
+  // Same partial-backfill rule as buildPlanResponse: only email amounts once
+  // every meal has ingredients; otherwise send the names-only legacy list.
+  const shoppingList = planNeedsIngredients(row)
+    ? []
+    : deriveShoppingList(row.content.days, row.people, checked);
   const categories =
     shoppingList.length > 0
       ? shoppingList.map((c) => ({ category: c.category, items: c.items.map(displayLine) }))

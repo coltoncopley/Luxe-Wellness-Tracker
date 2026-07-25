@@ -54,12 +54,27 @@ export interface MealPlanIngredient {
   category: MealPlanCategory;
 }
 
+/**
+ * Step-by-step cooking guide for one meal. Steps intentionally carry no
+ * ingredient amounts — quantities live in `ingredients` (per person) and are
+ * scaled by the plan's people count at display time. Written by AI on first
+ * request and cached here; swapping or regenerating the meal drops it.
+ */
+export interface MealPlanRecipe {
+  steps: string[];
+  prepMinutes: number | null;
+  cookMinutes: number | null;
+  tip: string | null;
+}
+
 export interface MealPlanMeal {
   name: string;
   description: string;
   calories: number;
   /** Optional: plans generated before the shopping-list overhaul lack this. */
   ingredients?: MealPlanIngredient[];
+  /** Optional: generated lazily the first time the member opens the meal. */
+  recipe?: MealPlanRecipe;
 }
 
 export interface MealPlanDay {

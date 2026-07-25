@@ -7,6 +7,7 @@
 - [DELETE /me FK-cleanup chain](account-deletion-fk-chain.md) — no ON DELETE CASCADE; every new per-user table must be added to the manual DELETE /me delete chain or rows orphan on account deletion.
 - [Web-search grounding](web-search-grounding.md) — prove an AI answer actually searched by checking `response.output` for a `web_search_call` item; discovery features must reject ungrounded results, no fabrication fallback.
 - [Editing seeded reference content](seed-content-updates.md) — seed is insert-once; changing seed text needs a manual SQL UPDATE on existing dev (and already-published prod) rows.
+- [meal_plans.content concurrent writers](meal-plan-content-writes.md) — AI-slow writers must use guarded slot-scoped jsonb_set (never whole-content RMW); derived shopping list only when ALL meals have ingredients.
 - [Multi-source health data + native isolation](apple-health-multisource.md) — steps are MAX-per-date across sources (never summed), sleep merges overlapping intervals; the HealthKit Nitro module must only load via a guarded lazy import in lib/healthkit.ts.
 - [E2E testing quirks](e2e-testing-quirks.md) — reuse an existing comped test user, match emails with lower(), split slow AI flows from CRUD plans; harness may restart api-server mid-test; toaster absent until a toast fires.
 - [Expo dev testing quirks](expo-testing-quirks.md) — RN Alert.alert is a no-op on Expo web (use `@/lib/alert` shim); stale-Metro 404s → restart expo workflow; keep runTest plans against Expo web very short.

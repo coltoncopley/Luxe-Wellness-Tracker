@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { MealPlanIngredient } from './mealPlanIngredient';
+import type { MealPlanRecipe } from './mealPlanRecipe';
 
 export interface MealPlanMeal {
   name: string;
@@ -13,4 +14,5 @@ export interface MealPlanMeal {
   calories: number;
   /** Per-person ingredients for this meal (absent on plans generated before the shopping-list overhaul) */
   ingredients?: MealPlanIngredient[];
+  recipe?: MealPlanRecipe;
 }
