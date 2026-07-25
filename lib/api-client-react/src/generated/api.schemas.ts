@@ -1694,10 +1694,51 @@ export interface WeeklyReport {
   generatedAt: string;
 }
 
+export type MealPlanIngredientUnit = typeof MealPlanIngredientUnit[keyof typeof MealPlanIngredientUnit] | null;
+
+
+export const MealPlanIngredientUnit = {
+  g: 'g',
+  oz: 'oz',
+  lb: 'lb',
+  ml: 'ml',
+  cup: 'cup',
+  tbsp: 'tbsp',
+  tsp: 'tsp',
+  clove: 'clove',
+  slice: 'slice',
+  can: 'can',
+  bunch: 'bunch',
+  item: 'item',
+} as const;
+
+export type MealPlanIngredientCategory = typeof MealPlanIngredientCategory[keyof typeof MealPlanIngredientCategory];
+
+
+export const MealPlanIngredientCategory = {
+  Produce: 'Produce',
+  Protein: 'Protein',
+  Dairy: 'Dairy',
+  Grains: 'Grains',
+  Pantry: 'Pantry',
+  Frozen: 'Frozen',
+  Other: 'Other',
+} as const;
+
+export interface MealPlanIngredient {
+  name: string;
+  /** Amount for a single person; null means "to taste" / uncountable */
+  quantity: number | null;
+  unit: MealPlanIngredientUnit;
+  category: MealPlanIngredientCategory;
+}
+
 export interface MealPlanMeal {
   name: string;
   description: string;
   calories: number;
+  /** Per-person ingredients for this meal (absent on plans generated before the shopping-list overhaul) */
+  ingredients?: MealPlanIngredient[];
 }
 
 export interface MealPlanDay {
@@ -1714,15 +1755,122 @@ export interface MealPlanGroceryCategory {
   items: string[];
 }
 
+export interface ShoppingListItem {
+  itemKey: string;
+  name: string;
+  quantity: number | null;
+  unit: string | null;
+  /** Preformatted amount like "2 lb" or "1½ cups"; empty when uncountable */
+  displayQuantity: string;
+  checked: boolean;
+}
+
+export interface ShoppingListCategory {
+  category: string;
+  items: ShoppingListItem[];
+}
+
 export interface MealPlan {
   /** YYYY-MM-DD (Monday) */
   weekStart: string;
   /** YYYY-MM-DD (Sunday) */
   weekEnd: string;
   days: MealPlanDay[];
+  /** Names-only grocery list (back-compat; prefer shoppingList) */
   grocery: MealPlanGroceryCategory[];
+  /** Scaled, checkable shopping list aggregated from meal ingredients */
+  shoppingList: ShoppingListCategory[];
+  /** Number of people the shopping list is scaled for */
+  people: number;
   notes: string | null;
   generatedAt: string;
+}
+
+export interface MealPlanState {
+  plan: MealPlan | null;
+  generationsRemaining: number;
+  suggestsRemaining: number;
+}
+
+export interface MealPlanResult {
+  plan: MealPlan;
+  generationsRemaining: number;
+  suggestsRemaining: number;
+}
+
+export interface MealPlanPreferences {
+  allergies: string[];
+  dislikes: string[];
+  dietStyle: string | null;
+  householdSize: number;
+  /** Dishes the member removed, learned automatically (read-only) */
+  avoidDishes: string[];
+}
+
+export interface UpdateMealPlanPreferencesInput {
+  allergies: string[];
+  dislikes: string[];
+  dietStyle: string | null;
+  /**
+     * @minimum 1
+     * @maximum 20
+     */
+  householdSize: number;
+}
+
+export type SuggestMealInputMealType = typeof SuggestMealInputMealType[keyof typeof SuggestMealInputMealType];
+
+
+export const SuggestMealInputMealType = {
+  breakfast: 'breakfast',
+  lunch: 'lunch',
+  dinner: 'dinner',
+  snack: 'snack',
+} as const;
+
+export interface SuggestMealInput {
+  /** YYYY-MM-DD of the day in the current plan */
+  date: string;
+  mealType: SuggestMealInputMealType;
+}
+
+export interface MealSuggestions {
+  options: MealPlanMeal[];
+  suggestsRemaining: number;
+}
+
+export type ApplyMealInputMealType = typeof ApplyMealInputMealType[keyof typeof ApplyMealInputMealType];
+
+
+export const ApplyMealInputMealType = {
+  breakfast: 'breakfast',
+  lunch: 'lunch',
+  dinner: 'dinner',
+  snack: 'snack',
+} as const;
+
+export interface ApplyMealInput {
+  date: string;
+  mealType: ApplyMealInputMealType;
+  /** @minimum 0 */
+  choiceIndex: number;
+}
+
+export interface SetMealPlanPeopleInput {
+  /**
+     * @minimum 1
+     * @maximum 20
+     */
+  people: number;
+}
+
+export interface CheckShoppingListItemInput {
+  itemKey: string;
+  checked: boolean;
+}
+
+export interface OkResponse {
+  ok: boolean;
 }
 
 export interface RedeemRewardInput {
@@ -2767,16 +2915,6 @@ category?: string;
 
 export type GetWeeklyReport200 = {
   report: WeeklyReport | null;
-};
-
-export type GetMealPlan200 = {
-  plan: MealPlan | null;
-  generationsRemaining: number;
-};
-
-export type GenerateMealPlan200 = {
-  plan: MealPlan;
-  generationsRemaining: number;
 };
 
 export type ListWorkoutsParams = {

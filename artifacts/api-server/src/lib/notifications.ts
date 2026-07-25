@@ -174,6 +174,71 @@ async function sendEmail(to: string, message: NotificationMessage): Promise<bool
   }
 }
 
+export interface ShoppingListEmailData {
+  weekStart: string;
+  weekEnd: string;
+  people: number;
+  /** Each item is a preformatted display string, e.g. "2 lb Chicken breast". */
+  categories: { category: string; items: string[] }[];
+}
+
+/**
+ * Sends a member's weekly shopping list to their own account email. Unlike
+ * generic notifications this is a user-initiated, transactional email: it
+ * bypasses notification opt-in and the dedupe ledger, and it is ONLY ever sent
+ * to the address passed in (which the caller must resolve to the account email —
+ * there is deliberately no arbitrary "to" relay).
+ */
+export async function sendShoppingListEmail(
+  to: string,
+  data: ShoppingListEmailData,
+): Promise<boolean> {
+  const apiKey = await getResendApiKey();
+  if (!apiKey) {
+    logger.warn("Shopping list email skipped: Resend is not connected");
+    return false;
+  }
+  const sections = data.categories
+    .map(
+      (c) =>
+        `<h3 style="font-size:14px;text-transform:uppercase;letter-spacing:1px;color:#8a7250;margin:20px 0 6px;">${escapeHtml(c.category)}</h3>` +
+        `<ul style="margin:0;padding-left:20px;font-size:15px;line-height:1.7;color:#2d2a26;">` +
+        c.items.map((i) => `<li>${escapeHtml(i)}</li>`).join("") +
+        `</ul>`,
+    )
+    .join("");
+  const peopleLabel = data.people === 1 ? "1 person" : `${data.people} people`;
+  const html = `<div style="font-family:Georgia,serif;max-width:520px;margin:0 auto;padding:32px 24px;color:#2d2a26;">
+  <h1 style="font-size:20px;letter-spacing:2px;text-transform:uppercase;color:#8a7250;margin:0 0 4px;">LUXE Wellness &amp; Aesthetics</h1>
+  <hr style="border:none;border-top:1px solid #e6ded2;margin:16px 0;" />
+  <h2 style="font-size:18px;margin:0 0 4px;">Your shopping list</h2>
+  <p style="font-size:13px;color:#9a938a;margin:0 0 8px;">Week of ${escapeHtml(data.weekStart)} – ${escapeHtml(data.weekEnd)} · scaled for ${escapeHtml(peopleLabel)}</p>
+  ${sections || '<p style="font-size:15px;">Your list is empty.</p>'}
+  <p style="font-size:12px;color:#9a938a;margin-top:32px;">You asked us to email this list from the LUXE app. We only ever send it to your own account email.</p>
+</div>`;
+  try {
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        from: FROM_EMAIL,
+        to: [to],
+        subject: `Your LUXE shopping list — week of ${data.weekStart}`,
+        html,
+      }),
+    });
+    if (!response.ok) {
+      const text = await response.text();
+      logger.warn({ status: response.status, text }, "Shopping list email send failed");
+      return false;
+    }
+    return true;
+  } catch (err) {
+    logger.warn({ err }, "Shopping list email errored");
+    return false;
+  }
+}
+
 /* ---------- Push ---------- */
 
 async function sendPushToUser(userId: string, message: NotificationMessage): Promise<boolean> {

@@ -868,15 +868,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                required: [plan, generationsRemaining]
-                properties:
-                  plan:
-                    oneOf:
-                      - $ref: "#/components/schemas/MealPlan"
-                      - type: "null"
-                  generationsRemaining:
-                    type: integer
+                $ref: "#/components/schemas/MealPlanState"
   /meal-plan/generate:
     post:
       operationId: generateMealPlan
@@ -888,13 +880,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                required: [plan, generationsRemaining]
-                properties:
-                  plan:
-                    $ref: "#/components/schemas/MealPlan"
-                  generationsRemaining:
-                    type: integer
+                $ref: "#/components/schemas/MealPlanResult"
         "429":
           description: Weekly generation limit reached
         "503":
@@ -903,6 +889,139 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/OpenaiError"
+  /meal-plan/preferences:
+    get:
+      operationId: getMealPlanPreferences
+      tags: [mealplan]
+      summary: Member's meal-plan preferences — patient-private
+      responses:
+        "200":
+          description: Current preferences (defaults when never set)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MealPlanPreferences"
+    put:
+      operationId: updateMealPlanPreferences
+      tags: [mealplan]
+      summary: Update meal-plan preferences
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMealPlanPreferencesInput"
+      responses:
+        "200":
+          description: Updated preferences
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MealPlanPreferences"
+  /meal-plan/meal/suggest:
+    post:
+      operationId: suggestMeal
+      tags: [mealplan]
+      summary: Get 3 AI alternatives for a meal slot (removes the current dish, learns it)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SuggestMealInput"
+      responses:
+        "200":
+          description: Three alternative meals
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MealSuggestions"
+        "404":
+          description: No current meal plan for this week
+        "429":
+          description: Daily suggestion limit reached
+        "503":
+          description: Suggestions temporarily unavailable
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OpenaiError"
+  /meal-plan/meal/apply:
+    post:
+      operationId: applyMeal
+      tags: [mealplan]
+      summary: Apply one of the pending swap options to a meal slot
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ApplyMealInput"
+      responses:
+        "200":
+          description: Updated meal plan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MealPlanResult"
+        "409":
+          description: No pending suggestions for this slot (regenerate or re-suggest)
+  /meal-plan/people:
+    patch:
+      operationId: setMealPlanPeople
+      tags: [mealplan]
+      summary: Scale the shopping list for a number of people
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SetMealPlanPeopleInput"
+      responses:
+        "200":
+          description: Updated meal plan
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MealPlanResult"
+        "404":
+          description: No current meal plan for this week
+  /meal-plan/shopping-list/check:
+    patch:
+      operationId: checkShoppingListItem
+      tags: [mealplan]
+      summary: Toggle a shopping-list item's checked state
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CheckShoppingListItemInput"
+      responses:
+        "200":
+          description: Saved
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+  /meal-plan/shopping-list/email:
+    post:
+      operationId: emailShoppingList
+      tags: [mealplan]
+      summary: Email this week's shopping list to the member's account email
+      responses:
+        "200":
+          description: Sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OkResponse"
+        "400":
+          description: No current meal plan for this week
+        "429":
+          description: Too many emails today
+        "503":
+          description: Email not configured
   /exercises:
     get:
       operationId: listExercises
@@ -5364,6 +5483,30 @@ components:
           type: string
         calories:
           type: integer
+        ingredients:
+          type: array
+          description: Per-person ingredients for this meal (absent on plans generated before the shopping-list overhaul)
+          items:
+            $ref: "#/components/schemas/MealPlanIngredient"
+    MealPlanIngredient:
+      type: object
+      required: [name, quantity, unit, category]
+      properties:
+        name:
+          type: string
+        quantity:
+          oneOf:
+            - type: number
+            - type: "null"
+          description: Amount for a single person; null means "to taste" / uncountable
+        unit:
+          oneOf:
+            - type: string
+              enum: [g, oz, lb, ml, cup, tbsp, tsp, clove, slice, can, bunch, item]
+            - type: "null"
+        category:
+          type: string
+          enum: [Produce, Protein, Dairy, Grains, Pantry, Frozen, Other]
     MealPlanDay:
       type: object
       required: [date, breakfast, lunch, dinner, snack]
@@ -5391,7 +5534,7 @@ components:
             type: string
     MealPlan:
       type: object
-      required: [weekStart, weekEnd, days, grocery, notes, generatedAt]
+      required: [weekStart, weekEnd, days, grocery, shoppingList, people, notes, generatedAt]
       properties:
         weekStart:
           type: string
@@ -5405,14 +5548,173 @@ components:
             $ref: "#/components/schemas/MealPlanDay"
         grocery:
           type: array
+          description: Names-only grocery list (back-compat; prefer shoppingList)
           items:
             $ref: "#/components/schemas/MealPlanGroceryCategory"
+        shoppingList:
+          type: array
+          description: Scaled, checkable shopping list aggregated from meal ingredients
+          items:
+            $ref: "#/components/schemas/ShoppingListCategory"
+        people:
+          type: integer
+          description: Number of people the shopping list is scaled for
         notes:
           oneOf:
             - type: string
             - type: "null"
         generatedAt:
           type: string
+    ShoppingListItem:
+      type: object
+      required: [itemKey, name, quantity, unit, displayQuantity, checked]
+      properties:
+        itemKey:
+          type: string
+        name:
+          type: string
+        quantity:
+          oneOf:
+            - type: number
+            - type: "null"
+        unit:
+          oneOf:
+            - type: string
+            - type: "null"
+        displayQuantity:
+          type: string
+          description: Preformatted amount like "2 lb" or "1½ cups"; empty when uncountable
+        checked:
+          type: boolean
+    ShoppingListCategory:
+      type: object
+      required: [category, items]
+      properties:
+        category:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ShoppingListItem"
+    MealPlanState:
+      type: object
+      required: [plan, generationsRemaining, suggestsRemaining]
+      properties:
+        plan:
+          oneOf:
+            - $ref: "#/components/schemas/MealPlan"
+            - type: "null"
+        generationsRemaining:
+          type: integer
+        suggestsRemaining:
+          type: integer
+    MealPlanResult:
+      type: object
+      required: [plan, generationsRemaining, suggestsRemaining]
+      properties:
+        plan:
+          $ref: "#/components/schemas/MealPlan"
+        generationsRemaining:
+          type: integer
+        suggestsRemaining:
+          type: integer
+    MealPlanPreferences:
+      type: object
+      required: [allergies, dislikes, dietStyle, householdSize, avoidDishes]
+      properties:
+        allergies:
+          type: array
+          items:
+            type: string
+        dislikes:
+          type: array
+          items:
+            type: string
+        dietStyle:
+          oneOf:
+            - type: string
+            - type: "null"
+        householdSize:
+          type: integer
+        avoidDishes:
+          type: array
+          description: Dishes the member removed, learned automatically (read-only)
+          items:
+            type: string
+    UpdateMealPlanPreferencesInput:
+      type: object
+      required: [allergies, dislikes, dietStyle, householdSize]
+      properties:
+        allergies:
+          type: array
+          items:
+            type: string
+        dislikes:
+          type: array
+          items:
+            type: string
+        dietStyle:
+          oneOf:
+            - type: string
+            - type: "null"
+        householdSize:
+          type: integer
+          minimum: 1
+          maximum: 20
+    SuggestMealInput:
+      type: object
+      required: [date, mealType]
+      properties:
+        date:
+          type: string
+          description: YYYY-MM-DD of the day in the current plan
+        mealType:
+          type: string
+          enum: [breakfast, lunch, dinner, snack]
+    MealSuggestions:
+      type: object
+      required: [options, suggestsRemaining]
+      properties:
+        options:
+          type: array
+          items:
+            $ref: "#/components/schemas/MealPlanMeal"
+        suggestsRemaining:
+          type: integer
+    ApplyMealInput:
+      type: object
+      required: [date, mealType, choiceIndex]
+      properties:
+        date:
+          type: string
+        mealType:
+          type: string
+          enum: [breakfast, lunch, dinner, snack]
+        choiceIndex:
+          type: integer
+          minimum: 0
+    SetMealPlanPeopleInput:
+      type: object
+      required: [people]
+      properties:
+        people:
+          type: integer
+          minimum: 1
+          maximum: 20
+    CheckShoppingListItemInput:
+      type: object
+      required: [itemKey, checked]
+      properties:
+        itemKey:
+          type: string
+        checked:
+          type: boolean
+    OkResponse:
+      type: object
+      required: [ok]
+      properties:
+        ok:
+          type: boolean
     RedeemRewardInput:
       type: object
       properties:

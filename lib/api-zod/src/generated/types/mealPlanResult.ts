@@ -7,7 +7,8 @@
  */
 import type { MealPlan } from './mealPlan';
 
-export type GenerateMealPlan200 = {
+export interface MealPlanResult {
   plan: MealPlan;
   generationsRemaining: number;
-};
+  suggestsRemaining: number;
+}

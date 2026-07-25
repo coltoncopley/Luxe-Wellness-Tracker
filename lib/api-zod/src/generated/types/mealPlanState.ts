@@ -7,7 +7,8 @@
  */
 import type { MealPlan } from './mealPlan';
 
-export type GetMealPlan200 = {
+export interface MealPlanState {
   plan: MealPlan | null;
   generationsRemaining: number;
-};
+  suggestsRemaining: number;
+}

@@ -42,6 +42,11 @@ import {
   workoutSetsTable,
   workoutPreferencesTable,
   exercisesTable,
+  mealPlansTable,
+  mealPlanPreferencesTable,
+  mealPlanGroceryChecksTable,
+  weeklyReportsTable,
+  challengeParticipantsTable,
 } from "@workspace/db";
 import {
   GetMeResponse,
@@ -361,6 +366,17 @@ router.delete("/me", async (req, res, next): Promise<void> => {
       await tx.delete(weightEntriesTable).where(eq(weightEntriesTable.userId, userId));
       await tx.delete(measurementsTable).where(eq(measurementsTable.userId, userId));
       await tx.delete(goalsTable).where(eq(goalsTable.userId, userId));
+
+      // Meal plans, weekly reports, and challenge participation all FK to users
+      // without cascade — a member with any of them would otherwise 500 the whole
+      // deletion. (challenges rows are global reference data and stay put.)
+      await tx.delete(mealPlanGroceryChecksTable).where(eq(mealPlanGroceryChecksTable.userId, userId));
+      await tx.delete(mealPlanPreferencesTable).where(eq(mealPlanPreferencesTable.userId, userId));
+      await tx.delete(mealPlansTable).where(eq(mealPlansTable.userId, userId));
+      await tx.delete(weeklyReportsTable).where(eq(weeklyReportsTable.userId, userId));
+      await tx
+        .delete(challengeParticipantsTable)
+        .where(eq(challengeParticipantsTable.userId, userId));
 
       await tx
         .delete(referralsTable)

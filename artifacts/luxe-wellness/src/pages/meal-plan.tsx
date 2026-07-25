@@ -1,13 +1,37 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   useGetMealPlan,
   useGenerateMealPlan,
+  useGetMealPlanPreferences,
+  useUpdateMealPlanPreferences,
+  useSuggestMeal,
+  useApplyMeal,
+  useSetMealPlanPeople,
+  useCheckShoppingListItem,
+  useEmailShoppingList,
   getGetMealPlanQueryKey,
+  getGetMealPlanPreferencesQueryKey,
+  type MealPlan,
+  type MealPlanResult,
+  type MealPlanMeal,
+  type ShoppingListItem,
+  type MealPlanPreferences,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   CalendarRange,
   ShoppingBasket,
@@ -15,10 +39,21 @@ import {
   RefreshCw,
   Lightbulb,
   ChefHat,
+  Shuffle,
+  Users,
+  Minus,
+  Plus,
+  Mail,
+  Share2,
+  X,
+  SlidersHorizontal,
+  Check,
 } from "lucide-react";
 import { toast } from "sonner";
 
-const MEAL_LABELS: { key: "breakfast" | "lunch" | "dinner" | "snack"; label: string; emoji: string }[] = [
+type MealKey = "breakfast" | "lunch" | "dinner" | "snack";
+
+const MEAL_LABELS: { key: MealKey; label: string; emoji: string }[] = [
   { key: "breakfast", label: "Breakfast", emoji: "🌅" },
   { key: "lunch", label: "Lunch", emoji: "☀️" },
   { key: "dinner", label: "Dinner", emoji: "🌙" },
@@ -40,16 +75,588 @@ function fmtShort(date: string): string {
   });
 }
 
+function displayLine(item: ShoppingListItem): string {
+  return item.displayQuantity ? `${item.displayQuantity} ${item.name}` : item.name;
+}
+
+function shoppingListText(plan: MealPlan): string {
+  const header = `LUXE shopping list — week of ${fmtShort(plan.weekStart)}–${fmtShort(plan.weekEnd)}\nServes ${plan.people}\n`;
+  if (plan.shoppingList.length > 0) {
+    const body = plan.shoppingList
+      .map(
+        (c) =>
+          `\n${c.category.toUpperCase()}\n` + c.items.map((i) => `- ${displayLine(i)}`).join("\n"),
+      )
+      .join("\n");
+    return header + body;
+  }
+  const body = plan.grocery
+    .map((c) => `\n${c.category.toUpperCase()}\n` + c.items.map((i) => `- ${i}`).join("\n"))
+    .join("\n");
+  return header + body;
+}
+
+/* ---------------- Chip input ---------------- */
+
+function ChipInput({
+  label,
+  placeholder,
+  values,
+  onChange,
+  testid,
+}: {
+  label: string;
+  placeholder: string;
+  values: string[];
+  onChange: (next: string[]) => void;
+  testid: string;
+}) {
+  const [draft, setDraft] = useState("");
+  const add = () => {
+    const v = draft.trim();
+    if (v.length === 0) return;
+    if (!values.some((x) => x.toLowerCase() === v.toLowerCase())) {
+      onChange([...values, v].slice(0, 40));
+    }
+    setDraft("");
+  };
+  return (
+    <div className="space-y-2">
+      <Label className="text-sm">{label}</Label>
+      {values.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          {values.map((v) => (
+            <span
+              key={v}
+              className="inline-flex items-center gap-1 rounded-full bg-secondary px-2.5 py-1 text-xs"
+            >
+              {v}
+              <button
+                type="button"
+                onClick={() => onChange(values.filter((x) => x !== v))}
+                className="text-muted-foreground hover:text-foreground"
+                aria-label={`Remove ${v}`}
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
+      <div className="flex gap-2">
+        <Input
+          value={draft}
+          placeholder={placeholder}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === ",") {
+              e.preventDefault();
+              add();
+            }
+          }}
+          data-testid={`input-${testid}`}
+        />
+        <Button type="button" variant="outline" onClick={add} data-testid={`button-add-${testid}`}>
+          Add
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+/* ---------------- Preferences dialog ---------------- */
+
+function PreferencesDialog({
+  open,
+  onOpenChange,
+  prefs,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  prefs: MealPlanPreferences;
+}) {
+  const queryClient = useQueryClient();
+  const update = useUpdateMealPlanPreferences();
+  const [allergies, setAllergies] = useState<string[]>(prefs.allergies);
+  const [dislikes, setDislikes] = useState<string[]>(prefs.dislikes);
+  const [dietStyle, setDietStyle] = useState(prefs.dietStyle ?? "");
+
+  useEffect(() => {
+    if (open) {
+      setAllergies(prefs.allergies);
+      setDislikes(prefs.dislikes);
+      setDietStyle(prefs.dietStyle ?? "");
+    }
+  }, [open, prefs.allergies, prefs.dislikes, prefs.dietStyle]);
+
+  const save = () => {
+    update.mutate(
+      {
+        data: {
+          allergies,
+          dislikes,
+          dietStyle: dietStyle.trim() ? dietStyle.trim() : null,
+          householdSize: prefs.householdSize,
+        },
+      },
+      {
+        onSuccess: () => {
+          void queryClient.invalidateQueries({ queryKey: getGetMealPlanPreferencesQueryKey() });
+          toast.success("Preferences saved — they'll shape your next plan.");
+          onOpenChange(false);
+        },
+        onError: () => toast.error("Couldn't save your preferences. Please try again."),
+      },
+    );
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="font-serif">Meal preferences</DialogTitle>
+          <DialogDescription>
+            Luxe AI uses these to tailor your plan. Everything here is private to you.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-5 py-1">
+          <ChipInput
+            label="Allergies (always avoided)"
+            placeholder="e.g. peanuts"
+            values={allergies}
+            onChange={setAllergies}
+            testid="allergy"
+          />
+          <ChipInput
+            label="Foods you dislike"
+            placeholder="e.g. mushrooms"
+            values={dislikes}
+            onChange={setDislikes}
+            testid="dislike"
+          />
+          <div className="space-y-2">
+            <Label className="text-sm" htmlFor="diet-style">
+              Diet style (optional)
+            </Label>
+            <Input
+              id="diet-style"
+              value={dietStyle}
+              placeholder="e.g. vegetarian, Mediterranean, low-carb"
+              onChange={(e) => setDietStyle(e.target.value)}
+              data-testid="input-diet-style"
+            />
+          </div>
+          {prefs.avoidDishes.length > 0 && (
+            <div className="rounded-lg bg-secondary/50 p-3">
+              <p className="text-xs font-medium text-muted-foreground">
+                Learned from your swaps — dishes we won't repeat:
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground/80">
+                {prefs.avoidDishes.slice(0, 8).join(", ")}
+                {prefs.avoidDishes.length > 8 ? "…" : ""}
+              </p>
+            </div>
+          )}
+        </div>
+        <DialogFooter>
+          <Button
+            className="rounded-full"
+            onClick={save}
+            disabled={update.isPending}
+            data-testid="button-save-preferences"
+          >
+            {update.isPending ? "Saving…" : "Save preferences"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/* ---------------- Swap dialog ---------------- */
+
+function SwapDialog({
+  slot,
+  onClose,
+  onApplied,
+}: {
+  slot: { date: string; mealType: MealKey; name: string } | null;
+  onClose: () => void;
+  onApplied: (result: MealPlanResult) => void;
+}) {
+  const suggest = useSuggestMeal();
+  const apply = useApplyMeal();
+  const [choice, setChoice] = useState<number | null>(null);
+  const requestedRef = useRef<string | null>(null);
+
+  const runSuggest = (date: string, mealType: MealKey) => {
+    setChoice(null);
+    suggest.reset();
+    suggest.mutate(
+      { data: { date, mealType } },
+      {
+        onError: (err) => {
+          const e = err as { status?: number; data?: { error?: string } };
+          if (e.status === 429) {
+            toast.error(e.data?.error ?? "You've used today's swap ideas. Try again tomorrow!");
+            onClose();
+          }
+        },
+      },
+    );
+  };
+
+  // Fire one suggestion request per opened slot (guarded against StrictMode double-run).
+  useEffect(() => {
+    if (!slot) {
+      requestedRef.current = null;
+      return;
+    }
+    const key = `${slot.date}:${slot.mealType}`;
+    if (requestedRef.current === key) return;
+    requestedRef.current = key;
+    runSuggest(slot.date, slot.mealType);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slot?.date, slot?.mealType]);
+
+  const options: MealPlanMeal[] = suggest.data?.options ?? [];
+
+  const doApply = () => {
+    if (!slot || choice == null) return;
+    apply.mutate(
+      { data: { date: slot.date, mealType: slot.mealType, choiceIndex: choice } },
+      {
+        onSuccess: (result) => {
+          onApplied(result);
+          toast.success("Meal swapped!");
+          onClose();
+        },
+        onError: (err) => {
+          const e = err as { status?: number };
+          toast.error(
+            e.status === 409
+              ? "Those ideas expired — try swapping again."
+              : "Couldn't swap that meal. Please try again.",
+          );
+        },
+      },
+    );
+  };
+
+  return (
+    <Dialog open={slot != null} onOpenChange={(v) => !v && onClose()}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle className="font-serif">Swap this meal</DialogTitle>
+          <DialogDescription>
+            {slot ? (
+              <>
+                Replacing <span className="font-medium">{slot.name}</span>. Pick a fresh idea below.
+              </>
+            ) : null}
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-3 py-1">
+          {suggest.isPending && (
+            <div className="flex flex-col items-center gap-3 py-10 text-center">
+              <RefreshCw className="h-6 w-6 animate-spin text-primary" />
+              <p className="text-sm text-muted-foreground">Finding three fresh ideas…</p>
+            </div>
+          )}
+
+          {suggest.isError && !suggest.isPending && (
+            <div className="py-8 text-center">
+              <p className="text-sm text-muted-foreground">
+                Couldn't fetch ideas just now.
+              </p>
+              <Button
+                variant="outline"
+                className="mt-3 rounded-full"
+                onClick={() => slot && runSuggest(slot.date, slot.mealType)}
+                data-testid="button-retry-suggest"
+              >
+                Try again
+              </Button>
+            </div>
+          )}
+
+          {!suggest.isPending &&
+            options.map((opt, i) => {
+              const selected = choice === i;
+              return (
+                <button
+                  type="button"
+                  key={i}
+                  onClick={() => setChoice(i)}
+                  className={`w-full rounded-xl border p-4 text-left transition ${
+                    selected ? "border-primary bg-primary/5" : "border-border hover:border-primary/40"
+                  }`}
+                  data-testid={`option-swap-${i}`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <p className="text-sm font-medium">{opt.name}</p>
+                    <span className="flex items-center gap-2">
+                      <span className="shrink-0 text-xs text-muted-foreground">
+                        {opt.calories} cal
+                      </span>
+                      {selected && <Check className="h-4 w-4 text-primary" />}
+                    </span>
+                  </div>
+                  <p className="mt-1 text-xs text-muted-foreground">{opt.description}</p>
+                </button>
+              );
+            })}
+        </div>
+
+        {!suggest.isPending && options.length > 0 && (
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button
+              variant="ghost"
+              onClick={() => slot && runSuggest(slot.date, slot.mealType)}
+              disabled={apply.isPending}
+              data-testid="button-more-ideas"
+            >
+              <RefreshCw className="mr-1.5 h-3.5 w-3.5" />
+              More ideas
+            </Button>
+            <Button
+              className="rounded-full"
+              onClick={doApply}
+              disabled={choice == null || apply.isPending}
+              data-testid="button-apply-swap"
+            >
+              {apply.isPending ? "Swapping…" : "Use this meal"}
+            </Button>
+          </DialogFooter>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+/* ---------------- Shopping list ---------------- */
+
+function ShoppingList({ plan }: { plan: MealPlan }) {
+  const check = useCheckShoppingListItem();
+  const email = useEmailShoppingList();
+  const [localChecks, setLocalChecks] = useState<Record<string, boolean>>({});
+
+  // Reset local check overrides whenever a new plan is generated.
+  useEffect(() => {
+    setLocalChecks({});
+  }, [plan.generatedAt]);
+
+  const isChecked = (item: ShoppingListItem) =>
+    localChecks[item.itemKey] ?? item.checked;
+
+  const toggle = (item: ShoppingListItem) => {
+    const next = !isChecked(item);
+    setLocalChecks((m) => ({ ...m, [item.itemKey]: next }));
+    check.mutate(
+      { data: { itemKey: item.itemKey, checked: next } },
+      {
+        onError: () => {
+          setLocalChecks((m) => ({ ...m, [item.itemKey]: !next }));
+          toast.error("Couldn't save that. Please try again.");
+        },
+      },
+    );
+  };
+
+  const sendEmail = () => {
+    email.mutate(undefined, {
+      onSuccess: () => toast.success("Shopping list sent to your email!"),
+      onError: (err) => {
+        const e = err as { status?: number; data?: { error?: string } };
+        toast.error(e.data?.error ?? "Couldn't send the email right now.");
+      },
+    });
+  };
+
+  const share = async () => {
+    const text = shoppingListText(plan);
+    const nav = navigator as Navigator & {
+      share?: (data: { title?: string; text?: string }) => Promise<void>;
+    };
+    try {
+      if (typeof nav.share === "function") {
+        await nav.share({ title: "LUXE shopping list", text });
+        return;
+      }
+    } catch {
+      // user cancelled or share unavailable — fall through to clipboard
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      toast.success("Shopping list copied — paste it into any message.");
+    } catch {
+      toast.error("Couldn't share the list on this device.");
+    }
+  };
+
+  const hasScaled = plan.shoppingList.length > 0;
+
+  return (
+    <Card className="shadow-sm border-border">
+      <CardHeader className="pb-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <CardTitle className="text-sm font-sans font-medium text-primary flex items-center gap-2">
+            <ShoppingBasket className="h-4 w-4" />
+            Shopping list {hasScaled ? `· serves ${plan.people}` : ""}
+          </CardTitle>
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              className="rounded-full"
+              onClick={share}
+              data-testid="button-share-list"
+            >
+              <Share2 className="mr-1.5 h-3.5 w-3.5" />
+              Share
+            </Button>
+            <Button
+              size="sm"
+              variant="outline"
+              className="rounded-full"
+              onClick={sendEmail}
+              disabled={email.isPending}
+              data-testid="button-email-list"
+            >
+              <Mail className="mr-1.5 h-3.5 w-3.5" />
+              {email.isPending ? "Sending…" : "Email"}
+            </Button>
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent className="grid gap-5 sm:grid-cols-2">
+        {hasScaled
+          ? plan.shoppingList.map((cat) => (
+              <div key={cat.category}>
+                <p className="mb-1.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  {cat.category}
+                </p>
+                <ul className="space-y-1.5">
+                  {cat.items.map((item) => {
+                    const checked = isChecked(item);
+                    return (
+                      <li key={item.itemKey} className="flex items-center gap-2.5">
+                        <Checkbox
+                          checked={checked}
+                          onCheckedChange={() => toggle(item)}
+                          data-testid={`check-${item.itemKey}`}
+                        />
+                        <span
+                          className={`text-sm ${checked ? "text-muted-foreground line-through" : ""}`}
+                        >
+                          {displayLine(item)}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </div>
+            ))
+          : plan.grocery.map((cat) => (
+              <div key={cat.category}>
+                <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  {cat.category}
+                </p>
+                <ul className="space-y-0.5">
+                  {cat.items.map((item, i) => (
+                    <li key={i} className="text-sm">
+                      • {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+      </CardContent>
+    </Card>
+  );
+}
+
+/* ---------------- People scaler ---------------- */
+
+function PeopleScaler({ plan }: { plan: MealPlan }) {
+  const queryClient = useQueryClient();
+  const setPeople = useSetMealPlanPeople();
+  const [pending, setPending] = useState<number | null>(null);
+  const people = pending ?? plan.people;
+
+  const change = (next: number) => {
+    const clamped = Math.min(Math.max(next, 1), 20);
+    if (clamped === plan.people) return;
+    setPending(clamped);
+    setPeople.mutate(
+      { data: { people: clamped } },
+      {
+        onSuccess: (result) => {
+          queryClient.setQueryData(getGetMealPlanQueryKey(), result);
+          setPending(null);
+        },
+        onError: () => {
+          setPending(null);
+          toast.error("Couldn't update servings. Please try again.");
+        },
+      },
+    );
+  };
+
+  return (
+    <div className="flex items-center gap-2 rounded-full border border-border px-3 py-1.5">
+      <Users className="h-4 w-4 text-muted-foreground" />
+      <span className="text-xs text-muted-foreground">Serves</span>
+      <button
+        type="button"
+        onClick={() => change(people - 1)}
+        disabled={setPeople.isPending || people <= 1}
+        className="text-muted-foreground hover:text-foreground disabled:opacity-40"
+        aria-label="Fewer people"
+        data-testid="button-people-minus"
+      >
+        <Minus className="h-3.5 w-3.5" />
+      </button>
+      <span className="w-5 text-center text-sm font-medium" data-testid="text-people-count">
+        {people}
+      </span>
+      <button
+        type="button"
+        onClick={() => change(people + 1)}
+        disabled={setPeople.isPending || people >= 20}
+        className="text-muted-foreground hover:text-foreground disabled:opacity-40"
+        aria-label="More people"
+        data-testid="button-people-plus"
+      >
+        <Plus className="h-3.5 w-3.5" />
+      </button>
+    </div>
+  );
+}
+
+/* ---------------- Page ---------------- */
+
 export default function MealPlan() {
   const queryClient = useQueryClient();
   const { data, isLoading } = useGetMealPlan({
     query: { queryKey: getGetMealPlanQueryKey() },
   });
+  const { data: prefs } = useGetMealPlanPreferences({
+    query: { queryKey: getGetMealPlanPreferencesQueryKey() },
+  });
   const generate = useGenerateMealPlan();
   const [openDay, setOpenDay] = useState<string | null>(null);
+  const [prefsOpen, setPrefsOpen] = useState(false);
+  const [swapSlot, setSwapSlot] = useState<{
+    date: string;
+    mealType: MealKey;
+    name: string;
+  } | null>(null);
 
   const plan = data?.plan ?? null;
   const remaining = data?.generationsRemaining ?? 0;
+  const suggestsRemaining = data?.suggestsRemaining ?? 0;
   const today = new Date().toLocaleDateString("en-CA");
 
   const runGenerate = () => {
@@ -61,7 +668,9 @@ export default function MealPlan() {
       onError: (err) => {
         const e = err as { status?: number; data?: { error?: string } };
         if (e.status === 429) {
-          toast.error(e.data?.error ?? "You've used this week's generations — a fresh plan unlocks Monday!");
+          toast.error(
+            e.data?.error ?? "You've used this week's generations — a fresh plan unlocks Monday!",
+          );
         } else {
           toast.error("Couldn't create your plan just now. Please try again in a moment.");
         }
@@ -69,16 +678,36 @@ export default function MealPlan() {
     });
   };
 
+  const applyResult = (result: MealPlanResult) => {
+    queryClient.setQueryData(getGetMealPlanQueryKey(), result);
+  };
+
+  const canSwap = suggestsRemaining > 0;
+
   return (
     <div className="space-y-8 pb-12 max-w-3xl">
-      <div>
-        <h1 className="text-4xl mb-2 text-primary flex items-center gap-3">
-          <CalendarRange className="h-8 w-8" />
-          Meal Plan
-        </h1>
-        <p className="text-muted-foreground text-lg">
-          A simple week of meals, tailored to your goals and the foods you already love.
-        </p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-4xl mb-2 text-primary flex items-center gap-3">
+            <CalendarRange className="h-8 w-8" />
+            Meal Plan
+          </h1>
+          <p className="text-muted-foreground text-lg">
+            A simple week of meals, tailored to your goals and the foods you already love.
+          </p>
+        </div>
+        {prefs && (
+          <Button
+            variant="outline"
+            size="sm"
+            className="rounded-full shrink-0"
+            onClick={() => setPrefsOpen(true)}
+            data-testid="button-open-preferences"
+          >
+            <SlidersHorizontal className="mr-1.5 h-3.5 w-3.5" />
+            Preferences
+          </Button>
+        )}
       </div>
 
       {isLoading ? (
@@ -93,8 +722,9 @@ export default function MealPlan() {
             <ChefHat className="h-10 w-10 text-primary mx-auto" />
             <p className="font-serif text-xl">No plan for this week yet</p>
             <p className="text-muted-foreground text-sm max-w-md mx-auto">
-              Luxe AI will build a 7-day plan around your calorie target and recent food logs —
-              plus a grocery list to match. It takes about a minute.
+              Luxe AI will build a 7-day plan around your calorie target, preferences, and recent
+              food logs — plus a shopping list you can check off, scale, and send to yourself. It
+              takes about a minute.
             </p>
             <Button
               className="rounded-full"
@@ -114,25 +744,30 @@ export default function MealPlan() {
         </Card>
       ) : (
         <>
-          <div className="flex items-center justify-between gap-3 -mt-4">
+          <div className="flex flex-wrap items-center justify-between gap-3 -mt-4">
             <p className="text-sm text-muted-foreground">
               Week of {fmtShort(plan.weekStart)} – {fmtShort(plan.weekEnd)}
             </p>
-            <Button
-              size="sm"
-              variant="outline"
-              className="rounded-full"
-              disabled={generate.isPending || remaining <= 0}
-              onClick={runGenerate}
-              data-testid="button-regenerate-plan"
-            >
-              <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${generate.isPending ? "animate-spin" : ""}`} />
-              {generate.isPending
-                ? "Rebuilding…"
-                : remaining > 0
-                  ? `Regenerate (${remaining} left)`
-                  : "New plan Monday"}
-            </Button>
+            <div className="flex items-center gap-2">
+              <PeopleScaler plan={plan} />
+              <Button
+                size="sm"
+                variant="outline"
+                className="rounded-full"
+                disabled={generate.isPending || remaining <= 0}
+                onClick={runGenerate}
+                data-testid="button-regenerate-plan"
+              >
+                <RefreshCw
+                  className={`mr-1.5 h-3.5 w-3.5 ${generate.isPending ? "animate-spin" : ""}`}
+                />
+                {generate.isPending
+                  ? "Rebuilding…"
+                  : remaining > 0
+                    ? `Regenerate (${remaining} left)`
+                    : "New plan Monday"}
+              </Button>
+            </div>
           </div>
 
           {plan.notes && (
@@ -176,7 +811,7 @@ export default function MealPlan() {
                       {MEAL_LABELS.map((m) => {
                         const meal = day[m.key];
                         return (
-                          <div key={m.key} className="flex items-start gap-3">
+                          <div key={m.key} className="flex items-start gap-3 group">
                             <span aria-hidden className="text-lg leading-6">
                               {m.emoji}
                             </span>
@@ -189,6 +824,19 @@ export default function MealPlan() {
                               </div>
                               <p className="text-xs text-muted-foreground">{meal.description}</p>
                             </div>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                canSwap &&
+                                setSwapSlot({ date: day.date, mealType: m.key, name: meal.name })
+                              }
+                              disabled={!canSwap}
+                              title={canSwap ? "Swap this meal" : "No swaps left today"}
+                              className="shrink-0 text-muted-foreground hover:text-primary disabled:opacity-30"
+                              data-testid={`button-swap-${day.date}-${m.key}`}
+                            >
+                              <Shuffle className="h-4 w-4" />
+                            </button>
                           </div>
                         );
                       })}
@@ -199,40 +847,26 @@ export default function MealPlan() {
             })}
           </div>
 
-          {plan.grocery.length > 0 && (
-            <Card className="shadow-sm border-border">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-sans font-medium text-primary flex items-center gap-2">
-                  <ShoppingBasket className="h-4 w-4" />
-                  Grocery list for the week
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="grid gap-4 sm:grid-cols-2">
-                {plan.grocery.map((cat) => (
-                  <div key={cat.category}>
-                    <p className="mb-1 text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                      {cat.category}
-                    </p>
-                    <ul className="space-y-0.5">
-                      {cat.items.map((item, i) => (
-                        <li key={i} className="text-sm">
-                          • {item}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          )}
+          <p className="text-xs text-muted-foreground -mt-1">
+            {canSwap
+              ? `Tap the shuffle icon to swap any meal — ${suggestsRemaining} swap${suggestsRemaining === 1 ? "" : "s"} left today.`
+              : "You've used today's meal swaps — they refresh tomorrow."}
+          </p>
+
+          <ShoppingList plan={plan} />
         </>
       )}
 
       <p className="text-xs text-muted-foreground">
         Your meal plan is private to you — it is never shared with LUXE staff. This is general
-        wellness guidance, not medical or dietetic advice. Check with your doctor about any
-        dietary needs or restrictions.
+        wellness guidance, not medical or dietetic advice. Check with your doctor about any dietary
+        needs or restrictions.
       </p>
+
+      {prefs && (
+        <PreferencesDialog open={prefsOpen} onOpenChange={setPrefsOpen} prefs={prefs} />
+      )}
+      <SwapDialog slot={swapSlot} onClose={() => setSwapSlot(null)} onApplied={applyResult} />
     </div>
   );
 }

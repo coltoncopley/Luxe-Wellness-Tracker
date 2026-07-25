@@ -1060,32 +1060,69 @@ export const GetMealPlanResponse = zod.object({
   "breakfast": zod.object({
   "name": zod.string(),
   "description": zod.string(),
-  "calories": zod.number()
+  "calories": zod.number(),
+  "ingredients": zod.array(zod.object({
+  "name": zod.string(),
+  "quantity": zod.union([zod.number(),zod.null()]).describe('Amount for a single person; null means \"to taste\" \/ uncountable'),
+  "unit": zod.union([zod.enum(['g', 'oz', 'lb', 'ml', 'cup', 'tbsp', 'tsp', 'clove', 'slice', 'can', 'bunch', 'item']),zod.null()]),
+  "category": zod.enum(['Produce', 'Protein', 'Dairy', 'Grains', 'Pantry', 'Frozen', 'Other'])
+})).optional().describe('Per-person ingredients for this meal (absent on plans generated before the shopping-list overhaul)')
 }),
   "lunch": zod.object({
   "name": zod.string(),
   "description": zod.string(),
-  "calories": zod.number()
+  "calories": zod.number(),
+  "ingredients": zod.array(zod.object({
+  "name": zod.string(),
+  "quantity": zod.union([zod.number(),zod.null()]).describe('Amount for a single person; null means \"to taste\" \/ uncountable'),
+  "unit": zod.union([zod.enum(['g', 'oz', 'lb', 'ml', 'cup', 'tbsp', 'tsp', 'clove', 'slice', 'can', 'bunch', 'item']),zod.null()]),
+  "category": zod.enum(['Produce', 'Protein', 'Dairy', 'Grains', 'Pantry', 'Frozen', 'Other'])
+})).optional().describe('Per-person ingredients for this meal (absent on plans generated before the shopping-list overhaul)')
 }),
   "dinner": zod.object({
   "name": zod.string(),
   "description": zod.string(),
-  "calories": zod.number()
+  "calories": zod.number(),
+  "ingredients": zod.array(zod.object({
+  "name": zod.string(),
+  "quantity": zod.union([zod.number(),zod.null()]).describe('Amount for a single person; null means \"to taste\" \/ uncountable'),
+  "unit": zod.union([zod.enum(['g', 'oz', 'lb', 'ml', 'cup', 'tbsp', 'tsp', 'clove', 'slice', 'can', 'bunch', 'item']),zod.null()]),
+  "category": zod.enum(['Produce', 'Protein', 'Dairy', 'Grains', 'Pantry', 'Frozen', 'Other'])
+})).optional().describe('Per-person ingredients for this meal (absent on plans generated before the shopping-list overhaul)')
 }),
   "snack": zod.object({
   "name": zod.string(),
   "description": zod.string(),
-  "calories": zod.number()
+  "calories": zod.number(),
+  "ingredients": zod.array(zod.object({
+  "name": zod.string(),
+  "quantity": zod.union([zod.number(),zod.null()]).describe('Amount for a single person; null means \"to taste\" \/ uncountable'),
+  "unit": zod.union([zod.enum(['g', 'oz', 'lb', 'ml', 'cup', 'tbsp', 'tsp', 'clove', 'slice', 'can', 'bunch', 'item']),zod.null()]),
+  "category": zod.enum(['Produce', 'Protein', 'Dairy', 'Grains', 'Pantry', 'Frozen', 'Other'])
+})).optional().describe('Per-person ingredients for this meal (absent on plans generated before the shopping-list overhaul)')
 })
 })),
   "grocery": zod.array(zod.object({
   "category": zod.string(),
   "items": zod.array(zod.string())
-})),
+})).describe('Names-only grocery list (back-compat; prefer shoppingList)'),
+  "shoppingList": zod.array(zod.object({
+  "category": zod.string(),
+  "items": zod.array(zod.object({
+  "itemKey": zod.string(),
+  "name": zod.string(),
+  "quantity": zod.union([zod.number(),zod.null()]),
+  "unit": zod.union([zod.string(),zod.null()]),
+  "displayQuantity": zod.string().describe('Preformatted amount like \"2 lb\" or \"1½ cups\"; empty when uncountable'),
+  "checked": zod.boolean()
+}))
+})).describe('Scaled, checkable shopping list aggregated from meal ingredients'),
+  "people": zod.number().describe('Number of people the shopping list is scaled for'),
   "notes": zod.union([zod.string(),zod.null()]),
   "generatedAt": zod.string()
 }),zod.null()]),
-  "generationsRemaining": zod.number()
+  "generationsRemaining": zod.number(),
+  "suggestsRemaining": zod.number()
 })
 
 
@@ -1101,32 +1138,323 @@ export const GenerateMealPlanResponse = zod.object({
   "breakfast": zod.object({
   "name": zod.string(),
   "description": zod.string(),
-  "calories": zod.number()
+  "calories": zod.number(),
+  "ingredients": zod.array(zod.object({
+  "name": zod.string(),
+  "quantity": zod.union([zod.number(),zod.null()]).describe('Amount for a single person; null means \"to taste\" \/ uncountable'),
+  "unit": zod.union([zod.enum(['g', 'oz', 'lb', 'ml', 'cup', 'tbsp', 'tsp', 'clove', 'slice', 'can', 'bunch', 'item']),zod.null()]),
+  "category": zod.enum(['Produce', 'Protein', 'Dairy', 'Grains', 'Pantry', 'Frozen', 'Other'])
+})).optional().describe('Per-person ingredients for this meal (absent on plans generated before the shopping-list overhaul)')
 }),
   "lunch": zod.object({
   "name": zod.string(),
   "description": zod.string(),
-  "calories": zod.number()
+  "calories": zod.number(),
+  "ingredients": zod.array(zod.object({
+  "name": zod.string(),
+  "quantity": zod.union([zod.number(),zod.null()]).describe('Amount for a single person; null means \"to taste\" \/ uncountable'),
+  "unit": zod.union([zod.enum(['g', 'oz', 'lb', 'ml', 'cup', 'tbsp', 'tsp', 'clove', 'slice', 'can', 'bunch', 'item']),zod.null()]),
+  "category": zod.enum(['Produce', 'Protein', 'Dairy', 'Grains', 'Pantry', 'Frozen', 'Other'])
+})).optional().describe('Per-person ingredients for this meal (absent on plans generated before the shopping-list overhaul)')
 }),
   "dinner": zod.object({
   "name": zod.string(),
   "description": zod.string(),
-  "calories": zod.number()
+  "calories": zod.number(),
+  "ingredients": zod.array(zod.object({
+  "name": zod.string(),
+  "quantity": zod.union([zod.number(),zod.null()]).describe('Amount for a single person; null means \"to taste\" \/ uncountable'),
+  "unit": zod.union([zod.enum(['g', 'oz', 'lb', 'ml', 'cup', 'tbsp', 'tsp', 'clove', 'slice', 'can', 'bunch', 'item']),zod.null()]),
+  "category": zod.enum(['Produce', 'Protein', 'Dairy', 'Grains', 'Pantry', 'Frozen', 'Other'])
+})).optional().describe('Per-person ingredients for this meal (absent on plans generated before the shopping-list overhaul)')
 }),
   "snack": zod.object({
   "name": zod.string(),
   "description": zod.string(),
-  "calories": zod.number()
+  "calories": zod.number(),
+  "ingredients": zod.array(zod.object({
+  "name": zod.string(),
+  "quantity": zod.union([zod.number(),zod.null()]).describe('Amount for a single person; null means \"to taste\" \/ uncountable'),
+  "unit": zod.union([zod.enum(['g', 'oz', 'lb', 'ml', 'cup', 'tbsp', 'tsp', 'clove', 'slice', 'can', 'bunch', 'item']),zod.null()]),
+  "category": zod.enum(['Produce', 'Protein', 'Dairy', 'Grains', 'Pantry', 'Frozen', 'Other'])
+})).optional().describe('Per-person ingredients for this meal (absent on plans generated before the shopping-list overhaul)')
 })
 })),
   "grocery": zod.array(zod.object({
   "category": zod.string(),
   "items": zod.array(zod.string())
-})),
+})).describe('Names-only grocery list (back-compat; prefer shoppingList)'),
+  "shoppingList": zod.array(zod.object({
+  "category": zod.string(),
+  "items": zod.array(zod.object({
+  "itemKey": zod.string(),
+  "name": zod.string(),
+  "quantity": zod.union([zod.number(),zod.null()]),
+  "unit": zod.union([zod.string(),zod.null()]),
+  "displayQuantity": zod.string().describe('Preformatted amount like \"2 lb\" or \"1½ cups\"; empty when uncountable'),
+  "checked": zod.boolean()
+}))
+})).describe('Scaled, checkable shopping list aggregated from meal ingredients'),
+  "people": zod.number().describe('Number of people the shopping list is scaled for'),
   "notes": zod.union([zod.string(),zod.null()]),
   "generatedAt": zod.string()
 }),
-  "generationsRemaining": zod.number()
+  "generationsRemaining": zod.number(),
+  "suggestsRemaining": zod.number()
+})
+
+
+/**
+ * @summary Member's meal-plan preferences — patient-private
+ */
+export const GetMealPlanPreferencesResponse = zod.object({
+  "allergies": zod.array(zod.string()),
+  "dislikes": zod.array(zod.string()),
+  "dietStyle": zod.union([zod.string(),zod.null()]),
+  "householdSize": zod.number(),
+  "avoidDishes": zod.array(zod.string()).describe('Dishes the member removed, learned automatically (read-only)')
+})
+
+
+/**
+ * @summary Update meal-plan preferences
+ */
+export const updateMealPlanPreferencesBodyHouseholdSizeMax = 20;
+
+
+
+export const UpdateMealPlanPreferencesBody = zod.object({
+  "allergies": zod.array(zod.string()),
+  "dislikes": zod.array(zod.string()),
+  "dietStyle": zod.union([zod.string(),zod.null()]),
+  "householdSize": zod.number().min(1).max(updateMealPlanPreferencesBodyHouseholdSizeMax)
+})
+
+export const UpdateMealPlanPreferencesResponse = zod.object({
+  "allergies": zod.array(zod.string()),
+  "dislikes": zod.array(zod.string()),
+  "dietStyle": zod.union([zod.string(),zod.null()]),
+  "householdSize": zod.number(),
+  "avoidDishes": zod.array(zod.string()).describe('Dishes the member removed, learned automatically (read-only)')
+})
+
+
+/**
+ * @summary Get 3 AI alternatives for a meal slot (removes the current dish, learns it)
+ */
+export const SuggestMealBody = zod.object({
+  "date": zod.string().describe('YYYY-MM-DD of the day in the current plan'),
+  "mealType": zod.enum(['breakfast', 'lunch', 'dinner', 'snack'])
+})
+
+export const SuggestMealResponse = zod.object({
+  "options": zod.array(zod.object({
+  "name": zod.string(),
+  "description": zod.string(),
+  "calories": zod.number(),
+  "ingredients": zod.array(zod.object({
+  "name": zod.string(),
+  "quantity": zod.union([zod.number(),zod.null()]).describe('Amount for a single person; null means \"to taste\" \/ uncountable'),
+  "unit": zod.union([zod.enum(['g', 'oz', 'lb', 'ml', 'cup', 'tbsp', 'tsp', 'clove', 'slice', 'can', 'bunch', 'item']),zod.null()]),
+  "category": zod.enum(['Produce', 'Protein', 'Dairy', 'Grains', 'Pantry', 'Frozen', 'Other'])
+})).optional().describe('Per-person ingredients for this meal (absent on plans generated before the shopping-list overhaul)')
+})),
+  "suggestsRemaining": zod.number()
+})
+
+
+/**
+ * @summary Apply one of the pending swap options to a meal slot
+ */
+export const applyMealBodyChoiceIndexMin = 0;
+
+
+
+export const ApplyMealBody = zod.object({
+  "date": zod.string(),
+  "mealType": zod.enum(['breakfast', 'lunch', 'dinner', 'snack']),
+  "choiceIndex": zod.number().min(applyMealBodyChoiceIndexMin)
+})
+
+export const ApplyMealResponse = zod.object({
+  "plan": zod.object({
+  "weekStart": zod.string().describe('YYYY-MM-DD (Monday)'),
+  "weekEnd": zod.string().describe('YYYY-MM-DD (Sunday)'),
+  "days": zod.array(zod.object({
+  "date": zod.string().describe('YYYY-MM-DD'),
+  "breakfast": zod.object({
+  "name": zod.string(),
+  "description": zod.string(),
+  "calories": zod.number(),
+  "ingredients": zod.array(zod.object({
+  "name": zod.string(),
+  "quantity": zod.union([zod.number(),zod.null()]).describe('Amount for a single person; null means \"to taste\" \/ uncountable'),
+  "unit": zod.union([zod.enum(['g', 'oz', 'lb', 'ml', 'cup', 'tbsp', 'tsp', 'clove', 'slice', 'can', 'bunch', 'item']),zod.null()]),
+  "category": zod.enum(['Produce', 'Protein', 'Dairy', 'Grains', 'Pantry', 'Frozen', 'Other'])
+})).optional().describe('Per-person ingredients for this meal (absent on plans generated before the shopping-list overhaul)')
+}),
+  "lunch": zod.object({
+  "name": zod.string(),
+  "description": zod.string(),
+  "calories": zod.number(),
+  "ingredients": zod.array(zod.object({
+  "name": zod.string(),
+  "quantity": zod.union([zod.number(),zod.null()]).describe('Amount for a single person; null means \"to taste\" \/ uncountable'),
+  "unit": zod.union([zod.enum(['g', 'oz', 'lb', 'ml', 'cup', 'tbsp', 'tsp', 'clove', 'slice', 'can', 'bunch', 'item']),zod.null()]),
+  "category": zod.enum(['Produce', 'Protein', 'Dairy', 'Grains', 'Pantry', 'Frozen', 'Other'])
+})).optional().describe('Per-person ingredients for this meal (absent on plans generated before the shopping-list overhaul)')
+}),
+  "dinner": zod.object({
+  "name": zod.string(),
+  "description": zod.string(),
+  "calories": zod.number(),
+  "ingredients": zod.array(zod.object({
+  "name": zod.string(),
+  "quantity": zod.union([zod.number(),zod.null()]).describe('Amount for a single person; null means \"to taste\" \/ uncountable'),
+  "unit": zod.union([zod.enum(['g', 'oz', 'lb', 'ml', 'cup', 'tbsp', 'tsp', 'clove', 'slice', 'can', 'bunch', 'item']),zod.null()]),
+  "category": zod.enum(['Produce', 'Protein', 'Dairy', 'Grains', 'Pantry', 'Frozen', 'Other'])
+})).optional().describe('Per-person ingredients for this meal (absent on plans generated before the shopping-list overhaul)')
+}),
+  "snack": zod.object({
+  "name": zod.string(),
+  "description": zod.string(),
+  "calories": zod.number(),
+  "ingredients": zod.array(zod.object({
+  "name": zod.string(),
+  "quantity": zod.union([zod.number(),zod.null()]).describe('Amount for a single person; null means \"to taste\" \/ uncountable'),
+  "unit": zod.union([zod.enum(['g', 'oz', 'lb', 'ml', 'cup', 'tbsp', 'tsp', 'clove', 'slice', 'can', 'bunch', 'item']),zod.null()]),
+  "category": zod.enum(['Produce', 'Protein', 'Dairy', 'Grains', 'Pantry', 'Frozen', 'Other'])
+})).optional().describe('Per-person ingredients for this meal (absent on plans generated before the shopping-list overhaul)')
+})
+})),
+  "grocery": zod.array(zod.object({
+  "category": zod.string(),
+  "items": zod.array(zod.string())
+})).describe('Names-only grocery list (back-compat; prefer shoppingList)'),
+  "shoppingList": zod.array(zod.object({
+  "category": zod.string(),
+  "items": zod.array(zod.object({
+  "itemKey": zod.string(),
+  "name": zod.string(),
+  "quantity": zod.union([zod.number(),zod.null()]),
+  "unit": zod.union([zod.string(),zod.null()]),
+  "displayQuantity": zod.string().describe('Preformatted amount like \"2 lb\" or \"1½ cups\"; empty when uncountable'),
+  "checked": zod.boolean()
+}))
+})).describe('Scaled, checkable shopping list aggregated from meal ingredients'),
+  "people": zod.number().describe('Number of people the shopping list is scaled for'),
+  "notes": zod.union([zod.string(),zod.null()]),
+  "generatedAt": zod.string()
+}),
+  "generationsRemaining": zod.number(),
+  "suggestsRemaining": zod.number()
+})
+
+
+/**
+ * @summary Scale the shopping list for a number of people
+ */
+export const setMealPlanPeopleBodyPeopleMax = 20;
+
+
+
+export const SetMealPlanPeopleBody = zod.object({
+  "people": zod.number().min(1).max(setMealPlanPeopleBodyPeopleMax)
+})
+
+export const SetMealPlanPeopleResponse = zod.object({
+  "plan": zod.object({
+  "weekStart": zod.string().describe('YYYY-MM-DD (Monday)'),
+  "weekEnd": zod.string().describe('YYYY-MM-DD (Sunday)'),
+  "days": zod.array(zod.object({
+  "date": zod.string().describe('YYYY-MM-DD'),
+  "breakfast": zod.object({
+  "name": zod.string(),
+  "description": zod.string(),
+  "calories": zod.number(),
+  "ingredients": zod.array(zod.object({
+  "name": zod.string(),
+  "quantity": zod.union([zod.number(),zod.null()]).describe('Amount for a single person; null means \"to taste\" \/ uncountable'),
+  "unit": zod.union([zod.enum(['g', 'oz', 'lb', 'ml', 'cup', 'tbsp', 'tsp', 'clove', 'slice', 'can', 'bunch', 'item']),zod.null()]),
+  "category": zod.enum(['Produce', 'Protein', 'Dairy', 'Grains', 'Pantry', 'Frozen', 'Other'])
+})).optional().describe('Per-person ingredients for this meal (absent on plans generated before the shopping-list overhaul)')
+}),
+  "lunch": zod.object({
+  "name": zod.string(),
+  "description": zod.string(),
+  "calories": zod.number(),
+  "ingredients": zod.array(zod.object({
+  "name": zod.string(),
+  "quantity": zod.union([zod.number(),zod.null()]).describe('Amount for a single person; null means \"to taste\" \/ uncountable'),
+  "unit": zod.union([zod.enum(['g', 'oz', 'lb', 'ml', 'cup', 'tbsp', 'tsp', 'clove', 'slice', 'can', 'bunch', 'item']),zod.null()]),
+  "category": zod.enum(['Produce', 'Protein', 'Dairy', 'Grains', 'Pantry', 'Frozen', 'Other'])
+})).optional().describe('Per-person ingredients for this meal (absent on plans generated before the shopping-list overhaul)')
+}),
+  "dinner": zod.object({
+  "name": zod.string(),
+  "description": zod.string(),
+  "calories": zod.number(),
+  "ingredients": zod.array(zod.object({
+  "name": zod.string(),
+  "quantity": zod.union([zod.number(),zod.null()]).describe('Amount for a single person; null means \"to taste\" \/ uncountable'),
+  "unit": zod.union([zod.enum(['g', 'oz', 'lb', 'ml', 'cup', 'tbsp', 'tsp', 'clove', 'slice', 'can', 'bunch', 'item']),zod.null()]),
+  "category": zod.enum(['Produce', 'Protein', 'Dairy', 'Grains', 'Pantry', 'Frozen', 'Other'])
+})).optional().describe('Per-person ingredients for this meal (absent on plans generated before the shopping-list overhaul)')
+}),
+  "snack": zod.object({
+  "name": zod.string(),
+  "description": zod.string(),
+  "calories": zod.number(),
+  "ingredients": zod.array(zod.object({
+  "name": zod.string(),
+  "quantity": zod.union([zod.number(),zod.null()]).describe('Amount for a single person; null means \"to taste\" \/ uncountable'),
+  "unit": zod.union([zod.enum(['g', 'oz', 'lb', 'ml', 'cup', 'tbsp', 'tsp', 'clove', 'slice', 'can', 'bunch', 'item']),zod.null()]),
+  "category": zod.enum(['Produce', 'Protein', 'Dairy', 'Grains', 'Pantry', 'Frozen', 'Other'])
+})).optional().describe('Per-person ingredients for this meal (absent on plans generated before the shopping-list overhaul)')
+})
+})),
+  "grocery": zod.array(zod.object({
+  "category": zod.string(),
+  "items": zod.array(zod.string())
+})).describe('Names-only grocery list (back-compat; prefer shoppingList)'),
+  "shoppingList": zod.array(zod.object({
+  "category": zod.string(),
+  "items": zod.array(zod.object({
+  "itemKey": zod.string(),
+  "name": zod.string(),
+  "quantity": zod.union([zod.number(),zod.null()]),
+  "unit": zod.union([zod.string(),zod.null()]),
+  "displayQuantity": zod.string().describe('Preformatted amount like \"2 lb\" or \"1½ cups\"; empty when uncountable'),
+  "checked": zod.boolean()
+}))
+})).describe('Scaled, checkable shopping list aggregated from meal ingredients'),
+  "people": zod.number().describe('Number of people the shopping list is scaled for'),
+  "notes": zod.union([zod.string(),zod.null()]),
+  "generatedAt": zod.string()
+}),
+  "generationsRemaining": zod.number(),
+  "suggestsRemaining": zod.number()
+})
+
+
+/**
+ * @summary Toggle a shopping-list item's checked state
+ */
+export const CheckShoppingListItemBody = zod.object({
+  "itemKey": zod.string(),
+  "checked": zod.boolean()
+})
+
+export const CheckShoppingListItemResponse = zod.object({
+  "ok": zod.boolean()
+})
+
+
+/**
+ * @summary Email this week's shopping list to the member's account email
+ */
+export const EmailShoppingListResponse = zod.object({
+  "ok": zod.boolean()
 })
 
 

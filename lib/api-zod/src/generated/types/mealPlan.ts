@@ -7,6 +7,7 @@
  */
 import type { MealPlanDay } from './mealPlanDay';
 import type { MealPlanGroceryCategory } from './mealPlanGroceryCategory';
+import type { ShoppingListCategory } from './shoppingListCategory';
 
 export interface MealPlan {
   /** YYYY-MM-DD (Monday) */
@@ -14,7 +15,12 @@ export interface MealPlan {
   /** YYYY-MM-DD (Sunday) */
   weekEnd: string;
   days: MealPlanDay[];
+  /** Names-only grocery list (back-compat; prefer shoppingList) */
   grocery: MealPlanGroceryCategory[];
+  /** Scaled, checkable shopping list aggregated from meal ingredients */
+  shoppingList: ShoppingListCategory[];
+  /** Number of people the shopping list is scaled for */
+  people: number;
   notes: string | null;
   generatedAt: string;
 }
