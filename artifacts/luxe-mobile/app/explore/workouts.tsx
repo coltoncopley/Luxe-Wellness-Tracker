@@ -873,7 +873,7 @@ export default function WorkoutsScreen() {
   const [prefsOpen, setPrefsOpen] = useState(false);
   const [generateOpen, setGenerateOpen] = useState(false);
   const [newTitle, setNewTitle] = useState("");
-  const [focusArea, setFocusArea] = useState<string>("full_body");
+  const [focusAreas, setFocusAreas] = useState<string[]>([]);
   const [durationMins, setDurationMins] = useState<number | null>(null);
   const [energy, setEnergy] = useState<string | null>(null);
   const [avoidToday, setAvoidToday] = useState("");
@@ -888,10 +888,24 @@ export default function WorkoutsScreen() {
     void queryClient.invalidateQueries({ queryKey: getGetMuscleRecoveryQueryKey() });
   };
 
+  // "Full body" clears every specific pick; picking a specific area drops full body.
+  const toggleFocus = (key: string) => {
+    if (key === "full_body") {
+      setFocusAreas([]);
+      return;
+    }
+    setFocusAreas((prev) =>
+      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key],
+    );
+  };
+  const isFocusActive = (key: string) =>
+    key === "full_body" ? focusAreas.length === 0 : focusAreas.includes(key);
+
   const runGenerate = () => {
-    const input: GenerateWorkoutInput = {
-      focusArea: focusArea as GenerateWorkoutInput["focusArea"],
-    };
+    const input: GenerateWorkoutInput = {};
+    if (focusAreas.length > 0) {
+      input.focusAreas = focusAreas as GenerateWorkoutInput["focusAreas"];
+    }
     if (durationMins != null) input.durationMins = durationMins;
     if (energy != null) input.energy = energy as GenerateWorkoutInput["energy"];
     const avoid = avoidToday.trim();
@@ -1098,11 +1112,14 @@ export default function WorkoutsScreen() {
               <Chip
                 key={o.key}
                 label={o.label}
-                active={focusArea === o.key}
-                onPress={() => setFocusArea(o.key)}
+                active={isFocusActive(o.key)}
+                onPress={() => toggleFocus(o.key)}
               />
             ))}
           </View>
+          <Text style={{ fontFamily: "Inter_400Regular", fontSize: 12, color: c.mutedForeground }}>
+            Pick as many areas as you like, or leave on Full body.
+          </Text>
 
           <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 13, color: c.foreground }}>
             How much time do you have?

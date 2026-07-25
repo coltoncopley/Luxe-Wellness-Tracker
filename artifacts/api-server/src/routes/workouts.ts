@@ -86,7 +86,7 @@ const ENERGY_GUIDANCE: Record<string, string> = {
 };
 
 type GenerateOptions = {
-  focusArea?: string;
+  focusAreas?: string[];
   durationMins?: number;
   energy?: string;
   avoidToday?: string | null;
@@ -464,10 +464,13 @@ async function generateAiWorkout(
   options: GenerateOptions = {},
 ): Promise<number | null> {
   const prefs = await getOrCreatePreferences(userId);
-  const focus =
-    options.focusArea && options.focusArea !== "full_body"
-      ? FOCUS_AREAS[options.focusArea]
-      : null;
+  // Union the muscles from every picked area; full_body (or an empty pick) means
+  // no restriction. De-dupe so overlapping areas (e.g. legs + glutes) don't repeat.
+  const focusKeys = (options.focusAreas ?? []).filter(
+    (k) => k !== "full_body" && FOCUS_AREAS[k],
+  );
+  const focusLabels = [...new Set(focusKeys.map((k) => FOCUS_AREAS[k]!.label))];
+  const focusMuscles = [...new Set(focusKeys.flatMap((k) => FOCUS_AREAS[k]!.muscles))];
   const durationMins = options.durationMins ?? prefs.targetDurationMins;
 
   // Library filtered to the member's equipment (bodyweight always allowed).
@@ -520,9 +523,10 @@ async function generateAiWorkout(
         "\n</patient_data>"
       : "No limitations reported.";
 
-  const focusBlock = focus
-    ? `Requested focus for today: ${focus.label}. Prioritize these muscle groups: ${focus.muscles.join(", ")}. Still include a little supporting work and never train a muscle listed as recovering.\n`
-    : "Requested focus for today: Full body — balance the session across major muscle groups.\n";
+  const focusBlock =
+    focusMuscles.length > 0
+      ? `Requested focus for today: ${focusLabels.join(", ")}. Prioritize these muscle groups: ${focusMuscles.join(", ")}. Still include a little supporting work and never train a muscle listed as recovering.\n`
+      : "Requested focus for today: Full body — balance the session across major muscle groups.\n";
 
   const energyBlock = options.energy ? `${ENERGY_GUIDANCE[options.energy] ?? ""}\n` : "";
 

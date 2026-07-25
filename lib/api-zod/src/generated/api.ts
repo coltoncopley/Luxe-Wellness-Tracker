@@ -1303,6 +1303,8 @@ export const GetExerciseSuggestionResponse = zod.object({
 /**
  * @summary Generate an AI workout for today — max 3 per day
  */
+export const generateWorkoutBodyFocusAreasMax = 10;
+
 export const generateWorkoutBodyDurationMinsMin = 10;
 export const generateWorkoutBodyDurationMinsMax = 120;
 
@@ -1311,7 +1313,7 @@ export const generateWorkoutBodyAvoidTodayMax = 300;
 
 
 export const GenerateWorkoutBody = zod.object({
-  "focusArea": zod.enum(['full_body', 'upper_body', 'lower_body', 'core', 'arms', 'back', 'chest', 'shoulders', 'legs', 'glutes']).optional(),
+  "focusAreas": zod.array(zod.enum(['full_body', 'upper_body', 'lower_body', 'core', 'arms', 'back', 'chest', 'shoulders', 'legs', 'glutes'])).max(generateWorkoutBodyFocusAreasMax).optional().describe('One or more body areas to prioritize. full_body entries are ignored; an empty or absent array means a balanced full-body session.'),
   "durationMins": zod.number().min(generateWorkoutBodyDurationMinsMin).max(generateWorkoutBodyDurationMinsMax).optional(),
   "energy": zod.enum(['low', 'medium', 'high']).optional(),
   "avoidToday": zod.string().max(generateWorkoutBodyAvoidTodayMax).nullish()

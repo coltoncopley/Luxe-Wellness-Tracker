@@ -2555,10 +2555,10 @@ export type WorkoutDetail = Workout & {
   exercises: WorkoutExercise[];
 };
 
-export type GenerateWorkoutInputFocusArea = typeof GenerateWorkoutInputFocusArea[keyof typeof GenerateWorkoutInputFocusArea];
+export type GenerateWorkoutInputFocusAreasItem = typeof GenerateWorkoutInputFocusAreasItem[keyof typeof GenerateWorkoutInputFocusAreasItem];
 
 
-export const GenerateWorkoutInputFocusArea = {
+export const GenerateWorkoutInputFocusAreasItem = {
   full_body: 'full_body',
   upper_body: 'upper_body',
   lower_body: 'lower_body',
@@ -2584,7 +2584,11 @@ export const GenerateWorkoutInputEnergy = {
  * Optional per-session questionnaire to tailor today's AI workout. All fields optional.
  */
 export interface GenerateWorkoutInput {
-  focusArea?: GenerateWorkoutInputFocusArea;
+  /**
+     * One or more body areas to prioritize. full_body entries are ignored; an empty or absent array means a balanced full-body session.
+     * @maxItems 10
+     */
+  focusAreas?: GenerateWorkoutInputFocusAreasItem[];
   /**
      * @minimum 10
      * @maximum 120

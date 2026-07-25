@@ -108,7 +108,7 @@ export * from './generateMealPlan200';
 export * from './generateWorkout200';
 export * from './generateWorkoutInput';
 export * from './generateWorkoutInputEnergy';
-export * from './generateWorkoutInputFocusArea';
+export * from './generateWorkoutInputFocusAreasItem';
 export * from './getActivitySummaryDays';
 export * from './getActivitySummaryParams';
 export * from './getChallenges200';

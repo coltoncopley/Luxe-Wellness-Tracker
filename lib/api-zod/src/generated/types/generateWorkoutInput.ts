@@ -6,13 +6,17 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { GenerateWorkoutInputEnergy } from './generateWorkoutInputEnergy';
-import type { GenerateWorkoutInputFocusArea } from './generateWorkoutInputFocusArea';
+import type { GenerateWorkoutInputFocusAreasItem } from './generateWorkoutInputFocusAreasItem';
 
 /**
  * Optional per-session questionnaire to tailor today's AI workout. All fields optional.
  */
 export interface GenerateWorkoutInput {
-  focusArea?: GenerateWorkoutInputFocusArea;
+  /**
+     * One or more body areas to prioritize. full_body entries are ignored; an empty or absent array means a balanced full-body session.
+     * @maxItems 10
+     */
+  focusAreas?: GenerateWorkoutInputFocusAreasItem[];
   /**
      * @minimum 10
      * @maximum 120

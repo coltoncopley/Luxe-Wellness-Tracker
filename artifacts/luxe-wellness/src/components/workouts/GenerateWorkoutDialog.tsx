@@ -31,15 +31,29 @@ export function GenerateWorkoutDialog({
   onGenerate: (input: GenerateWorkoutInput) => void;
   isPending: boolean;
 }) {
-  const [focusArea, setFocusArea] = useState<string>("full_body");
+  const [focusAreas, setFocusAreas] = useState<string[]>([]);
   const [durationMins, setDurationMins] = useState<number | null>(null);
   const [energy, setEnergy] = useState<string | null>(null);
   const [avoidToday, setAvoidToday] = useState("");
 
+  // "Full body" clears every specific pick; picking a specific area drops full body.
+  const toggleFocus = (key: string) => {
+    if (key === "full_body") {
+      setFocusAreas([]);
+      return;
+    }
+    setFocusAreas((prev) =>
+      prev.includes(key) ? prev.filter((k) => k !== key) : [...prev, key],
+    );
+  };
+  const isFocusActive = (key: string) =>
+    key === "full_body" ? focusAreas.length === 0 : focusAreas.includes(key);
+
   const submit = () => {
-    const input: GenerateWorkoutInput = {
-      focusArea: focusArea as GenerateWorkoutInput["focusArea"],
-    };
+    const input: GenerateWorkoutInput = {};
+    if (focusAreas.length > 0) {
+      input.focusAreas = focusAreas as GenerateWorkoutInput["focusAreas"];
+    }
     if (durationMins != null) input.durationMins = durationMins;
     if (energy != null) input.energy = energy as GenerateWorkoutInput["energy"];
     const avoid = avoidToday.trim();
@@ -64,15 +78,18 @@ export function GenerateWorkoutDialog({
               {FOCUS_AREA_OPTIONS.map((o) => (
                 <Badge
                   key={o.key}
-                  variant={focusArea === o.key ? "default" : "outline"}
+                  variant={isFocusActive(o.key) ? "default" : "outline"}
                   className="cursor-pointer"
-                  onClick={() => setFocusArea(o.key)}
+                  onClick={() => toggleFocus(o.key)}
                   data-testid={`focus-area-${o.key}`}
                 >
                   {o.label}
                 </Badge>
               ))}
             </div>
+            <p className="text-xs text-muted-foreground">
+              Pick as many areas as you like, or leave on Full body.
+            </p>
           </div>
 
           <div className="space-y-2">

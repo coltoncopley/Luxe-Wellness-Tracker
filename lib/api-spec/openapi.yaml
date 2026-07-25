@@ -5907,9 +5907,13 @@ components:
       type: object
       description: Optional per-session questionnaire to tailor today's AI workout. All fields optional.
       properties:
-        focusArea:
-          type: string
-          enum: [full_body, upper_body, lower_body, core, arms, back, chest, shoulders, legs, glutes]
+        focusAreas:
+          type: array
+          description: One or more body areas to prioritize. full_body entries are ignored; an empty or absent array means a balanced full-body session.
+          maxItems: 10
+          items:
+            type: string
+            enum: [full_body, upper_body, lower_body, core, arms, back, chest, shoulders, legs, glutes]
         durationMins: { type: integer, minimum: 10, maximum: 120 }
         energy: { type: string, enum: [low, medium, high] }
         avoidToday: { type: ["string", "null"], maxLength: 300 }
