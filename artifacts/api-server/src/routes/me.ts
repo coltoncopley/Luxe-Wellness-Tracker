@@ -37,6 +37,11 @@ import {
   offerClaimsTable,
   membershipCodesTable,
   staffCodesTable,
+  workoutsTable,
+  workoutExercisesTable,
+  workoutSetsTable,
+  workoutPreferencesTable,
+  exercisesTable,
 } from "@workspace/db";
 import {
   GetMeResponse,
@@ -377,6 +382,30 @@ router.delete("/me", async (req, res, next): Promise<void> => {
       // No FK to users, but personal — scrub the caller's own rows.
       await tx.delete(offerClaimsTable).where(eq(offerClaimsTable.userId, userId));
       await tx.delete(membershipCodesTable).where(eq(membershipCodesTable.redeemedBy, userId));
+
+      // Workout suite (children before parents): clear sets → workout-exercises →
+      // workouts → preferences by hand, then the user's own private custom lifts
+      // last. exercises.owner_user_id and workouts.user_id both FK to users without
+      // cascade, so a user with any workout or custom lift would otherwise 500 the
+      // whole deletion. Custom lifts are removed only after this user's
+      // workout_exercises (the sole rows that can reference them) are gone.
+      const myWorkouts = tx
+        .select({ id: workoutsTable.id })
+        .from(workoutsTable)
+        .where(eq(workoutsTable.userId, userId));
+      const myWorkoutExercises = tx
+        .select({ id: workoutExercisesTable.id })
+        .from(workoutExercisesTable)
+        .where(inArray(workoutExercisesTable.workoutId, myWorkouts));
+      await tx
+        .delete(workoutSetsTable)
+        .where(inArray(workoutSetsTable.workoutExerciseId, myWorkoutExercises));
+      await tx
+        .delete(workoutExercisesTable)
+        .where(inArray(workoutExercisesTable.workoutId, myWorkouts));
+      await tx.delete(workoutsTable).where(eq(workoutsTable.userId, userId));
+      await tx.delete(workoutPreferencesTable).where(eq(workoutPreferencesTable.userId, userId));
+      await tx.delete(exercisesTable).where(eq(exercisesTable.ownerUserId, userId));
 
       await tx.delete(usersTable).where(eq(usersTable.id, userId));
     });

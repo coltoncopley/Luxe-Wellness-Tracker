@@ -410,6 +410,7 @@ async function seedExercises(tx: Tx, log: LogFn) {
     .values(values)
     .onConflictDoUpdate({
       target: exercisesTable.name,
+      targetWhere: sql`${exercisesTable.ownerUserId} IS NULL`,
       set: { howToVideoId: sql`excluded.how_to_video_id` },
     });
   log(`Seeded/updated ${values.length} exercises.`);

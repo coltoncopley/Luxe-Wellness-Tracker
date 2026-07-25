@@ -2,27 +2,71 @@ import { useMemo, useState } from "react";
 import {
   useListExercises,
   getListExercisesQueryKey,
+  useDeleteCustomExercise,
   type Exercise,
 } from "@workspace/api-client-react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Search, ChevronDown, ChevronUp, Plus } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { toast } from "sonner";
+import { Search, ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react";
 import { MUSCLE_LABELS, muscleLabel, equipmentLabel } from "./labels";
 import { HowToVideo } from "./HowToVideo";
+import { AddCustomLiftDialog } from "./AddCustomLiftDialog";
 
 export function LibraryTab({
   onAddToWorkout,
 }: {
   onAddToWorkout?: (exercise: Exercise) => void;
 }) {
+  const queryClient = useQueryClient();
   const { data: exercises, isLoading } = useListExercises({
     query: { queryKey: getListExercisesQueryKey() },
   });
   const [search, setSearch] = useState("");
   const [muscle, setMuscle] = useState<string | null>(null);
   const [openId, setOpenId] = useState<number | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<Exercise | null>(null);
+  const remove = useDeleteCustomExercise();
+
+  const confirmDelete = () => {
+    if (!deleteTarget) return;
+    remove.mutate(
+      { id: deleteTarget.id },
+      {
+        onSuccess: () => {
+          void queryClient.invalidateQueries({ queryKey: getListExercisesQueryKey() });
+          toast.success("Custom lift removed.");
+          setDeleteTarget(null);
+        },
+        onError: (e) => {
+          const status =
+            typeof e === "object" && e !== null && "status" in e
+              ? (e as { status?: number }).status
+              : undefined;
+          toast.error(
+            status === 409
+              ? "This lift is used in a workout — remove it from your workouts first."
+              : "Couldn't remove that lift. Please try again.",
+          );
+          setDeleteTarget(null);
+        },
+      },
+    );
+  };
 
   const filtered = useMemo(() => {
     const list = exercises ?? [];
@@ -46,6 +90,20 @@ export function LibraryTab({
 
   return (
     <div className="space-y-4">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm text-muted-foreground">
+          Browse the full library, or add a private lift only you can see.
+        </p>
+        <Button
+          size="sm"
+          className="rounded-full shrink-0"
+          onClick={() => setAddOpen(true)}
+          data-testid="button-add-custom-lift"
+        >
+          <Plus className="h-4 w-4 mr-1.5" />
+          Add your own lift
+        </Button>
+      </div>
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
@@ -99,6 +157,11 @@ export function LibraryTab({
                       <Badge variant="outline" className="text-xs capitalize">
                         {e.difficulty}
                       </Badge>
+                      {e.isMine && (
+                        <Badge className="text-xs" data-testid={`badge-mine-${e.id}`}>
+                          Mine
+                        </Badge>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
@@ -125,6 +188,17 @@ export function LibraryTab({
                         <ChevronDown className="h-4 w-4" />
                       )}
                     </Button>
+                    {e.isMine && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-destructive hover:text-destructive"
+                        onClick={() => setDeleteTarget(e)}
+                        data-testid={`button-delete-exercise-${e.id}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    )}
                   </div>
                 </div>
                 {openId === e.id && (
@@ -148,6 +222,34 @@ export function LibraryTab({
           ))
         )}
       </div>
+
+      <AddCustomLiftDialog open={addOpen} onOpenChange={setAddOpen} />
+
+      <AlertDialog
+        open={deleteTarget !== null}
+        onOpenChange={(o) => {
+          if (!o) setDeleteTarget(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove this lift?</AlertDialogTitle>
+            <AlertDialogDescription>
+              “{deleteTarget?.name}” will be removed from your library. This can’t be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel data-testid="button-cancel-delete">Keep it</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              disabled={remove.isPending}
+              data-testid="button-confirm-delete"
+            >
+              {remove.isPending ? "Removing..." : "Remove"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

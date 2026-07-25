@@ -61,6 +61,7 @@ import type {
   CreatePassportEntryInput,
   CreateProgressPhotoInput,
   CreateStaffCodeInput,
+  CustomExerciseInput,
   DailySummary,
   DashboardSummary,
   Device,
@@ -4039,6 +4040,146 @@ export function useListExercises<TData = Awaited<ReturnType<typeof listExercises
 
 
 
+
+export const getCreateCustomExerciseUrl = () => {
+
+
+
+
+  return `/api/exercises/custom`
+}
+
+/**
+ * @summary Add a personal custom lift — private to this patient, with an auto-found how-to video
+ */
+export const createCustomExercise = async (customExerciseInput: CustomExerciseInput, options?: RequestInit): Promise<Exercise> => {
+
+  return customFetch<Exercise>(getCreateCustomExerciseUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(customExerciseInput)
+  }
+);}
+
+
+
+
+export const getCreateCustomExerciseMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCustomExercise>>, TError,{data: BodyType<CustomExerciseInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createCustomExercise>>, TError,{data: BodyType<CustomExerciseInput>}, TContext> => {
+
+const mutationKey = ['createCustomExercise'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createCustomExercise>>, {data: BodyType<CustomExerciseInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createCustomExercise(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateCustomExerciseMutationResult = NonNullable<Awaited<ReturnType<typeof createCustomExercise>>>
+    export type CreateCustomExerciseMutationBody = BodyType<CustomExerciseInput>
+    export type CreateCustomExerciseMutationError = ErrorType<void>
+
+    /**
+ * @summary Add a personal custom lift — private to this patient, with an auto-found how-to video
+ */
+export const useCreateCustomExercise = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createCustomExercise>>, TError,{data: BodyType<CustomExerciseInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createCustomExercise>>,
+        TError,
+        {data: BodyType<CustomExerciseInput>},
+        TContext
+      > => {
+      return useMutation(getCreateCustomExerciseMutationOptions(options));
+    }
+
+export const getDeleteCustomExerciseUrl = (id: number,) => {
+
+
+
+
+  return `/api/exercises/${id}`
+}
+
+/**
+ * @summary Remove a custom lift you added (library exercises cannot be removed)
+ */
+export const deleteCustomExercise = async (id: number, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteCustomExerciseUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteCustomExerciseMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCustomExercise>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteCustomExercise>>, TError,{id: number}, TContext> => {
+
+const mutationKey = ['deleteCustomExercise'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteCustomExercise>>, {id: number}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteCustomExercise(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteCustomExerciseMutationResult = NonNullable<Awaited<ReturnType<typeof deleteCustomExercise>>>
+
+    export type DeleteCustomExerciseMutationError = ErrorType<void>
+
+    /**
+ * @summary Remove a custom lift you added (library exercises cannot be removed)
+ */
+export const useDeleteCustomExercise = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteCustomExercise>>, TError,{id: number}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteCustomExercise>>,
+        TError,
+        {id: number},
+        TContext
+      > => {
+      return useMutation(getDeleteCustomExerciseMutationOptions(options));
+    }
 
 export const getGetWorkoutPreferencesUrl = () => {
 

@@ -20,4 +20,6 @@ export interface Exercise {
      * @nullable
      */
   howToVideoId?: string | null;
+  /** True only for the patient's own private custom lift; never set for shared library exercises. */
+  isMine?: boolean;
 }

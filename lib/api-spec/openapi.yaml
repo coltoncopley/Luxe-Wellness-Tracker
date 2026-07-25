@@ -917,6 +917,48 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Exercise"
+  /exercises/custom:
+    post:
+      operationId: createCustomExercise
+      tags: [workouts]
+      summary: Add a personal custom lift — private to this patient, with an auto-found how-to video
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CustomExerciseInput"
+      responses:
+        "201":
+          description: Custom lift created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Exercise"
+        "400":
+          description: Invalid input
+        "409":
+          description: You already have a lift with this name
+        "429":
+          description: Limit reached
+  /exercises/{id}:
+    delete:
+      operationId: deleteCustomExercise
+      tags: [workouts]
+      summary: Remove a custom lift you added (library exercises cannot be removed)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+        "404":
+          description: Not found
+        "409":
+          description: This lift is used in a workout and cannot be removed
   /workout-preferences:
     get:
       operationId: getWorkoutPreferences
@@ -5809,6 +5851,29 @@ components:
         howToVideoId:
           type: ["string", "null"]
           description: YouTube video id for the in-app how-to demo player. Null falls back to a YouTube search link.
+        isMine:
+          type: boolean
+          description: True only for the patient's own private custom lift; never set for shared library exercises.
+    CustomExerciseInput:
+      type: object
+      required: [name, primaryMuscle, equipment]
+      properties:
+        name: { type: string, minLength: 2, maxLength: 60 }
+        primaryMuscle:
+          type: string
+          enum: [biceps, calves, chest, core, forearms, glutes, hamstrings, lats, lower_back, quads, shoulders, traps, triceps, upper_back]
+        equipment:
+          type: string
+          enum: [band, barbell, bodyweight, cable, dumbbell, kettlebell, machine]
+        secondaryMuscles:
+          type: array
+          items:
+            type: string
+            enum: [biceps, calves, chest, core, forearms, glutes, hamstrings, lats, lower_back, quads, shoulders, traps, triceps, upper_back]
+        difficulty:
+          type: string
+          enum: [beginner, intermediate, advanced]
+        instructions: { type: string, maxLength: 500 }
     WorkoutPreferences:
       type: object
       required: [goal, experienceLevel, equipment, targetDurationMins, daysPerWeek, limitations]

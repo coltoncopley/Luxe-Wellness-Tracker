@@ -2348,6 +2348,84 @@ export interface Exercise {
      * @nullable
      */
   howToVideoId?: string | null;
+  /** True only for the patient's own private custom lift; never set for shared library exercises. */
+  isMine?: boolean;
+}
+
+export type CustomExerciseInputPrimaryMuscle = typeof CustomExerciseInputPrimaryMuscle[keyof typeof CustomExerciseInputPrimaryMuscle];
+
+
+export const CustomExerciseInputPrimaryMuscle = {
+  biceps: 'biceps',
+  calves: 'calves',
+  chest: 'chest',
+  core: 'core',
+  forearms: 'forearms',
+  glutes: 'glutes',
+  hamstrings: 'hamstrings',
+  lats: 'lats',
+  lower_back: 'lower_back',
+  quads: 'quads',
+  shoulders: 'shoulders',
+  traps: 'traps',
+  triceps: 'triceps',
+  upper_back: 'upper_back',
+} as const;
+
+export type CustomExerciseInputEquipment = typeof CustomExerciseInputEquipment[keyof typeof CustomExerciseInputEquipment];
+
+
+export const CustomExerciseInputEquipment = {
+  band: 'band',
+  barbell: 'barbell',
+  bodyweight: 'bodyweight',
+  cable: 'cable',
+  dumbbell: 'dumbbell',
+  kettlebell: 'kettlebell',
+  machine: 'machine',
+} as const;
+
+export type CustomExerciseInputSecondaryMusclesItem = typeof CustomExerciseInputSecondaryMusclesItem[keyof typeof CustomExerciseInputSecondaryMusclesItem];
+
+
+export const CustomExerciseInputSecondaryMusclesItem = {
+  biceps: 'biceps',
+  calves: 'calves',
+  chest: 'chest',
+  core: 'core',
+  forearms: 'forearms',
+  glutes: 'glutes',
+  hamstrings: 'hamstrings',
+  lats: 'lats',
+  lower_back: 'lower_back',
+  quads: 'quads',
+  shoulders: 'shoulders',
+  traps: 'traps',
+  triceps: 'triceps',
+  upper_back: 'upper_back',
+} as const;
+
+export type CustomExerciseInputDifficulty = typeof CustomExerciseInputDifficulty[keyof typeof CustomExerciseInputDifficulty];
+
+
+export const CustomExerciseInputDifficulty = {
+  beginner: 'beginner',
+  intermediate: 'intermediate',
+  advanced: 'advanced',
+} as const;
+
+export interface CustomExerciseInput {
+  /**
+     * @minLength 2
+     * @maxLength 60
+     */
+  name: string;
+  primaryMuscle: CustomExerciseInputPrimaryMuscle;
+  equipment: CustomExerciseInputEquipment;
+  secondaryMuscles?: CustomExerciseInputSecondaryMusclesItem[];
+  difficulty?: CustomExerciseInputDifficulty;
+  /** @maxLength 500 */
+  instructions?: string;
 }
 
 export type WorkoutPreferencesGoal = typeof WorkoutPreferencesGoal[keyof typeof WorkoutPreferencesGoal];

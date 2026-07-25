@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Alert } from "@/lib/alert";
 
 import type {
+  CustomExerciseInput,
   Exercise,
   GenerateWorkoutInput,
   WorkoutExercise,
@@ -18,10 +19,13 @@ import {
   getGetWorkoutPreferencesQueryKey,
   getGetWorkoutQueryKey,
   getListActivitiesQueryKey,
+  getListExercisesQueryKey,
   getListWorkoutsQueryKey,
   useAddWorkoutExercise,
   useCompleteWorkout,
+  useCreateCustomExercise,
   useCreateWorkout,
+  useDeleteCustomExercise,
   useDeleteWorkout,
   useDeleteWorkoutSet,
   useGenerateWorkout,
@@ -185,6 +189,176 @@ function ModalShell({
   );
 }
 
+function errStatus(e: unknown): number | undefined {
+  return typeof e === "object" && e !== null && "status" in e
+    ? (e as { status?: number }).status
+    : undefined;
+}
+
+function CreateCustomLiftModal({
+  visible,
+  onClose,
+}: {
+  visible: boolean;
+  onClose: () => void;
+}) {
+  const c = useColors();
+  const queryClient = useQueryClient();
+  const create = useCreateCustomExercise();
+
+  const [name, setName] = useState("");
+  const [primaryMuscle, setPrimaryMuscle] = useState("chest");
+  const [equipment, setEquipment] = useState("dumbbell");
+  const [difficulty, setDifficulty] = useState("beginner");
+  const [secondary, setSecondary] = useState<string[]>([]);
+  const [instructions, setInstructions] = useState("");
+
+  const reset = () => {
+    setName("");
+    setPrimaryMuscle("chest");
+    setEquipment("dumbbell");
+    setDifficulty("beginner");
+    setSecondary([]);
+    setInstructions("");
+  };
+
+  const close = () => {
+    reset();
+    onClose();
+  };
+
+  const toggleSecondary = (key: string) =>
+    setSecondary((prev) => (prev.includes(key) ? prev.filter((m) => m !== key) : [...prev, key]));
+
+  const onSave = () => {
+    const trimmed = name.trim();
+    if (trimmed.length < 2) {
+      Alert.alert("Name needed", "Please enter an exercise name (at least 2 characters).");
+      return;
+    }
+    create.mutate(
+      {
+        data: {
+          name: trimmed,
+          primaryMuscle: primaryMuscle as CustomExerciseInput["primaryMuscle"],
+          equipment: equipment as CustomExerciseInput["equipment"],
+          difficulty: difficulty as CustomExerciseInput["difficulty"],
+          secondaryMuscles: secondary.filter(
+            (m) => m !== primaryMuscle,
+          ) as CustomExerciseInput["secondaryMuscles"],
+          instructions:
+            instructions.trim().length > 0 ? instructions.trim().slice(0, 500) : undefined,
+        },
+      },
+      {
+        onSuccess: (created) => {
+          void queryClient.invalidateQueries({ queryKey: getListExercisesQueryKey() });
+          Alert.alert(
+            "Lift added",
+            created.howToVideoId
+              ? `"${created.name}" is in your library with a how-to video ready to watch.`
+              : `"${created.name}" is in your library.`,
+          );
+          close();
+        },
+        onError: (e) => {
+          const status = errStatus(e);
+          Alert.alert(
+            "Couldn't add your lift",
+            status === 409
+              ? "You already have a lift with this name."
+              : status === 429
+                ? "You've hit today's limit for adding lifts — try again tomorrow."
+                : "Please try again.",
+          );
+        },
+      },
+    );
+  };
+
+  const label = (t: string) => (
+    <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 13, color: c.foreground }}>{t}</Text>
+  );
+
+  return (
+    <ModalShell visible={visible} title="Add your own lift" onClose={close}>
+      <View style={{ gap: 16 }}>
+        <Text style={{ fontFamily: "Inter_400Regular", fontSize: 13, color: c.mutedForeground }}>
+          Create a private exercise only you can see. We&apos;ll try to find a how-to video for it
+          automatically.
+        </Text>
+        {label("Exercise name")}
+        <LuxeInput
+          placeholder="e.g. Bulgarian Split Squat"
+          value={name}
+          onChangeText={setName}
+          maxLength={60}
+        />
+        {label("Main muscle")}
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+          {Object.entries(MUSCLE_LABELS).map(([key, l]) => (
+            <Chip
+              key={key}
+              label={l}
+              active={primaryMuscle === key}
+              onPress={() => setPrimaryMuscle(key)}
+            />
+          ))}
+        </View>
+        {label("Equipment")}
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+          {Object.entries(EQUIPMENT_LABELS).map(([key, l]) => (
+            <Chip
+              key={key}
+              label={l}
+              active={equipment === key}
+              onPress={() => setEquipment(key)}
+            />
+          ))}
+        </View>
+        {label("Difficulty")}
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+          {EXPERIENCE_OPTIONS.map((o) => (
+            <Chip
+              key={o.key}
+              label={o.label}
+              active={difficulty === o.key}
+              onPress={() => setDifficulty(o.key)}
+            />
+          ))}
+        </View>
+        {label("Also works (optional)")}
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
+          {Object.entries(MUSCLE_LABELS)
+            .filter(([key]) => key !== primaryMuscle)
+            .map(([key, l]) => (
+              <Chip
+                key={key}
+                label={l}
+                active={secondary.includes(key)}
+                onPress={() => toggleSecondary(key)}
+              />
+            ))}
+        </View>
+        {label("How to do it (optional)")}
+        <LuxeInput
+          placeholder="A short note to remind yourself of the setup or form cues."
+          value={instructions}
+          onChangeText={setInstructions}
+          multiline
+          maxLength={500}
+          style={{ minHeight: 70, textAlignVertical: "top" }}
+        />
+        <LuxeButton
+          label={create.isPending ? "Adding…" : "Add lift"}
+          onPress={onSave}
+          disabled={create.isPending}
+        />
+      </View>
+    </ModalShell>
+  );
+}
+
 function ExerciseLibraryList({
   onPick,
   pickLabel,
@@ -193,10 +367,41 @@ function ExerciseLibraryList({
   pickLabel?: string;
 }) {
   const c = useColors();
+  const queryClient = useQueryClient();
   const query = useListExercises();
+  const remove = useDeleteCustomExercise();
   const [search, setSearch] = useState("");
   const [muscle, setMuscle] = useState<string | null>(null);
   const [openId, setOpenId] = useState<number | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
+
+  const onDelete = (e: Exercise) => {
+    Alert.alert("Remove this lift?", `"${e.name}" will be removed from your library.`, [
+      { text: "Keep it", style: "cancel" },
+      {
+        text: "Remove",
+        style: "destructive",
+        onPress: () =>
+          remove.mutate(
+            { id: e.id },
+            {
+              onSuccess: () => {
+                void queryClient.invalidateQueries({ queryKey: getListExercisesQueryKey() });
+              },
+              onError: (err) => {
+                const status = errStatus(err);
+                Alert.alert(
+                  "Couldn't remove",
+                  status === 409
+                    ? "This lift is used in a workout — remove it from your workouts first."
+                    : "Please try again.",
+                );
+              },
+            },
+          ),
+      },
+    ]);
+  };
 
   const filtered = useMemo(() => {
     const list = query.data ?? [];
@@ -218,6 +423,14 @@ function ExerciseLibraryList({
 
   return (
     <View style={{ gap: 10 }}>
+      {!onPick ? (
+        <LuxeButton
+          label="Add your own lift"
+          small
+          icon="plus"
+          onPress={() => setAddOpen(true)}
+        />
+      ) : null}
       <LuxeInput placeholder="Search exercises…" value={search} onChangeText={setSearch} />
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8 }}>
         <Chip label="All" active={muscle === null} onPress={() => setMuscle(null)} />
@@ -237,9 +450,33 @@ function ExerciseLibraryList({
           <Card key={e.id} style={{ padding: 14, gap: 6 }}>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
               <Pressable style={{ flex: 1 }} onPress={() => setOpenId(openId === e.id ? null : e.id)}>
-                <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 14, color: c.foreground }}>
-                  {e.name}
-                </Text>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                  <Text
+                    style={{ fontFamily: "Inter_600SemiBold", fontSize: 14, color: c.foreground }}
+                  >
+                    {e.name}
+                  </Text>
+                  {e.isMine ? (
+                    <View
+                      style={{
+                        backgroundColor: c.secondary,
+                        borderRadius: 999,
+                        paddingHorizontal: 8,
+                        paddingVertical: 2,
+                      }}
+                    >
+                      <Text
+                        style={{
+                          fontFamily: "Inter_600SemiBold",
+                          fontSize: 10,
+                          color: c.foreground,
+                        }}
+                      >
+                        Mine
+                      </Text>
+                    </View>
+                  ) : null}
+                </View>
                 <Text
                   style={{
                     fontFamily: "Inter_400Regular",
@@ -260,11 +497,18 @@ function ExerciseLibraryList({
                   onPress={() => onPick(e)}
                 />
               ) : (
-                <Feather
-                  name={openId === e.id ? "chevron-up" : "chevron-down"}
-                  size={18}
-                  color={c.mutedForeground}
-                />
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 12 }}>
+                  {e.isMine ? (
+                    <Pressable hitSlop={8} onPress={() => onDelete(e)}>
+                      <Feather name="trash-2" size={16} color={c.destructive} />
+                    </Pressable>
+                  ) : null}
+                  <Feather
+                    name={openId === e.id ? "chevron-up" : "chevron-down"}
+                    size={18}
+                    color={c.mutedForeground}
+                  />
+                </View>
               )}
             </View>
             {openId === e.id ? (
@@ -288,6 +532,9 @@ function ExerciseLibraryList({
           </Card>
         ))
       )}
+      {!onPick ? (
+        <CreateCustomLiftModal visible={addOpen} onClose={() => setAddOpen(false)} />
+      ) : null}
     </View>
   );
 }

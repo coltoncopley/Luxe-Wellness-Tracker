@@ -1142,9 +1142,53 @@ export const ListExercisesResponseItem = zod.object({
   "category": zod.string(),
   "difficulty": zod.string(),
   "instructions": zod.string(),
-  "howToVideoId": zod.string().nullish().describe('YouTube video id for the in-app how-to demo player. Null falls back to a YouTube search link.')
+  "howToVideoId": zod.string().nullish().describe('YouTube video id for the in-app how-to demo player. Null falls back to a YouTube search link.'),
+  "isMine": zod.boolean().optional().describe('True only for the patient\'s own private custom lift; never set for shared library exercises.')
 })
 export const ListExercisesResponse = zod.array(ListExercisesResponseItem)
+
+
+/**
+ * @summary Add a personal custom lift — private to this patient, with an auto-found how-to video
+ */
+export const createCustomExerciseBodyNameMin = 2;
+export const createCustomExerciseBodyNameMax = 60;
+
+export const createCustomExerciseBodyInstructionsMax = 500;
+
+
+
+export const CreateCustomExerciseBody = zod.object({
+  "name": zod.string().min(createCustomExerciseBodyNameMin).max(createCustomExerciseBodyNameMax),
+  "primaryMuscle": zod.enum(['biceps', 'calves', 'chest', 'core', 'forearms', 'glutes', 'hamstrings', 'lats', 'lower_back', 'quads', 'shoulders', 'traps', 'triceps', 'upper_back']),
+  "equipment": zod.enum(['band', 'barbell', 'bodyweight', 'cable', 'dumbbell', 'kettlebell', 'machine']),
+  "secondaryMuscles": zod.array(zod.enum(['biceps', 'calves', 'chest', 'core', 'forearms', 'glutes', 'hamstrings', 'lats', 'lower_back', 'quads', 'shoulders', 'traps', 'triceps', 'upper_back'])).optional(),
+  "difficulty": zod.enum(['beginner', 'intermediate', 'advanced']).optional(),
+  "instructions": zod.string().max(createCustomExerciseBodyInstructionsMax).optional()
+})
+
+export const CreateCustomExerciseResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "primaryMuscle": zod.string(),
+  "secondaryMuscles": zod.array(zod.string()),
+  "equipment": zod.string(),
+  "category": zod.string(),
+  "difficulty": zod.string(),
+  "instructions": zod.string(),
+  "howToVideoId": zod.string().nullish().describe('YouTube video id for the in-app how-to demo player. Null falls back to a YouTube search link.'),
+  "isMine": zod.boolean().optional().describe('True only for the patient\'s own private custom lift; never set for shared library exercises.')
+})
+
+
+/**
+ * @summary Remove a custom lift you added (library exercises cannot be removed)
+ */
+export const DeleteCustomExerciseParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DeleteCustomExerciseResponse = zod.void()
 
 
 /**
@@ -1262,7 +1306,8 @@ export const CreateWorkoutResponse = zod.object({
   "category": zod.string(),
   "difficulty": zod.string(),
   "instructions": zod.string(),
-  "howToVideoId": zod.string().nullish().describe('YouTube video id for the in-app how-to demo player. Null falls back to a YouTube search link.')
+  "howToVideoId": zod.string().nullish().describe('YouTube video id for the in-app how-to demo player. Null falls back to a YouTube search link.'),
+  "isMine": zod.boolean().optional().describe('True only for the patient\'s own private custom lift; never set for shared library exercises.')
 }),
   "sets": zod.array(zod.object({
   "id": zod.number(),
@@ -1349,7 +1394,8 @@ export const GenerateWorkoutResponse = zod.object({
   "category": zod.string(),
   "difficulty": zod.string(),
   "instructions": zod.string(),
-  "howToVideoId": zod.string().nullish().describe('YouTube video id for the in-app how-to demo player. Null falls back to a YouTube search link.')
+  "howToVideoId": zod.string().nullish().describe('YouTube video id for the in-app how-to demo player. Null falls back to a YouTube search link.'),
+  "isMine": zod.boolean().optional().describe('True only for the patient\'s own private custom lift; never set for shared library exercises.')
 }),
   "sets": zod.array(zod.object({
   "id": zod.number(),
@@ -1397,7 +1443,8 @@ export const GetWorkoutResponse = zod.object({
   "category": zod.string(),
   "difficulty": zod.string(),
   "instructions": zod.string(),
-  "howToVideoId": zod.string().nullish().describe('YouTube video id for the in-app how-to demo player. Null falls back to a YouTube search link.')
+  "howToVideoId": zod.string().nullish().describe('YouTube video id for the in-app how-to demo player. Null falls back to a YouTube search link.'),
+  "isMine": zod.boolean().optional().describe('True only for the patient\'s own private custom lift; never set for shared library exercises.')
 }),
   "sets": zod.array(zod.object({
   "id": zod.number(),
@@ -1456,7 +1503,8 @@ export const UpdateWorkoutResponse = zod.object({
   "category": zod.string(),
   "difficulty": zod.string(),
   "instructions": zod.string(),
-  "howToVideoId": zod.string().nullish().describe('YouTube video id for the in-app how-to demo player. Null falls back to a YouTube search link.')
+  "howToVideoId": zod.string().nullish().describe('YouTube video id for the in-app how-to demo player. Null falls back to a YouTube search link.'),
+  "isMine": zod.boolean().optional().describe('True only for the patient\'s own private custom lift; never set for shared library exercises.')
 }),
   "sets": zod.array(zod.object({
   "id": zod.number(),
@@ -1512,7 +1560,8 @@ export const CompleteWorkoutResponse = zod.object({
   "category": zod.string(),
   "difficulty": zod.string(),
   "instructions": zod.string(),
-  "howToVideoId": zod.string().nullish().describe('YouTube video id for the in-app how-to demo player. Null falls back to a YouTube search link.')
+  "howToVideoId": zod.string().nullish().describe('YouTube video id for the in-app how-to demo player. Null falls back to a YouTube search link.'),
+  "isMine": zod.boolean().optional().describe('True only for the patient\'s own private custom lift; never set for shared library exercises.')
 }),
   "sets": zod.array(zod.object({
   "id": zod.number(),
@@ -1566,7 +1615,8 @@ export const AddWorkoutExerciseResponse = zod.object({
   "category": zod.string(),
   "difficulty": zod.string(),
   "instructions": zod.string(),
-  "howToVideoId": zod.string().nullish().describe('YouTube video id for the in-app how-to demo player. Null falls back to a YouTube search link.')
+  "howToVideoId": zod.string().nullish().describe('YouTube video id for the in-app how-to demo player. Null falls back to a YouTube search link.'),
+  "isMine": zod.boolean().optional().describe('True only for the patient\'s own private custom lift; never set for shared library exercises.')
 }),
   "sets": zod.array(zod.object({
   "id": zod.number(),
@@ -1618,7 +1668,8 @@ export const UpdateWorkoutExerciseResponse = zod.object({
   "category": zod.string(),
   "difficulty": zod.string(),
   "instructions": zod.string(),
-  "howToVideoId": zod.string().nullish().describe('YouTube video id for the in-app how-to demo player. Null falls back to a YouTube search link.')
+  "howToVideoId": zod.string().nullish().describe('YouTube video id for the in-app how-to demo player. Null falls back to a YouTube search link.'),
+  "isMine": zod.boolean().optional().describe('True only for the patient\'s own private custom lift; never set for shared library exercises.')
 }),
   "sets": zod.array(zod.object({
   "id": zod.number(),

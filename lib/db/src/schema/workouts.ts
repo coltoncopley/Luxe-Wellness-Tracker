@@ -7,8 +7,10 @@ import {
   integer,
   timestamp,
   unique,
+  uniqueIndex,
   index,
 } from "drizzle-orm/pg-core";
+import { sql } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 import { usersTable } from "./users";
@@ -42,17 +44,34 @@ export const EQUIPMENT_TYPES = [
 ] as const;
 export type EquipmentType = (typeof EQUIPMENT_TYPES)[number];
 
-export const exercisesTable = pgTable("exercises", {
-  id: serial("id").primaryKey(),
-  name: text("name").notNull().unique(),
-  primaryMuscle: text("primary_muscle").notNull(),
-  secondaryMuscles: text("secondary_muscles").array().notNull(),
-  equipment: text("equipment").notNull(),
-  category: text("category").notNull(),
-  difficulty: text("difficulty").notNull().default("beginner"),
-  instructions: text("instructions").notNull(),
-  howToVideoId: text("how_to_video_id"),
-});
+export const exercisesTable = pgTable(
+  "exercises",
+  {
+    id: serial("id").primaryKey(),
+    name: text("name").notNull(),
+    primaryMuscle: text("primary_muscle").notNull(),
+    secondaryMuscles: text("secondary_muscles").array().notNull(),
+    equipment: text("equipment").notNull(),
+    category: text("category").notNull(),
+    difficulty: text("difficulty").notNull().default("beginner"),
+    instructions: text("instructions").notNull(),
+    howToVideoId: text("how_to_video_id"),
+    // NULL = shared/global library (staff-managed). Set = patient-private custom
+    // lift, visible only to that patient — staff must never see or touch these rows.
+    ownerUserId: text("owner_user_id").references(() => usersTable.id),
+  },
+  (t) => [
+    // Library names stay globally unique; custom-lift names are unique per owner
+    // (case-insensitive). Two partial indexes so a patient's custom name can never
+    // collide with — or leak the existence of — another patient's custom lift.
+    uniqueIndex("exercises_library_name_unique")
+      .on(t.name)
+      .where(sql`${t.ownerUserId} IS NULL`),
+    uniqueIndex("exercises_owner_lower_name_unique")
+      .on(t.ownerUserId, sql`lower(${t.name})`)
+      .where(sql`${t.ownerUserId} IS NOT NULL`),
+  ],
+);
 
 export type Exercise = typeof exercisesTable.$inferSelect;
 
