@@ -880,6 +880,7 @@ function SwapModal({
 }) {
   const c = useColors();
   const insets = useSafeAreaInsets();
+  const queryClient = useQueryClient();
   const suggest = useSuggestMeal();
   const apply = useApplyMeal();
   const [choice, setChoice] = useState<number | null>(null);
@@ -926,6 +927,11 @@ function SwapModal({
       {
         onSuccess: (result) => {
           onApplied(result);
+          // A confirmed swap teaches avoidDishes server-side; refresh the
+          // "won't repeat" list shown in Preferences.
+          void queryClient.invalidateQueries({
+            queryKey: getGetMealPlanPreferencesQueryKey(),
+          });
           onClose();
           Alert.alert("Swapped!", "Your meal has been updated.");
         },

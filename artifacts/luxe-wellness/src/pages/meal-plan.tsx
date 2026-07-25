@@ -284,6 +284,7 @@ function SwapDialog({
   onClose: () => void;
   onApplied: (result: MealPlanResult) => void;
 }) {
+  const queryClient = useQueryClient();
   const suggest = useSuggestMeal();
   const apply = useApplyMeal();
   const [choice, setChoice] = useState<number | null>(null);
@@ -328,6 +329,11 @@ function SwapDialog({
       {
         onSuccess: (result) => {
           onApplied(result);
+          // A confirmed swap teaches avoidDishes server-side; refresh the
+          // "won't repeat" list shown in Preferences.
+          void queryClient.invalidateQueries({
+            queryKey: getGetMealPlanPreferencesQueryKey(),
+          });
           toast.success("Meal swapped!");
           onClose();
         },

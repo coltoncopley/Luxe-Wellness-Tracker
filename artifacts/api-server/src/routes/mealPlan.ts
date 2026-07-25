@@ -790,17 +790,10 @@ router.post("/meal-plan/meal/suggest", async (req, res): Promise<void> => {
         const opts = await suggestMeals(mealType, currentDish, facts, prefs);
         if (!opts || opts.length === 0) return null;
 
-        // Learn from the removed dish (most-recent kept, capped, de-duped).
-        const nextAvoid = [
-          currentDish,
-          ...prefs.avoidDishes.filter((d) => d.toLowerCase() !== currentDish.toLowerCase()),
-        ].slice(0, AVOID_DISHES_CAP);
-
+        // Only stash the pending options and count the suggestion here. The
+        // removed dish is learned into avoidDishes on apply (a confirmed pick),
+        // never on merely opening the swap.
         const nextCount = (row.suggestDate === today ? row.suggestCount : 0) + 1;
-        await db
-          .update(mealPlanPreferencesTable)
-          .set({ avoidDishes: nextAvoid, updatedAt: new Date() })
-          .where(eq(mealPlanPreferencesTable.userId, userId));
         await db
           .update(mealPlansTable)
           .set({
@@ -865,6 +858,9 @@ router.post("/meal-plan/meal/apply", async (req, res): Promise<void> => {
     return;
   }
 
+  // The dish being replaced — learned into avoidDishes below, now that the
+  // member has actually confirmed a swap.
+  const removedDish = row.content.days[dayIndex]![mealType].name;
   const chosen = options[choiceIndex]!;
   const days = row.content.days.map((d, i) => {
     if (i !== dayIndex) return d;
@@ -883,6 +879,18 @@ router.post("/meal-plan/meal/apply", async (req, res): Promise<void> => {
     .set({ content, pendingSuggestions: nextPending })
     .where(eq(mealPlansTable.id, row.id))
     .returning();
+
+  // Learn from the removed dish (most-recent kept, capped, de-duped) — only on
+  // this confirmed pick, so canceling a swap without choosing teaches nothing.
+  const prefs = await getOrCreateMealPlanPrefs(userId);
+  const nextAvoid = [
+    removedDish,
+    ...prefs.avoidDishes.filter((d) => d.toLowerCase() !== removedDish.toLowerCase()),
+  ].slice(0, AVOID_DISHES_CAP);
+  await db
+    .update(mealPlanPreferencesTable)
+    .set({ avoidDishes: nextAvoid, updatedAt: new Date() })
+    .where(eq(mealPlanPreferencesTable.userId, userId));
 
   const checked = await getCheckedMap(userId, weekStart);
   res.json({
