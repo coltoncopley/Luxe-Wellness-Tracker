@@ -1,5 +1,6 @@
 import { Router, type IRouter } from "express";
 import healthRouter from "./health";
+import embedRouter from "./embed";
 import catalogRouter from "./catalog";
 import appointmentsRouter from "./appointments";
 import trackingRouter from "./tracking";
@@ -40,8 +41,10 @@ import { requireActiveSubscription } from "../middlewares/subscription";
 
 const router: IRouter = Router();
 
-// Public: health, service/staff catalog, wellness tips (dashboard summary is authed inside)
+// Public: health, service/staff catalog, wellness tips (dashboard summary is authed inside),
+// exercise how-to video embed pages (static HTML for the mobile WebView player)
 router.use(healthRouter);
+router.use(embedRouter);
 router.use(catalogRouter);
 router.use(wellnessRouter);
 

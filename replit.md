@@ -45,6 +45,7 @@ Patient companion app for LUXE Wellness and Aesthetics (physician-owned med spa 
 
 ## Gotchas
 
+- **Mobile fix delivery:** the owner's phone runs the installed TestFlight/App Store build with NO expo-updates/OTA — code changes to `luxe-mobile` do NOT reach the device until a new EAS build is submitted. Server-side changes need a production republish too. Never tell the owner a mobile fix is live until both have shipped; "still broken" reports minutes after a fix usually mean the old build, not a failed fix.
 - Facebook page can't be fetched programmatically (scraper-blocked); Aesthetic Record services page is JS-rendered — service list hand-curated in seed.
 - V2 roadmap phases 1-4 (Home+Briefing, data-aware AI, missions/photos, skin scan) all DONE (2026-07). Wearables deferred (need native app). Original vision doc in attached_assets/.
 
