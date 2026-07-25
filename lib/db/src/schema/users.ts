@@ -14,6 +14,11 @@ export const usersTable = pgTable("users", {
   // Patient-set birthday as "MM-DD" (no year, patient-private, used for birthday perks).
   birthday: text("birthday"),
   privacyAckAt: timestamp("privacy_ack_at", { withTimezone: true }),
+  // Onboarding (patient-private): the "personal why" picked during the welcome
+  // wizard, the 2-3 daily actions they chose, and when they finished the wizard.
+  primaryGoal: text("primary_goal"),
+  dailyActions: text("daily_actions").array(),
+  onboardedAt: timestamp("onboarded_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
