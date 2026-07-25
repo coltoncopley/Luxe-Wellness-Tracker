@@ -1854,6 +1854,39 @@ export interface ShoppingLinkResult {
   url: string;
 }
 
+export interface KrogerStatus {
+  /** Server has Kroger API credentials configured */
+  enabled: boolean;
+  /** This member has linked their Kroger account */
+  connected: boolean;
+}
+
+export interface KrogerConnectUrl {
+  /** Kroger sign-in URL to open in a browser */
+  url: string;
+}
+
+export interface KrogerCartItem {
+  name: string;
+}
+
+export interface KrogerCartInput {
+  /**
+     * @minItems 1
+     * @maxItems 60
+     */
+  items: KrogerCartItem[];
+}
+
+export interface KrogerCartResult {
+  /** Item names matched and added to the cart (1 of each; quantities adjusted on kroger.com) */
+  added: string[];
+  /** Item names Kroger couldn't match to a product */
+  missed: string[];
+  /** Where the member reviews the cart and checks out */
+  cartUrl: string;
+}
+
 export interface MealPlanState {
   plan: MealPlan | null;
   generationsRemaining: number;
@@ -3160,6 +3193,18 @@ category?: string;
 export type GetWeeklyReport200 = {
   report: WeeklyReport | null;
 };
+
+export type GetKrogerConnectUrlParams = {
+platform?: GetKrogerConnectUrlPlatform;
+};
+
+export type GetKrogerConnectUrlPlatform = typeof GetKrogerConnectUrlPlatform[keyof typeof GetKrogerConnectUrlPlatform];
+
+
+export const GetKrogerConnectUrlPlatform = {
+  web: 'web',
+  mobile: 'mobile',
+} as const;
 
 export type ListWorkoutsParams = {
 /**

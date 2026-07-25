@@ -19,3 +19,4 @@
 - [YouTube embed error 153 in RN WebView](youtube-embed-error-153.md) — bare `source={{ uri }}` sends no Referer and YouTube rejects it; wrap in HTML + `baseUrl` to the app domain.
 - [Expo native-only modules on web + OTA](expo-native-only-modules.md) — native-only RN libs (react-native-webview) need a `.native.tsx`/`.tsx` platform-file split so web bundles an iframe alt; verify via web entry.bundle grep; adding one forces a fresh EAS build before any OTA.
 - [Instacart handoff](instacart-handoff.md) — dev vs prod key/URL universes, closed unit vocabulary (else each+display_text), graceful no-key degradation, popup pre-open pattern.
+- [Kroger cart handoff](kroger-cart-handoff.md) — cart API is write-only; OAuth callback must be public w/ HMAC-signed state (bare browser); redirect URIs registered per-environment in the portal.

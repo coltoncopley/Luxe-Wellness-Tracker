@@ -1737,6 +1737,47 @@ export const CreateShoppingLinkResponse = zod.object({
 
 
 /**
+ * @summary Whether Kroger handoff is configured and this member has linked their account
+ */
+export const GetKrogerStatusResponse = zod.object({
+  "enabled": zod.boolean().describe('Server has Kroger API credentials configured'),
+  "connected": zod.boolean().describe('This member has linked their Kroger account')
+})
+
+
+/**
+ * @summary Start Kroger account linking — returns the sign-in URL to open in a browser
+ */
+export const GetKrogerConnectUrlQueryParams = zod.object({
+  "platform": zod.enum(['web', 'mobile']).optional()
+})
+
+export const GetKrogerConnectUrlResponse = zod.object({
+  "url": zod.string().describe('Kroger sign-in URL to open in a browser')
+})
+
+
+/**
+ * @summary Add the selected shopping-list items to the member's Kroger cart
+ */
+export const addToKrogerCartBodyItemsMax = 60;
+
+
+
+export const AddToKrogerCartBody = zod.object({
+  "items": zod.array(zod.object({
+  "name": zod.string()
+})).min(1).max(addToKrogerCartBodyItemsMax)
+})
+
+export const AddToKrogerCartResponse = zod.object({
+  "added": zod.array(zod.string()).describe('Item names matched and added to the cart (1 of each; quantities adjusted on kroger.com)'),
+  "missed": zod.array(zod.string()).describe('Item names Kroger couldn\'t match to a product'),
+  "cartUrl": zod.string().describe('Where the member reviews the cart and checks out')
+})
+
+
+/**
  * @summary Full exercise library
  */
 export const ListExercisesResponseItem = zod.object({

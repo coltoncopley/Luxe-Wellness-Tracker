@@ -1094,6 +1094,63 @@ paths:
           description: Too many link requests today
         "503":
           description: Instacart is not configured or unreachable
+  /kroger/status:
+    get:
+      operationId: getKrogerStatus
+      tags: [mealplan]
+      summary: Whether Kroger handoff is configured and this member has linked their account
+      responses:
+        "200":
+          description: Status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KrogerStatus"
+  /kroger/connect-url:
+    get:
+      operationId: getKrogerConnectUrl
+      tags: [mealplan]
+      summary: Start Kroger account linking — returns the sign-in URL to open in a browser
+      parameters:
+        - name: platform
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [web, mobile]
+      responses:
+        "200":
+          description: Authorize URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KrogerConnectUrl"
+        "503":
+          description: Kroger is not configured
+  /kroger/cart:
+    post:
+      operationId: addToKrogerCart
+      tags: [mealplan]
+      summary: Add the selected shopping-list items to the member's Kroger cart
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/KrogerCartInput"
+      responses:
+        "200":
+          description: Items matched and added (unmatched names reported back)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KrogerCartResult"
+        "409":
+          description: Kroger account not connected, or connection expired
+        "429":
+          description: Too many cart sends today
+        "503":
+          description: Kroger is not configured or unreachable
   /exercises:
     get:
       operationId: listExercises
@@ -5872,6 +5929,56 @@ components:
         url:
           type: string
           description: Instacart shopping-list page URL to open in a browser
+    KrogerStatus:
+      type: object
+      required: [enabled, connected]
+      properties:
+        enabled:
+          type: boolean
+          description: Server has Kroger API credentials configured
+        connected:
+          type: boolean
+          description: This member has linked their Kroger account
+    KrogerConnectUrl:
+      type: object
+      required: [url]
+      properties:
+        url:
+          type: string
+          description: Kroger sign-in URL to open in a browser
+    KrogerCartItem:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+    KrogerCartInput:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          minItems: 1
+          maxItems: 60
+          items:
+            $ref: "#/components/schemas/KrogerCartItem"
+    KrogerCartResult:
+      type: object
+      required: [added, missed, cartUrl]
+      properties:
+        added:
+          type: array
+          items:
+            type: string
+          description: Item names matched and added to the cart (1 of each; quantities adjusted on kroger.com)
+        missed:
+          type: array
+          items:
+            type: string
+          description: Item names Kroger couldn't match to a product
+        cartUrl:
+          type: string
+          description: Where the member reviews the cart and checks out
     MealPlanState:
       type: object
       required: [plan, generationsRemaining, suggestsRemaining]

@@ -12,8 +12,12 @@ import {
   useGetMealRecipe,
   useSetMealShop,
   useCreateShoppingLink,
+  useGetKrogerStatus,
+  useAddToKrogerCart,
+  getKrogerConnectUrl,
   getGetMealPlanQueryKey,
   getGetMealPlanPreferencesQueryKey,
+  getGetKrogerStatusQueryKey,
   type MealPlan,
   type MealPlanResult,
   type MealPlanMeal,
@@ -595,8 +599,28 @@ function RecipeDialog({ slot, onClose }: { slot: RecipeSlot | null; onClose: () 
 function ShoppingList({ plan }: { plan: MealPlan }) {
   const check = useCheckShoppingListItem();
   const email = useEmailShoppingList();
+  const queryClient = useQueryClient();
   const [localChecks, setLocalChecks] = useState<Record<string, boolean>>({});
   const [shopOpen, setShopOpen] = useState(false);
+
+  // Returning from Kroger's sign-in page (?kroger=connected|error): strip the
+  // param, confirm, refresh connection status, and reopen the shop dialog.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const kroger = params.get("kroger");
+    if (!kroger) return;
+    params.delete("kroger");
+    const qs = params.toString();
+    window.history.replaceState({}, "", window.location.pathname + (qs ? `?${qs}` : ""));
+    if (kroger === "connected") {
+      toast.success("Kroger account connected!");
+      void queryClient.invalidateQueries({ queryKey: getGetKrogerStatusQueryKey() });
+      setShopOpen(true);
+    } else {
+      toast.error("Kroger connection didn't go through. Please try again.");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Reset local check overrides whenever a new plan is generated.
   useEffect(() => {
@@ -762,6 +786,12 @@ function ShopDialog({
   onClose: () => void;
 }) {
   const link = useCreateShoppingLink();
+  const queryClient = useQueryClient();
+  const kroger = useGetKrogerStatus({
+    query: { queryKey: getGetKrogerStatusQueryKey(), enabled: open },
+  });
+  const krogerCart = useAddToKrogerCart();
+  const [connecting, setConnecting] = useState(false);
   const [selected, setSelected] = useState<Record<string, boolean>>({});
 
   // Each time the dialog opens, preselect what's still needed (unchecked items),
@@ -814,6 +844,55 @@ function ShopDialog({
     }
   };
 
+  const connectKroger = async () => {
+    // Full-page redirect: Kroger's sign-in page disallows iframes, and the
+    // callback brings the member straight back to /meal-plan?kroger=connected.
+    setConnecting(true);
+    try {
+      const { url } = await getKrogerConnectUrl({ platform: "web" });
+      window.location.assign(url);
+    } catch {
+      setConnecting(false);
+      toast.error("Couldn't start Kroger sign-in. Please try again.");
+    }
+  };
+
+  const sendKroger = () => {
+    // Open the tab inside the click gesture so popup blockers allow it,
+    // then point it at the Kroger cart once the items are in.
+    const popup = window.open("", "_blank");
+    if (popup) popup.opener = null;
+    const items = selectedItems.slice(0, 60).map((i) => ({ name: i.name }));
+    krogerCart.mutate(
+      { data: { items } },
+      {
+        onSuccess: (result) => {
+          if (popup) popup.location.href = result.cartUrl;
+          else window.open(result.cartUrl, "_blank", "noopener");
+          const capped = selectedItems.length > 60 ? " (Kroger takes 60 items at a time.)" : "";
+          if (result.missed.length === 0) {
+            toast.success(`All ${result.added.length} items added to your Kroger cart.${capped}`);
+          } else {
+            const preview = result.missed.slice(0, 3).join(", ");
+            toast.info(
+              `${result.added.length} added to your Kroger cart. Not found: ${preview}${result.missed.length > 3 ? "…" : ""}${capped}`,
+            );
+          }
+        },
+        onError: (err) => {
+          popup?.close();
+          const e = err as { status?: number; data?: { error?: string } };
+          if (e.status === 409) {
+            void queryClient.invalidateQueries({ queryKey: getGetKrogerStatusQueryKey() });
+            toast.error(e.data?.error ?? "Please reconnect your Kroger account.");
+          } else {
+            toast.error(e.data?.error ?? "Couldn't send to Kroger. Please try again.");
+          }
+        },
+      },
+    );
+  };
+
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
@@ -821,8 +900,8 @@ function ShopDialog({
           <DialogTitle className="font-serif text-xl">Shop your list</DialogTitle>
           <DialogDescription>
             {plan.instacartEnabled
-              ? "Untick anything you already have, then send the rest to Instacart — you can shop it at Walmart, Costco, Kroger and more."
-              : "Untick anything you already have, then copy the rest to paste anywhere — Walmart's app, notes, or a text."}
+              ? "Untick anything you already have, then send the rest to Instacart or Kroger — or tap an item's arrow to find it at Walmart."
+              : "Untick anything you already have, then send the rest to your store — or tap an item's arrow to find it at Walmart."}
           </DialogDescription>
         </DialogHeader>
 
@@ -843,10 +922,21 @@ function ShopDialog({
                       data-testid={`shop-item-${item.itemKey}`}
                     />
                     <span
-                      className={`text-sm ${selected[item.itemKey] ? "" : "text-muted-foreground"}`}
+                      className={`flex-1 text-sm ${selected[item.itemKey] ? "" : "text-muted-foreground"}`}
                     >
                       {displayLine(item)}
                     </span>
+                    <a
+                      href={`https://www.walmart.com/search?q=${encodeURIComponent(item.name)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="shrink-0 text-muted-foreground transition-colors hover:text-primary"
+                      aria-label={`Find ${item.name} at Walmart`}
+                      title="Find at Walmart"
+                      data-testid={`link-walmart-${item.itemKey}`}
+                    >
+                      <ExternalLink className="h-3.5 w-3.5" />
+                    </a>
                   </li>
                 ))}
               </ul>
@@ -869,6 +959,29 @@ function ShopDialog({
             <Copy className="mr-1.5 h-3.5 w-3.5" />
             Copy list
           </Button>
+          {kroger.data?.enabled &&
+            (kroger.data.connected ? (
+              <Button
+                className="rounded-full"
+                onClick={sendKroger}
+                disabled={selectedItems.length === 0 || krogerCart.isPending}
+                data-testid="button-send-kroger"
+              >
+                <ShoppingCart className="mr-1.5 h-3.5 w-3.5" />
+                {krogerCart.isPending ? "Sending…" : "Send to Kroger"}
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                className="rounded-full"
+                onClick={connectKroger}
+                disabled={connecting}
+                data-testid="button-connect-kroger"
+              >
+                <ShoppingCart className="mr-1.5 h-3.5 w-3.5" />
+                {connecting ? "Opening…" : "Connect Kroger"}
+              </Button>
+            ))}
           {plan.instacartEnabled && (
             <Button
               className="rounded-full"

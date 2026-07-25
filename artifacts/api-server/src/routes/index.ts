@@ -31,6 +31,7 @@ import socialRouter from "./social";
 import announcementsRouter from "./announcements";
 import notificationsRouter from "./notifications";
 import meRouter from "./me";
+import krogerRouter, { krogerCallback } from "./kroger";
 import doctorTipsRouter from "./doctorTips";
 import offersRouter from "./offers";
 import activityRouter from "./activity";
@@ -47,6 +48,10 @@ router.use(healthRouter);
 router.use(embedRouter);
 router.use(catalogRouter);
 router.use(wellnessRouter);
+// Kroger OAuth redirect lands in a bare browser (no Clerk session on mobile's
+// system browser), so it must bypass auth: the member is identified by the
+// HMAC-signed `state` token minted by /kroger/connect-url.
+router.get("/kroger/callback", krogerCallback);
 
 // Authenticated, no membership required: profile + billing itself
 router.use(requireAuth, meRouter);
@@ -71,6 +76,7 @@ router.use(requireAuth, requireActiveSubscription, streaksRouter);
 router.use(requireAuth, requireActiveSubscription, journeyRouter);
 router.use(requireAuth, requireActiveSubscription, weeklyReportRouter);
 router.use(requireAuth, requireActiveSubscription, mealPlanRouter);
+router.use(requireAuth, requireActiveSubscription, krogerRouter);
 router.use(requireAuth, requireActiveSubscription, workoutsRouter);
 router.use(requireAuth, requireActiveSubscription, photosRouter);
 router.use(requireAuth, requireActiveSubscription, skinRouter);

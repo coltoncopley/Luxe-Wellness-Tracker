@@ -91,6 +91,7 @@ import type {
   GetCommunityPosts200,
   GetCurrentDoctorTip200,
   GetDailySummaryParams,
+  GetKrogerConnectUrlParams,
   GetMindSummary200,
   GetPassport200,
   GetVapidPublicKey200,
@@ -106,6 +107,10 @@ import type {
   IngredientScanResult,
   JoinChallenge200,
   JourneySummary,
+  KrogerCartInput,
+  KrogerCartResult,
+  KrogerConnectUrl,
+  KrogerStatus,
   ListAnnouncements200,
   ListFoodLogsParams,
   ListIngredientScans200,
@@ -4689,6 +4694,237 @@ export const useCreateShoppingLink = <TError = ErrorType<void>,
         TContext
       > => {
       return useMutation(getCreateShoppingLinkMutationOptions(options));
+    }
+
+export const getGetKrogerStatusUrl = () => {
+
+
+
+
+  return `/api/kroger/status`
+}
+
+/**
+ * @summary Whether Kroger handoff is configured and this member has linked their account
+ */
+export const getKrogerStatus = async ( options?: RequestInit): Promise<KrogerStatus> => {
+
+  return customFetch<KrogerStatus>(getGetKrogerStatusUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetKrogerStatusQueryKey = () => {
+    return [
+    `/api/kroger/status`
+    ] as const;
+    }
+
+
+export const getGetKrogerStatusQueryOptions = <TData = Awaited<ReturnType<typeof getKrogerStatus>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getKrogerStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetKrogerStatusQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getKrogerStatus>>> = ({ signal }) => getKrogerStatus({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getKrogerStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetKrogerStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getKrogerStatus>>>
+export type GetKrogerStatusQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Whether Kroger handoff is configured and this member has linked their account
+ */
+
+export function useGetKrogerStatus<TData = Awaited<ReturnType<typeof getKrogerStatus>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getKrogerStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetKrogerStatusQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetKrogerConnectUrlUrl = (params?: GetKrogerConnectUrlParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/kroger/connect-url?${stringifiedParams}` : `/api/kroger/connect-url`
+}
+
+/**
+ * @summary Start Kroger account linking — returns the sign-in URL to open in a browser
+ */
+export const getKrogerConnectUrl = async (params?: GetKrogerConnectUrlParams, options?: RequestInit): Promise<KrogerConnectUrl> => {
+
+  return customFetch<KrogerConnectUrl>(getGetKrogerConnectUrlUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetKrogerConnectUrlQueryKey = (params?: GetKrogerConnectUrlParams,) => {
+    return [
+    `/api/kroger/connect-url`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getGetKrogerConnectUrlQueryOptions = <TData = Awaited<ReturnType<typeof getKrogerConnectUrl>>, TError = ErrorType<void>>(params?: GetKrogerConnectUrlParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getKrogerConnectUrl>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetKrogerConnectUrlQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getKrogerConnectUrl>>> = ({ signal }) => getKrogerConnectUrl(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getKrogerConnectUrl>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetKrogerConnectUrlQueryResult = NonNullable<Awaited<ReturnType<typeof getKrogerConnectUrl>>>
+export type GetKrogerConnectUrlQueryError = ErrorType<void>
+
+
+/**
+ * @summary Start Kroger account linking — returns the sign-in URL to open in a browser
+ */
+
+export function useGetKrogerConnectUrl<TData = Awaited<ReturnType<typeof getKrogerConnectUrl>>, TError = ErrorType<void>>(
+ params?: GetKrogerConnectUrlParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getKrogerConnectUrl>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetKrogerConnectUrlQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getAddToKrogerCartUrl = () => {
+
+
+
+
+  return `/api/kroger/cart`
+}
+
+/**
+ * @summary Add the selected shopping-list items to the member's Kroger cart
+ */
+export const addToKrogerCart = async (krogerCartInput: KrogerCartInput, options?: RequestInit): Promise<KrogerCartResult> => {
+
+  return customFetch<KrogerCartResult>(getAddToKrogerCartUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(krogerCartInput)
+  }
+);}
+
+
+
+
+export const getAddToKrogerCartMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addToKrogerCart>>, TError,{data: BodyType<KrogerCartInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof addToKrogerCart>>, TError,{data: BodyType<KrogerCartInput>}, TContext> => {
+
+const mutationKey = ['addToKrogerCart'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addToKrogerCart>>, {data: BodyType<KrogerCartInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  addToKrogerCart(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddToKrogerCartMutationResult = NonNullable<Awaited<ReturnType<typeof addToKrogerCart>>>
+    export type AddToKrogerCartMutationBody = BodyType<KrogerCartInput>
+    export type AddToKrogerCartMutationError = ErrorType<void>
+
+    /**
+ * @summary Add the selected shopping-list items to the member's Kroger cart
+ */
+export const useAddToKrogerCart = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addToKrogerCart>>, TError,{data: BodyType<KrogerCartInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof addToKrogerCart>>,
+        TError,
+        {data: BodyType<KrogerCartInput>},
+        TContext
+      > => {
+      return useMutation(getAddToKrogerCartMutationOptions(options));
     }
 
 export const getListExercisesUrl = () => {

@@ -3,6 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  AppState,
   Linking,
   Modal,
   Pressable,
@@ -25,12 +26,16 @@ import type {
   ShoppingListItem,
 } from "@workspace/api-client-react";
 import {
+  getGetKrogerStatusQueryKey,
   getGetMealPlanPreferencesQueryKey,
   getGetMealPlanQueryKey,
+  getKrogerConnectUrl,
+  useAddToKrogerCart,
   useApplyMeal,
   useCheckShoppingListItem,
   useEmailShoppingList,
   useGenerateMealPlan,
+  useGetKrogerStatus,
   useGetMealPlan,
   useGetMealPlanPreferences,
   useGetMealRecipe,
@@ -759,7 +764,23 @@ function ShopModal({
   const c = useColors();
   const insets = useSafeAreaInsets();
   const link = useCreateShoppingLink();
+  const queryClient = useQueryClient();
+  const kroger = useGetKrogerStatus({
+    query: { queryKey: getGetKrogerStatusQueryKey(), enabled: visible },
+  });
+  const krogerCart = useAddToKrogerCart();
   const [selected, setSelected] = useState<Record<string, boolean>>({});
+
+  // Connecting Kroger happens in the system browser; when the member swipes
+  // back to the app, refresh connection status so the button flips to "Send".
+  useEffect(() => {
+    if (!visible) return;
+    const sub = AppState.addEventListener("change", (s) => {
+      if (s === "active")
+        void queryClient.invalidateQueries({ queryKey: getGetKrogerStatusQueryKey() });
+    });
+    return () => sub.remove();
+  }, [visible, queryClient]);
 
   // Each time the sheet opens, preselect what's still needed (unchecked items),
   // honoring checkbox changes made this session over the server snapshot.
@@ -804,6 +825,52 @@ function ShopModal({
     }
   };
 
+  const connectKroger = async () => {
+    try {
+      const { url } = await getKrogerConnectUrl({ platform: "mobile" });
+      await Linking.openURL(url);
+    } catch {
+      Alert.alert("Couldn't start Kroger sign-in", "Please try again.");
+    }
+  };
+
+  const sendKroger = () => {
+    const items = selectedItems.slice(0, 60).map((i) => ({ name: i.name }));
+    krogerCart.mutate(
+      { data: { items } },
+      {
+        onSuccess: (result) => {
+          const missedNote =
+            result.missed.length > 0
+              ? `\nNot found: ${result.missed.slice(0, 4).join(", ")}${result.missed.length > 4 ? "…" : ""}`
+              : "";
+          const capped =
+            selectedItems.length > 60 ? "\n(Kroger takes 60 items at a time.)" : "";
+          Alert.alert(
+            "Sent to Kroger",
+            `${result.added.length} item${result.added.length === 1 ? "" : "s"} added to your cart.${missedNote}${capped}`,
+            [
+              { text: "Later", style: "cancel" },
+              { text: "View cart", onPress: () => void Linking.openURL(result.cartUrl) },
+            ],
+          );
+        },
+        onError: (err) => {
+          const e = err as { status?: number; data?: { error?: string } };
+          if (e.status === 409) {
+            void queryClient.invalidateQueries({ queryKey: getGetKrogerStatusQueryKey() });
+            Alert.alert(
+              "Reconnect Kroger",
+              e.data?.error ?? "Please connect your Kroger account again.",
+            );
+          } else {
+            Alert.alert("Couldn't send to Kroger", e.data?.error ?? "Please try again.");
+          }
+        },
+      },
+    );
+  };
+
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
       <View style={{ flex: 1, backgroundColor: c.background, paddingTop: insets.top }}>
@@ -838,8 +905,8 @@ function ShopModal({
             }}
           >
             {plan.instacartEnabled
-              ? "Untick anything you already have, then send the rest to Instacart — you can shop it at Walmart, Costco, Kroger and more."
-              : "Untick anything you already have, then share the rest to paste anywhere — Walmart's app, notes, or a text."}
+              ? "Untick anything you already have, then send the rest to Instacart or Kroger — or tap an item's arrow to find it at Walmart."
+              : "Untick anything you already have, then share the rest — or tap an item's arrow to find it at Walmart."}
           </Text>
 
           {plan.shoppingList.map((cat) => (
@@ -887,6 +954,17 @@ function ShopModal({
                     >
                       {displayLine(item)}
                     </Text>
+                    <Pressable
+                      hitSlop={8}
+                      onPress={() =>
+                        void Linking.openURL(
+                          `https://www.walmart.com/search?q=${encodeURIComponent(item.name)}`,
+                        )
+                      }
+                      accessibilityLabel={`Find ${item.name} at Walmart`}
+                    >
+                      <Feather name="external-link" size={15} color={c.mutedForeground} />
+                    </Pressable>
                   </Pressable>
                 );
               })}
@@ -906,6 +984,36 @@ function ShopModal({
           <Text style={{ fontFamily: "Inter_400Regular", fontSize: 12, color: c.mutedForeground }}>
             {selectedItems.length} of {allItems.length} items selected
           </Text>
+          {kroger.data?.enabled ? (
+            kroger.data.connected ? (
+              <LuxeButton
+                label={krogerCart.isPending ? "Sending…" : "Send to Kroger cart"}
+                disabled={selectedItems.length === 0 || krogerCart.isPending}
+                onPress={sendKroger}
+              />
+            ) : (
+              <Pressable
+                onPress={connectKroger}
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 6,
+                  borderWidth: 1,
+                  borderColor: c.border,
+                  borderRadius: 999,
+                  paddingVertical: 11,
+                }}
+              >
+                <Feather name="shopping-cart" size={14} color={c.foreground} />
+                <Text
+                  style={{ fontFamily: "Inter_500Medium", fontSize: 14, color: c.foreground }}
+                >
+                  Connect Kroger
+                </Text>
+              </Pressable>
+            )
+          ) : null}
           {plan.instacartEnabled ? (
             <LuxeButton
               label={link.isPending ? "Preparing…" : "Open in Instacart"}

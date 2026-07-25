@@ -8,6 +8,7 @@ import {
   activitiesTable,
   sleepEntriesTable,
   deviceConnectionsTable,
+  krogerTokensTable,
   appointmentsTable,
   communityPostsTable,
   communityHeartsTable,
@@ -424,6 +425,7 @@ router.delete("/me", async (req, res, next): Promise<void> => {
       await tx.delete(mealPlanGroceryChecksTable).where(eq(mealPlanGroceryChecksTable.userId, userId));
       await tx.delete(mealPlanPreferencesTable).where(eq(mealPlanPreferencesTable.userId, userId));
       await tx.delete(mealPlansTable).where(eq(mealPlansTable.userId, userId));
+      await tx.delete(krogerTokensTable).where(eq(krogerTokensTable.userId, userId));
       await tx.delete(weeklyReportsTable).where(eq(weeklyReportsTable.userId, userId));
       await tx
         .delete(challengeParticipantsTable)
