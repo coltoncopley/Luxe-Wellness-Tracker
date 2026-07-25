@@ -181,7 +181,7 @@ function TodayAtLuxeCard() {
           <div>
             <h2 className="text-2xl font-serif text-primary mb-1">Today at LUXE</h2>
             <p className="font-serif text-lg text-foreground">{today.focus.title}</p>
-            <p className="text-sm text-muted-foreground mt-1">{today.focus.message}</p>
+            <p className="text-base text-muted-foreground mt-1">{today.focus.message}</p>
           </div>
           {today.focus.actionKey && DESTINATIONS[today.focus.actionKey] && (
             <Link href={DESTINATIONS[today.focus.actionKey]}>
@@ -204,7 +204,7 @@ function TodayAtLuxeCard() {
                     ) : (
                       <Circle className="h-5 w-5 text-muted-foreground/40 shrink-0" />
                     )}
-                    <span className={`text-sm font-medium flex-1 ${checkin.done ? "line-through text-muted-foreground" : "text-foreground"}`}>
+                    <span className={`text-base font-medium flex-1 ${checkin.done ? "line-through text-muted-foreground" : "text-foreground"}`}>
                       {checkin.label}
                     </span>
                     <ChevronRight className="h-4 w-4 text-muted-foreground/40 shrink-0" />
@@ -303,7 +303,7 @@ export default function Dashboard() {
                 <Sparkles className="h-4 w-4" />
                 Today's Wellness Score
               </div>
-              <p className="text-xs text-muted-foreground md:text-left text-center mt-0 pt-0">A consistency score — not a medical assessment.</p>
+              <p className="text-sm text-muted-foreground md:text-left text-center mt-0 pt-0">A consistency score — not a medical assessment.</p>
               {briefing.aiBriefing ? (
                 <p className="text-lg leading-relaxed font-serif" data-testid="text-ai-briefing">
                   {briefing.aiBriefing}
@@ -313,7 +313,7 @@ export default function Dashboard() {
                   Log your habits, meals, and weigh-in to build today's score.
                 </p>
               )}
-              <div className="flex flex-wrap justify-center md:justify-start gap-x-4 gap-y-1 text-xs text-muted-foreground">
+              <div className="flex flex-wrap justify-center md:justify-start gap-x-4 gap-y-1 text-sm text-muted-foreground">
                 {briefing.components.map((c) => (
                   <span key={c.key}>
                     {c.label}: {c.points}/{c.maxPoints}
@@ -324,113 +324,6 @@ export default function Dashboard() {
           </div>
         </CardContent>
       </Card>
-
-      {/* Weekly tip from the practice */}
-      {doctorTip && (
-        <Card className="border-border bg-card shadow-sm">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-sans font-medium text-primary flex items-center gap-2">
-              <Stethoscope className="h-4 w-4" />
-              This week's tip from Dr. Copley
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <h3 className="font-serif text-lg mb-1" data-testid="text-doctor-tip-title">
-              {doctorTip.title}
-            </h3>
-            <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
-              {doctorTip.body}
-            </p>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Limited-time offers */}
-      <OffersCard />
-
-      {/* Spa announcements */}
-      {announcements.length > 0 && (
-        <Card className="border-accent/40 bg-accent/5 shadow-sm">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-sans font-medium text-primary flex items-center gap-2">
-              <Megaphone className="h-4 w-4" />
-              What's new at LUXE
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {announcements.slice(0, 3).map((a) => (
-              <div key={a.id} data-testid={`announcement-${a.id}`}>
-                <div className="flex items-baseline justify-between gap-3">
-                  <h3 className="font-serif text-lg">{a.title}</h3>
-                  <span className="text-xs text-muted-foreground shrink-0">
-                    {new Date(a.createdAt).toLocaleDateString()}
-                  </span>
-                </div>
-                <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-line">
-                  {a.body}
-                </p>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      )}
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Yesterday recap + tip */}
-        <div className="space-y-4">
-          <h2 className="text-2xl">Yesterday's Recap</h2>
-          <Card className="shadow-sm border-border">
-            <CardContent className="p-6 grid grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-muted-foreground">Calories</p>
-                <p className="text-2xl font-serif" data-testid="text-yesterday-calories">
-                  {briefing.yesterday.calories ?? "—"}
-                  {briefing.yesterday.calorieTarget != null && (
-                    <span className="text-sm text-muted-foreground font-sans">
-                      {" "}
-                      / {briefing.yesterday.calorieTarget}
-                    </span>
-                  )}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Protein</p>
-                <p className="text-2xl font-serif">
-                  {briefing.yesterday.proteinGrams != null
-                    ? `${briefing.yesterday.proteinGrams}g`
-                    : "—"}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Glow Score</p>
-                <p className="text-2xl font-serif">{briefing.yesterday.glowScore ?? "—"}</p>
-              </div>
-              <div>
-                <p className="text-sm text-muted-foreground">Total Weight Change</p>
-                <p className="text-2xl font-serif">
-                  {briefing.yesterday.weightChangeLbs != null
-                    ? `${briefing.yesterday.weightChangeLbs > 0 ? "+" : ""}${briefing.yesterday.weightChangeLbs} lbs`
-                    : "—"}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-          <Card className="bg-secondary/50 border-none shadow-none">
-            <CardContent className="p-5">
-              {dailyTip ? (
-                <>
-                  <h3 className="font-serif text-lg mb-1">{dailyTip.title}</h3>
-                  <p className="text-muted-foreground text-sm leading-relaxed">
-                    {dailyTip.content}
-                  </p>
-                </>
-              ) : (
-                <p className="text-muted-foreground text-sm">Drink plenty of water today!</p>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
 
       {/* Stats row */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -547,7 +440,110 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      <p className="text-xs text-muted-foreground">
+      {/* News from the spa: weekly tip, offers, announcements */}
+      {doctorTip && (
+        <Card className="border-border bg-card shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-sans font-medium text-primary flex items-center gap-2">
+              <Stethoscope className="h-4 w-4" />
+              This week's tip from Dr. Copley
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <h3 className="font-serif text-lg mb-1" data-testid="text-doctor-tip-title">
+              {doctorTip.title}
+            </h3>
+            <p className="text-base text-muted-foreground leading-relaxed whitespace-pre-line">
+              {doctorTip.body}
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      <OffersCard />
+
+      {announcements.length > 0 && (
+        <Card className="border-accent/40 bg-accent/5 shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base font-sans font-medium text-primary flex items-center gap-2">
+              <Megaphone className="h-4 w-4" />
+              What's new at LUXE
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {announcements.slice(0, 3).map((a) => (
+              <div key={a.id} data-testid={`announcement-${a.id}`}>
+                <div className="flex items-baseline justify-between gap-3">
+                  <h3 className="font-serif text-lg">{a.title}</h3>
+                  <span className="text-sm text-muted-foreground shrink-0">
+                    {new Date(a.createdAt).toLocaleDateString()}
+                  </span>
+                </div>
+                <p className="text-base text-muted-foreground leading-relaxed whitespace-pre-line">
+                  {a.body}
+                </p>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Yesterday recap + daily tip */}
+      <div className="space-y-4">
+        <h2 className="text-2xl">Yesterday's Recap</h2>
+        <Card className="shadow-sm border-border">
+          <CardContent className="p-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div>
+              <p className="text-sm text-muted-foreground">Calories</p>
+              <p className="text-2xl font-serif" data-testid="text-yesterday-calories">
+                {briefing.yesterday.calories ?? "—"}
+                {briefing.yesterday.calorieTarget != null && (
+                  <span className="text-sm text-muted-foreground font-sans">
+                    {" "}
+                    / {briefing.yesterday.calorieTarget}
+                  </span>
+                )}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Protein</p>
+              <p className="text-2xl font-serif">
+                {briefing.yesterday.proteinGrams != null
+                  ? `${briefing.yesterday.proteinGrams}g`
+                  : "—"}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Glow Score</p>
+              <p className="text-2xl font-serif">{briefing.yesterday.glowScore ?? "—"}</p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground">Total Weight Change</p>
+              <p className="text-2xl font-serif">
+                {briefing.yesterday.weightChangeLbs != null
+                  ? `${briefing.yesterday.weightChangeLbs > 0 ? "+" : ""}${briefing.yesterday.weightChangeLbs} lbs`
+                  : "—"}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+        <Card className="bg-secondary/50 border-none shadow-none">
+          <CardContent className="p-5">
+            {dailyTip ? (
+              <>
+                <h3 className="font-serif text-lg mb-1">{dailyTip.title}</h3>
+                <p className="text-muted-foreground text-base leading-relaxed">
+                  {dailyTip.content}
+                </p>
+              </>
+            ) : (
+              <p className="text-muted-foreground text-base">Drink plenty of water today!</p>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <p className="text-sm text-muted-foreground">
         Your briefing and wellness score are private to you — they are never shared with LUXE
         staff. This is general wellness encouragement, not medical advice.
       </p>

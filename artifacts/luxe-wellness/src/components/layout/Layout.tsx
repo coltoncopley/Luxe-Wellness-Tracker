@@ -70,31 +70,66 @@ export function Layout({ children }: { children: React.ReactNode }) {
   });
   const isStaff = me?.role === "staff" || me?.role === "admin";
 
-  const navItems = [
-    { href: "/", label: "Dashboard", icon: User },
-    { href: "/book", label: "Book", icon: Calendar },
-    { href: "/weight", label: "Progress", icon: Activity },
-    { href: "/food", label: "Food Log", icon: Utensils },
-    { href: "/restaurants", label: "Restaurants", icon: MapPin },
-    { href: "/glow", label: "Glow Score", icon: Sun },
-    { href: "/activity", label: "Activity & Sleep", icon: Footprints },
-    { href: "/workouts", label: "Workouts", icon: Dumbbell },
-    { href: "/mind", label: "Mind", icon: HeartHandshake },
-    { href: "/skin", label: "Skin Scan", icon: ScanFace },
-    { href: "/routine", label: "Skincare Routine", icon: Sparkles },
-    { href: "/ingredients", label: "Product Scan", icon: FlaskConical },
-    { href: "/passport", label: "Beauty Passport", icon: BookHeart },
-    { href: "/bhrt", label: "Hormone Replacement", icon: HeartPulse },
-    { href: "/rewards", label: "Rewards", icon: Gift },
-    { href: "/photos", label: "Progress Photos", icon: Images },
-    { href: "/journey", label: "My Journey", icon: Milestone },
-    { href: "/weekly-report", label: "Weekly Report", icon: FileHeart },
-    { href: "/meal-plan", label: "Meal Plan", icon: CalendarRange },
-    ...(isStaff ? [] : [{ href: "/friends", label: "Friends", icon: Users }]),
-    ...(isStaff ? [] : [{ href: "/community", label: "Community", icon: Megaphone }]),
-    { href: "/luxe-ai", label: "Luxe AI", icon: Sparkles },
-    { href: "/settings", label: "Notifications", icon: Bell },
-    ...(isStaff ? [{ href: "/staff", label: "Staff Portal", icon: BadgeCheck }] : []),
+  const navSections: { heading: string | null; items: { href: string; label: string; icon: typeof User }[] }[] = [
+    {
+      heading: null,
+      items: [
+        { href: "/", label: "Home", icon: User },
+        { href: "/book", label: "Book a Visit", icon: Calendar },
+        { href: "/luxe-ai", label: "Luxe AI", icon: Sparkles },
+      ],
+    },
+    {
+      heading: "Daily tracking",
+      items: [
+        { href: "/weight", label: "Weight", icon: Activity },
+        { href: "/food", label: "Food Log", icon: Utensils },
+        { href: "/activity", label: "Activity & Sleep", icon: Footprints },
+        { href: "/workouts", label: "Workouts", icon: Dumbbell },
+        { href: "/glow", label: "Glow Score", icon: Sun },
+        { href: "/mind", label: "Mind", icon: HeartHandshake },
+      ],
+    },
+    {
+      heading: "Food & dining",
+      items: [
+        { href: "/meal-plan", label: "Meal Plan", icon: CalendarRange },
+        { href: "/restaurants", label: "Restaurants", icon: MapPin },
+      ],
+    },
+    {
+      heading: "Skin & beauty",
+      items: [
+        { href: "/routine", label: "Skincare Routine", icon: Sparkles },
+        { href: "/skin", label: "Skin Scan", icon: ScanFace },
+        { href: "/ingredients", label: "Product Scan", icon: FlaskConical },
+        { href: "/photos", label: "Progress Photos", icon: Images },
+        { href: "/passport", label: "Beauty Passport", icon: BookHeart },
+        { href: "/bhrt", label: "Hormone Health", icon: HeartPulse },
+      ],
+    },
+    {
+      heading: "My progress",
+      items: [
+        { href: "/journey", label: "My Journey", icon: Milestone },
+        { href: "/weekly-report", label: "Weekly Report", icon: FileHeart },
+      ],
+    },
+    {
+      heading: "Rewards & friends",
+      items: [
+        { href: "/rewards", label: "Rewards", icon: Gift },
+        ...(isStaff ? [] : [{ href: "/friends", label: "Friends", icon: Users }]),
+        ...(isStaff ? [] : [{ href: "/community", label: "Community", icon: Megaphone }]),
+      ],
+    },
+    {
+      heading: null,
+      items: [
+        { href: "/settings", label: "Settings", icon: Bell },
+        ...(isStaff ? [{ href: "/staff", label: "Staff Portal", icon: BadgeCheck }] : []),
+      ],
+    },
   ];
 
   const displayName = user?.firstName ?? me?.firstName ?? user?.primaryEmailAddress?.emailAddress ?? null;
@@ -114,21 +149,30 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
       {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
-        <div className="md:hidden fixed inset-0 z-40 bg-background pt-20 px-4 pb-6 flex flex-col gap-2 overflow-y-auto">
-          {navItems.map((item) => (
-            <Link key={item.href} href={item.href}>
-              <div 
-                onClick={() => setMobileMenuOpen(false)}
-                className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-colors ${
-                  location === item.href 
-                    ? "bg-primary text-primary-foreground" 
-                    : "hover:bg-muted text-muted-foreground"
-                }`}
-              >
-                <item.icon className="h-5 w-5" />
-                <span className="font-medium">{item.label}</span>
-              </div>
-            </Link>
+        <div className="md:hidden fixed inset-0 z-40 bg-background pt-20 px-4 pb-6 flex flex-col gap-1 overflow-y-auto">
+          {navSections.map((section, si) => (
+            <div key={section.heading ?? `section-${si}`} className="flex flex-col gap-1">
+              {section.heading && (
+                <p className="px-4 pt-5 pb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground/70">
+                  {section.heading}
+                </p>
+              )}
+              {section.items.map((item) => (
+                <Link key={item.href} href={item.href}>
+                  <div
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`flex items-center gap-3 px-4 py-3.5 rounded-xl transition-colors ${
+                      location === item.href
+                        ? "bg-primary text-primary-foreground"
+                        : "hover:bg-muted text-foreground/80"
+                    }`}
+                  >
+                    <item.icon className="h-5 w-5" />
+                    <span className="font-medium text-base">{item.label}</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
           ))}
           <Show when="signed-in">
             <SignOutButton className="justify-start px-4 py-3 h-auto rounded-xl text-muted-foreground" />
@@ -147,18 +191,27 @@ export function Layout({ children }: { children: React.ReactNode }) {
           <img src={luxeLogo} alt="LUXE Logo" className="w-10 h-10 rounded-full object-cover shadow-sm" />
           <span className="font-serif font-semibold text-xl tracking-tight">LUXE Wellness</span>
         </div>
-        <nav className="flex-1 px-4 flex flex-col gap-2 mt-4 overflow-y-auto">
-          {navItems.map((item) => (
-            <Link key={item.href} href={item.href}>
-              <div className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all cursor-pointer ${
-                location === item.href 
-                  ? "bg-primary text-primary-foreground shadow-md scale-105" 
-                  : "hover:bg-muted text-muted-foreground hover:scale-105"
-              }`}>
-                <item.icon className="h-5 w-5" />
-                <span className="font-medium">{item.label}</span>
-              </div>
-            </Link>
+        <nav className="flex-1 px-4 flex flex-col gap-1 mt-2 overflow-y-auto">
+          {navSections.map((section, si) => (
+            <div key={section.heading ?? `section-${si}`} className="flex flex-col gap-1">
+              {section.heading && (
+                <p className="px-4 pt-5 pb-1 text-xs font-semibold uppercase tracking-wider text-muted-foreground/70">
+                  {section.heading}
+                </p>
+              )}
+              {section.items.map((item) => (
+                <Link key={item.href} href={item.href}>
+                  <div className={`flex items-center gap-3 px-4 py-2.5 rounded-xl transition-colors cursor-pointer ${
+                    location === item.href
+                      ? "bg-primary text-primary-foreground shadow-md"
+                      : "hover:bg-muted text-foreground/80"
+                  }`}>
+                    <item.icon className="h-5 w-5" />
+                    <span className="font-medium">{item.label}</span>
+                  </div>
+                </Link>
+              ))}
+            </div>
           ))}
         </nav>
         <Show when="signed-in">

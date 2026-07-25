@@ -360,7 +360,7 @@ export default function HomeScreen() {
               borderWidth: 1,
               borderColor: c.border,
               borderRadius: 16,
-              paddingVertical: 14,
+              paddingVertical: 16,
               paddingHorizontal: 14,
               flexDirection: "row",
               alignItems: "center",
@@ -370,21 +370,21 @@ export default function HomeScreen() {
           >
             <View
               style={{
-                width: 32,
-                height: 32,
-                borderRadius: 16,
+                width: 38,
+                height: 38,
+                borderRadius: 19,
                 backgroundColor: c.secondary,
                 alignItems: "center",
                 justifyContent: "center",
               }}
             >
-              <Feather name={item.icon} size={15} color={c.tint} />
+              <Feather name={item.icon} size={18} color={c.tint} />
             </View>
             <Text
               style={{
                 flex: 1,
                 fontFamily: "Inter_500Medium",
-                fontSize: 13,
+                fontSize: 15,
                 color: c.foreground,
               }}
               numberOfLines={2}
