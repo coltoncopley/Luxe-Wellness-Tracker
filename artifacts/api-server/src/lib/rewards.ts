@@ -23,6 +23,8 @@ export const POINTS = {
   activityLog: 10,
   sleepLog: 10,
   workoutComplete: 25,
+  welcome: 50,
+  dailyLoop: 20,
 } as const;
 
 export const INGREDIENT_SCAN_DAILY_CAP = 2;

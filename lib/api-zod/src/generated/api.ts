@@ -3234,6 +3234,9 @@ export const AcknowledgePrivacyNoticeResponse = zod.object({
   "firstName": zod.string().nullish(),
   "role": zod.enum(['patient', 'staff', 'admin']),
   "privacyAcknowledged": zod.boolean().describe('Whether the user has acknowledged the privacy notice'),
+  "onboarded": zod.boolean().describe('Whether the welcome wizard has been completed'),
+  "primaryGoal": zod.string().nullish().describe('The member\'s chosen \"personal why\" (patient-private)'),
+  "dailyActions": zod.array(zod.string()).optional().describe('Daily action keys chosen during onboarding (patient-private)'),
   "birthday": zod.string().nullish().describe('Birthday as MM-DD (patient-set, patient-private)')
 })
 
@@ -3247,6 +3250,9 @@ export const GetMeResponse = zod.object({
   "firstName": zod.string().nullish(),
   "role": zod.enum(['patient', 'staff', 'admin']),
   "privacyAcknowledged": zod.boolean().describe('Whether the user has acknowledged the privacy notice'),
+  "onboarded": zod.boolean().describe('Whether the welcome wizard has been completed'),
+  "primaryGoal": zod.string().nullish().describe('The member\'s chosen \"personal why\" (patient-private)'),
+  "dailyActions": zod.array(zod.string()).optional().describe('Daily action keys chosen during onboarding (patient-private)'),
   "birthday": zod.string().nullish().describe('Birthday as MM-DD (patient-set, patient-private)')
 })
 
@@ -3273,6 +3279,9 @@ export const ActivateStaffAccessResponse = zod.object({
   "firstName": zod.string().nullish(),
   "role": zod.enum(['patient', 'staff', 'admin']),
   "privacyAcknowledged": zod.boolean().describe('Whether the user has acknowledged the privacy notice'),
+  "onboarded": zod.boolean().describe('Whether the welcome wizard has been completed'),
+  "primaryGoal": zod.string().nullish().describe('The member\'s chosen \"personal why\" (patient-private)'),
+  "dailyActions": zod.array(zod.string()).optional().describe('Daily action keys chosen during onboarding (patient-private)'),
   "birthday": zod.string().nullish().describe('Birthday as MM-DD (patient-set, patient-private)')
 })
 
@@ -3289,6 +3298,157 @@ export const UpdateBirthdayBody = zod.object({
 
 export const UpdateBirthdayResponse = zod.object({
   "birthday": zod.string().nullable().describe('Birthday as MM-DD, or null if not set')
+})
+
+
+/**
+ * @summary Save onboarding choices (primary goal + daily actions) and finish the welcome wizard
+ */
+export const completeOnboardingBodyDailyActionsMax = 5;
+
+
+
+export const CompleteOnboardingBody = zod.object({
+  "primaryGoal": zod.enum(['weight_nutrition', 'better_skin', 'daily_wellness', 'hormone_education', 'maintain_results']),
+  "dailyActions": zod.array(zod.enum(['weigh_in', 'log_meal', 'glow_checkin', 'mind_checkin', 'move', 'skincare'])).min(1).max(completeOnboardingBodyDailyActionsMax)
+})
+
+export const CompleteOnboardingResponse = zod.object({
+  "user": zod.object({
+  "id": zod.string(),
+  "email": zod.string().nullish(),
+  "firstName": zod.string().nullish(),
+  "role": zod.enum(['patient', 'staff', 'admin']),
+  "privacyAcknowledged": zod.boolean().describe('Whether the user has acknowledged the privacy notice'),
+  "onboarded": zod.boolean().describe('Whether the welcome wizard has been completed'),
+  "primaryGoal": zod.string().nullish().describe('The member\'s chosen \"personal why\" (patient-private)'),
+  "dailyActions": zod.array(zod.string()).optional().describe('Daily action keys chosen during onboarding (patient-private)'),
+  "birthday": zod.string().nullish().describe('Birthday as MM-DD (patient-set, patient-private)')
+}),
+  "welcomePoints": zod.number().describe('Welcome points awarded by this call (0 if already awarded before)')
+})
+
+
+/**
+ * @summary Get the "Today at LUXE" daily loop (focus, quick check-ins, reward progress, trend)
+ */
+export const GetTodayResponse = zod.object({
+  "focus": zod.object({
+  "title": zod.string(),
+  "message": zod.string(),
+  "actionKey": zod.string().nullable().describe('Daily action key this focus points at')
+}),
+  "checkins": zod.array(zod.object({
+  "key": zod.string(),
+  "label": zod.string(),
+  "done": zod.boolean()
+})),
+  "allDone": zod.boolean().describe('Whether every selected daily action is done today'),
+  "completedToday": zod.boolean().describe('Whether today\'s loop points were already claimed'),
+  "completePoints": zod.number().describe('Points awarded for completing the daily loop'),
+  "points": zod.number().describe('Current points balance'),
+  "nextReward": zod.union([zod.object({
+  "title": zod.string(),
+  "points": zod.number(),
+  "pointsAway": zod.number()
+}),zod.null()]),
+  "trend": zod.string().nullable().describe('One encouraging, deterministic trend or milestone line')
+})
+
+
+/**
+ * @summary Claim today's daily-loop points once all selected actions are done
+ */
+export const CompleteTodayResponse = zod.object({
+  "awarded": zod.boolean().describe('True if points were just awarded (false if already claimed today)'),
+  "points": zod.number().describe('Updated points balance')
+})
+
+
+/**
+ * @summary Get the skincare routine (AM/PM items), today's check-off, and photo reminder state
+ */
+export const GetRoutineResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.number(),
+  "period": zod.enum(['am', 'pm']),
+  "position": zod.number(),
+  "productName": zod.string(),
+  "ingredientScanId": zod.number().nullable()
+})),
+  "today": zod.object({
+  "amDone": zod.boolean(),
+  "pmDone": zod.boolean(),
+  "sunscreenUsed": zod.boolean()
+}),
+  "photoDue": zod.boolean().describe('True when no progress photo has been added in the last 7 days')
+})
+
+
+/**
+ * @summary Replace the AM and PM routine items
+ */
+export const updateRoutineBodyAmItemProductNameMax = 120;
+
+export const updateRoutineBodyAmMax = 10;
+
+export const updateRoutineBodyPmItemProductNameMax = 120;
+
+export const updateRoutineBodyPmMax = 10;
+
+
+
+export const UpdateRoutineBody = zod.object({
+  "am": zod.array(zod.object({
+  "productName": zod.string().min(1).max(updateRoutineBodyAmItemProductNameMax),
+  "ingredientScanId": zod.number().nullish()
+})).max(updateRoutineBodyAmMax),
+  "pm": zod.array(zod.object({
+  "productName": zod.string().min(1).max(updateRoutineBodyPmItemProductNameMax),
+  "ingredientScanId": zod.number().nullish()
+})).max(updateRoutineBodyPmMax)
+})
+
+export const UpdateRoutineResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.number(),
+  "period": zod.enum(['am', 'pm']),
+  "position": zod.number(),
+  "productName": zod.string(),
+  "ingredientScanId": zod.number().nullable()
+})),
+  "today": zod.object({
+  "amDone": zod.boolean(),
+  "pmDone": zod.boolean(),
+  "sunscreenUsed": zod.boolean()
+}),
+  "photoDue": zod.boolean().describe('True when no progress photo has been added in the last 7 days')
+})
+
+
+/**
+ * @summary Check off AM/PM routine or sunscreen for today
+ */
+export const UpdateRoutineCheckinBody = zod.object({
+  "amDone": zod.boolean().optional(),
+  "pmDone": zod.boolean().optional(),
+  "sunscreenUsed": zod.boolean().optional()
+})
+
+export const UpdateRoutineCheckinResponse = zod.object({
+  "items": zod.array(zod.object({
+  "id": zod.number(),
+  "period": zod.enum(['am', 'pm']),
+  "position": zod.number(),
+  "productName": zod.string(),
+  "ingredientScanId": zod.number().nullable()
+})),
+  "today": zod.object({
+  "amDone": zod.boolean(),
+  "pmDone": zod.boolean(),
+  "sunscreenUsed": zod.boolean()
+}),
+  "photoDue": zod.boolean().describe('True when no progress photo has been added in the last 7 days')
 })
 
 

@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Link } from "wouter";
 import { Sparkles, Flame, Droplets, Moon, Brain, Dumbbell, Beef } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -249,7 +250,9 @@ export default function Glow() {
                 <Label htmlFor="skincare" className="font-medium">
                   Skincare routine done
                 </Label>
-                <p className="text-xs text-muted-foreground">Cleanse, moisturize, SPF</p>
+                <div className="text-xs text-muted-foreground">
+                  <Link href="/routine" className="underline hover:text-primary">View your routine</Link>
+                </div>
               </div>
             </div>
             <Switch id="skincare" checked={skincareDone} onCheckedChange={setSkincareDone} />

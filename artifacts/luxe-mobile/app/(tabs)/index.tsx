@@ -13,6 +13,10 @@ import {
   useGetStreak,
   useListAnnouncements,
   useListOffers,
+  useGetToday,
+  useCompleteToday,
+  getGetTodayQueryKey,
+  getGetBriefingQueryKey,
 } from "@workspace/api-client-react";
 
 import { ScoreRing } from "@/components/ScoreRing";
@@ -30,6 +34,8 @@ export default function HomeScreen() {
   const doctorTip = useGetCurrentDoctorTip();
   const offers = useListOffers();
   const claimOffer = useClaimOffer();
+  const today = useGetToday();
+  const completeToday = useCompleteToday();
   const [refreshing, setRefreshing] = useState(false);
 
   const onRefresh = async () => {
@@ -40,6 +46,31 @@ export default function HomeScreen() {
 
   const b = briefing.data;
   const y = b?.yesterday;
+
+  const goForAction = (key: string) => {
+    switch (key) {
+      case "weigh_in":
+        router.push("/(tabs)/track");
+        break;
+      case "log_meal":
+        router.push("/(tabs)/track");
+        break;
+      case "glow_checkin":
+        router.push("/(tabs)/track");
+        break;
+      case "mind_checkin":
+        router.push("/(tabs)/track");
+        break;
+      case "move":
+        router.push("/(tabs)/track");
+        break;
+      case "skincare":
+        router.push("/explore/routine");
+        break;
+      default:
+        router.push("/(tabs)/track");
+    }
+  };
 
   const goForTodo = (href: string) => {
     if (href.startsWith("/luxe-ai")) router.push("/(tabs)/chat");
@@ -61,6 +92,25 @@ export default function HomeScreen() {
       },
     );
   };
+
+  const handleClaimToday = () => {
+    const awardPoints = today.data?.completePoints ?? 20;
+    completeToday.mutate(undefined, {
+      onSuccess: (res) => {
+        void queryClient.invalidateQueries({ queryKey: getGetTodayQueryKey() });
+        void queryClient.invalidateQueries({ queryKey: getGetBriefingQueryKey() });
+        void queryClient.invalidateQueries({ queryKey: ["rewardsSummary"] });
+        if (res.awarded) {
+          Alert.alert("Daily Loop Complete!", `+${awardPoints} points awarded. Consistency is key!`);
+        }
+      },
+      onError: () => {
+        Alert.alert("Could not complete", "Make sure all your check-ins are done.");
+      }
+    });
+  };
+
+  const t = today.data;
 
   return (
     <Screen
@@ -90,6 +140,9 @@ export default function HomeScreen() {
         <View style={{ flex: 1 }}>
           <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 15, color: c.foreground }}>
             Today's Wellness Score
+          </Text>
+          <Text style={{ fontFamily: "Inter_400Regular", fontSize: 11, color: c.mutedForeground, marginTop: 2 }}>
+            A consistency score — not a medical assessment.
           </Text>
           <View style={{ gap: 4, marginTop: 8 }}>
             {(b?.components ?? []).map((comp) => (
@@ -158,50 +211,133 @@ export default function HomeScreen() {
         </Card>
       ) : null}
 
-      <SectionTitle>Today's to-dos</SectionTitle>
-      <Card style={{ paddingVertical: 4 }}>
-        {(b?.todos ?? []).length === 0 ? (
-          <EmptyState icon="check-circle" text="Nothing on the list right now." />
-        ) : (
-          (b?.todos ?? []).map((t, i) => (
-            <Pressable
-              key={t.id}
-              onPress={() => (t.done ? undefined : goForTodo(t.href))}
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 12,
-                paddingVertical: 12,
-                borderTopWidth: i === 0 ? 0 : 1,
-                borderTopColor: c.border,
-              }}
-            >
-              <Feather
-                name={t.done ? "check-circle" : "circle"}
-                size={19}
-                color={t.done ? c.success : c.mutedForeground}
-              />
-              <Text
+      {t ? (
+        <Card style={{ marginTop: 12, borderWidth: 1, borderColor: c.border }}>
+          <View style={{ marginBottom: 16 }}>
+            <Text style={{ fontFamily: "PlayfairDisplay_600SemiBold", fontSize: 24, color: c.foreground }}>
+              {t.focus.title}
+            </Text>
+            <Text style={{ fontFamily: "Inter_400Regular", fontSize: 14, color: c.mutedForeground, marginTop: 4, lineHeight: 20 }}>
+              {t.focus.message}
+            </Text>
+            {t.focus.actionKey && !t.checkins.find(c => c.key === t.focus.actionKey)?.done && (
+              <Pressable
+                onPress={() => goForAction(t.focus.actionKey!)}
+                style={{ marginTop: 12, flexDirection: "row", alignItems: "center", gap: 6 }}
+              >
+                <Text style={{ fontFamily: "Inter_500Medium", fontSize: 14, color: c.primary }}>Focus on this today</Text>
+                <Feather name="arrow-right" size={14} color={c.primary} />
+              </Pressable>
+            )}
+          </View>
+
+          <View style={{ gap: 0 }}>
+            {t.checkins.map((chk, i) => (
+              <Pressable
+                key={chk.key}
+                onPress={() => (chk.done ? undefined : goForAction(chk.key))}
                 style={{
-                  flex: 1,
-                  fontFamily: "Inter_500Medium",
-                  fontSize: 14,
-                  color: t.done ? c.mutedForeground : c.foreground,
-                  textDecorationLine: t.done ? "line-through" : "none",
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 12,
+                  paddingVertical: 14,
+                  borderTopWidth: i === 0 ? 1 : 1,
+                  borderTopColor: c.border,
                 }}
               >
-                {t.label}
+                <Feather
+                  name={chk.done ? "check-circle" : "circle"}
+                  size={20}
+                  color={chk.done ? c.success : c.mutedForeground}
+                />
+                <Text
+                  style={{
+                    flex: 1,
+                    fontFamily: "Inter_500Medium",
+                    fontSize: 15,
+                    color: chk.done ? c.mutedForeground : c.foreground,
+                    textDecorationLine: chk.done ? "line-through" : "none",
+                  }}
+                >
+                  {chk.label}
+                </Text>
+                {!chk.done && <Feather name="chevron-right" size={16} color={c.mutedForeground} />}
+              </Pressable>
+            ))}
+          </View>
+
+          <View style={{ marginTop: 16 }}>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+              <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 15, color: c.foreground }}>
+                {t.points} points
               </Text>
-              {!t.done ? <Feather name="chevron-right" size={16} color={c.mutedForeground} /> : null}
-            </Pressable>
-          ))
-        )}
-      </Card>
+              {t.nextReward ? (
+                <Text style={{ fontFamily: "Inter_400Regular", fontSize: 13, color: c.mutedForeground }}>
+                  {t.nextReward.pointsAway} pts away from {t.nextReward.title}
+                </Text>
+              ) : null}
+            </View>
+
+            {t.allDone && !t.completedToday ? (
+              <LuxeButton label={`Complete Loop (+${t.completePoints})`} onPress={handleClaimToday} loading={completeToday.isPending} />
+            ) : t.completedToday ? (
+              <View style={{ backgroundColor: c.secondary, padding: 12, borderRadius: 12, alignItems: "center" }}>
+                <Text style={{ fontFamily: "Inter_500Medium", fontSize: 14, color: c.foreground }}>
+                  Loop complete!
+                </Text>
+              </View>
+            ) : null}
+          </View>
+        </Card>
+      ) : (
+        <>
+          <SectionTitle>Today's to-dos</SectionTitle>
+          <Card style={{ paddingVertical: 4 }}>
+            {(b?.todos ?? []).length === 0 ? (
+              <EmptyState icon="check-circle" text="Nothing on the list right now." />
+            ) : (
+              (b?.todos ?? []).map((todo, i) => (
+                <Pressable
+                  key={todo.id}
+                  onPress={() => (todo.done ? undefined : goForTodo(todo.href))}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 12,
+                    paddingVertical: 12,
+                    borderTopWidth: i === 0 ? 0 : 1,
+                    borderTopColor: c.border,
+                  }}
+                >
+                  <Feather
+                    name={todo.done ? "check-circle" : "circle"}
+                    size={19}
+                    color={todo.done ? c.success : c.mutedForeground}
+                  />
+                  <Text
+                    style={{
+                      flex: 1,
+                      fontFamily: "Inter_500Medium",
+                      fontSize: 14,
+                      color: todo.done ? c.mutedForeground : c.foreground,
+                      textDecorationLine: todo.done ? "line-through" : "none",
+                    }}
+                  >
+                    {todo.label}
+                  </Text>
+                  {!todo.done ? <Feather name="chevron-right" size={16} color={c.mutedForeground} /> : null}
+                </Pressable>
+              ))
+            )}
+          </Card>
+        </>
+      )}
 
       <SectionTitle>Explore</SectionTitle>
       <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10 }}>
         {[
           { label: "Skin Scan", icon: "aperture" as const, href: "/explore/skin" },
+          { label: "Skincare Routine", icon: "sun" as const, href: "/explore/routine" },
           { label: "Product Scan", icon: "search" as const, href: "/explore/ingredients" },
           { label: "Progress Photos", icon: "camera" as const, href: "/explore/photos" },
           { label: "My Journey", icon: "trending-up" as const, href: "/explore/journey" },

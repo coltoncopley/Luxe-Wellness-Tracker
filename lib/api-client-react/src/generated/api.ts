@@ -55,6 +55,7 @@ import type {
   ClaimReferralResult,
   CommunityPost,
   CompAccess,
+  CompleteTodayResult,
   ConnectOuraInput,
   CreateAnnouncementInput,
   CreateCommunityPostInput,
@@ -134,6 +135,8 @@ import type {
   OfferInput,
   OfferUpdate,
   OkResponse,
+  OnboardingInput,
+  OnboardingResponse,
   OpenaiConversation,
   OpenaiConversationInput,
   OpenaiConversationWithMessages,
@@ -158,6 +161,9 @@ import type {
   RewardItemInput,
   RewardItemUpdate,
   RewardsSummary,
+  RoutineCheckinInput,
+  RoutineResponse,
+  RoutineUpdateInput,
   SearchChainMenuItemsParams,
   SearchMenuItemsParams,
   SendCheerInput,
@@ -179,6 +185,7 @@ import type {
   StreakSummary,
   SuggestMealInput,
   SyncResult,
+  TodayResponse,
   ToggleCommunityHeart200,
   UnsubscribePushInput,
   UpdateAccessCodeInput,
@@ -10290,6 +10297,440 @@ export const useUpdateBirthday = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getUpdateBirthdayMutationOptions(options));
+    }
+
+export const getCompleteOnboardingUrl = () => {
+
+
+
+
+  return `/api/me/onboarding`
+}
+
+/**
+ * @summary Save onboarding choices (primary goal + daily actions) and finish the welcome wizard
+ */
+export const completeOnboarding = async (onboardingInput: OnboardingInput, options?: RequestInit): Promise<OnboardingResponse> => {
+
+  return customFetch<OnboardingResponse>(getCompleteOnboardingUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(onboardingInput)
+  }
+);}
+
+
+
+
+export const getCompleteOnboardingMutationOptions = <TError = ErrorType<OpenaiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeOnboarding>>, TError,{data: BodyType<OnboardingInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof completeOnboarding>>, TError,{data: BodyType<OnboardingInput>}, TContext> => {
+
+const mutationKey = ['completeOnboarding'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof completeOnboarding>>, {data: BodyType<OnboardingInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  completeOnboarding(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CompleteOnboardingMutationResult = NonNullable<Awaited<ReturnType<typeof completeOnboarding>>>
+    export type CompleteOnboardingMutationBody = BodyType<OnboardingInput>
+    export type CompleteOnboardingMutationError = ErrorType<OpenaiError>
+
+    /**
+ * @summary Save onboarding choices (primary goal + daily actions) and finish the welcome wizard
+ */
+export const useCompleteOnboarding = <TError = ErrorType<OpenaiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeOnboarding>>, TError,{data: BodyType<OnboardingInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof completeOnboarding>>,
+        TError,
+        {data: BodyType<OnboardingInput>},
+        TContext
+      > => {
+      return useMutation(getCompleteOnboardingMutationOptions(options));
+    }
+
+export const getGetTodayUrl = () => {
+
+
+
+
+  return `/api/today`
+}
+
+/**
+ * @summary Get the "Today at LUXE" daily loop (focus, quick check-ins, reward progress, trend)
+ */
+export const getToday = async ( options?: RequestInit): Promise<TodayResponse> => {
+
+  return customFetch<TodayResponse>(getGetTodayUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetTodayQueryKey = () => {
+    return [
+    `/api/today`
+    ] as const;
+    }
+
+
+export const getGetTodayQueryOptions = <TData = Awaited<ReturnType<typeof getToday>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getToday>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetTodayQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getToday>>> = ({ signal }) => getToday({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getToday>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetTodayQueryResult = NonNullable<Awaited<ReturnType<typeof getToday>>>
+export type GetTodayQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get the "Today at LUXE" daily loop (focus, quick check-ins, reward progress, trend)
+ */
+
+export function useGetToday<TData = Awaited<ReturnType<typeof getToday>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getToday>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetTodayQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCompleteTodayUrl = () => {
+
+
+
+
+  return `/api/today/complete`
+}
+
+/**
+ * @summary Claim today's daily-loop points once all selected actions are done
+ */
+export const completeToday = async ( options?: RequestInit): Promise<CompleteTodayResult> => {
+
+  return customFetch<CompleteTodayResult>(getCompleteTodayUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getCompleteTodayMutationOptions = <TError = ErrorType<OpenaiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeToday>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof completeToday>>, TError,void, TContext> => {
+
+const mutationKey = ['completeToday'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof completeToday>>, void> = () => {
+
+
+          return  completeToday(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CompleteTodayMutationResult = NonNullable<Awaited<ReturnType<typeof completeToday>>>
+
+    export type CompleteTodayMutationError = ErrorType<OpenaiError>
+
+    /**
+ * @summary Claim today's daily-loop points once all selected actions are done
+ */
+export const useCompleteToday = <TError = ErrorType<OpenaiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof completeToday>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof completeToday>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getCompleteTodayMutationOptions(options));
+    }
+
+export const getGetRoutineUrl = () => {
+
+
+
+
+  return `/api/routine`
+}
+
+/**
+ * @summary Get the skincare routine (AM/PM items), today's check-off, and photo reminder state
+ */
+export const getRoutine = async ( options?: RequestInit): Promise<RoutineResponse> => {
+
+  return customFetch<RoutineResponse>(getGetRoutineUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetRoutineQueryKey = () => {
+    return [
+    `/api/routine`
+    ] as const;
+    }
+
+
+export const getGetRoutineQueryOptions = <TData = Awaited<ReturnType<typeof getRoutine>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRoutine>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetRoutineQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getRoutine>>> = ({ signal }) => getRoutine({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getRoutine>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetRoutineQueryResult = NonNullable<Awaited<ReturnType<typeof getRoutine>>>
+export type GetRoutineQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get the skincare routine (AM/PM items), today's check-off, and photo reminder state
+ */
+
+export function useGetRoutine<TData = Awaited<ReturnType<typeof getRoutine>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getRoutine>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetRoutineQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateRoutineUrl = () => {
+
+
+
+
+  return `/api/routine`
+}
+
+/**
+ * @summary Replace the AM and PM routine items
+ */
+export const updateRoutine = async (routineUpdateInput: RoutineUpdateInput, options?: RequestInit): Promise<RoutineResponse> => {
+
+  return customFetch<RoutineResponse>(getUpdateRoutineUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(routineUpdateInput)
+  }
+);}
+
+
+
+
+export const getUpdateRoutineMutationOptions = <TError = ErrorType<OpenaiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateRoutine>>, TError,{data: BodyType<RoutineUpdateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateRoutine>>, TError,{data: BodyType<RoutineUpdateInput>}, TContext> => {
+
+const mutationKey = ['updateRoutine'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateRoutine>>, {data: BodyType<RoutineUpdateInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateRoutine(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateRoutineMutationResult = NonNullable<Awaited<ReturnType<typeof updateRoutine>>>
+    export type UpdateRoutineMutationBody = BodyType<RoutineUpdateInput>
+    export type UpdateRoutineMutationError = ErrorType<OpenaiError>
+
+    /**
+ * @summary Replace the AM and PM routine items
+ */
+export const useUpdateRoutine = <TError = ErrorType<OpenaiError>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateRoutine>>, TError,{data: BodyType<RoutineUpdateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateRoutine>>,
+        TError,
+        {data: BodyType<RoutineUpdateInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateRoutineMutationOptions(options));
+    }
+
+export const getUpdateRoutineCheckinUrl = () => {
+
+
+
+
+  return `/api/routine/checkin`
+}
+
+/**
+ * @summary Check off AM/PM routine or sunscreen for today
+ */
+export const updateRoutineCheckin = async (routineCheckinInput: RoutineCheckinInput, options?: RequestInit): Promise<RoutineResponse> => {
+
+  return customFetch<RoutineResponse>(getUpdateRoutineCheckinUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(routineCheckinInput)
+  }
+);}
+
+
+
+
+export const getUpdateRoutineCheckinMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateRoutineCheckin>>, TError,{data: BodyType<RoutineCheckinInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateRoutineCheckin>>, TError,{data: BodyType<RoutineCheckinInput>}, TContext> => {
+
+const mutationKey = ['updateRoutineCheckin'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateRoutineCheckin>>, {data: BodyType<RoutineCheckinInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateRoutineCheckin(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateRoutineCheckinMutationResult = NonNullable<Awaited<ReturnType<typeof updateRoutineCheckin>>>
+    export type UpdateRoutineCheckinMutationBody = BodyType<RoutineCheckinInput>
+    export type UpdateRoutineCheckinMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Check off AM/PM routine or sunscreen for today
+ */
+export const useUpdateRoutineCheckin = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateRoutineCheckin>>, TError,{data: BodyType<RoutineCheckinInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateRoutineCheckin>>,
+        TError,
+        {data: BodyType<RoutineCheckinInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateRoutineCheckinMutationOptions(options));
     }
 
 export const getAdminCreateServiceUrl = () => {

@@ -16,6 +16,15 @@ export interface Me {
   role: MeRole;
   /** Whether the user has acknowledged the privacy notice */
   privacyAcknowledged: boolean;
+  /** Whether the welcome wizard has been completed */
+  onboarded: boolean;
+  /**
+     * The member's chosen "personal why" (patient-private)
+     * @nullable
+     */
+  primaryGoal?: string | null;
+  /** Daily action keys chosen during onboarding (patient-private) */
+  dailyActions?: string[];
   /**
      * Birthday as MM-DD (patient-set, patient-private)
      * @nullable

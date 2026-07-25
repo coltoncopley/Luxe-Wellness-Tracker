@@ -76,7 +76,7 @@ export default function SkinScreen() {
   return (
     <StackScreen refreshing={history.isRefetching} onRefresh={() => void history.refetch()}>
       <Text style={{ fontFamily: "Inter_400Regular", fontSize: 14, color: c.mutedForeground }}>
-        A weekly AI check-in on your skin — hydration, texture, tone, and glow.
+        Educational skincare insights — not a medical evaluation.
       </Text>
       <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 6, marginTop: 8 }}>
         <Feather name="lock" size={13} color={c.mutedForeground} style={{ marginTop: 2 }} />

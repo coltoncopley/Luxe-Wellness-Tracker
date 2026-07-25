@@ -81,6 +81,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     { href: "/workouts", label: "Workouts", icon: Dumbbell },
     { href: "/mind", label: "Mind", icon: HeartHandshake },
     { href: "/skin", label: "Skin Scan", icon: ScanFace },
+    { href: "/routine", label: "Skincare Routine", icon: Sparkles },
     { href: "/ingredients", label: "Product Scan", icon: FlaskConical },
     { href: "/passport", label: "Beauty Passport", icon: BookHeart },
     { href: "/bhrt", label: "Hormone Replacement", icon: HeartPulse },

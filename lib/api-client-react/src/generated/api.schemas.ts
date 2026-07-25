@@ -1910,6 +1910,15 @@ export interface Me {
   role: MeRole;
   /** Whether the user has acknowledged the privacy notice */
   privacyAcknowledged: boolean;
+  /** Whether the welcome wizard has been completed */
+  onboarded: boolean;
+  /**
+     * The member's chosen "personal why" (patient-private)
+     * @nullable
+     */
+  primaryGoal?: string | null;
+  /** Daily action keys chosen during onboarding (patient-private) */
+  dailyActions?: string[];
   /**
      * Birthday as MM-DD (patient-set, patient-private)
      * @nullable
@@ -2887,6 +2896,145 @@ export interface ExerciseSuggestion {
      * @nullable
      */
   lastPerformedAt: string | null;
+}
+
+export type OnboardingInputPrimaryGoal = typeof OnboardingInputPrimaryGoal[keyof typeof OnboardingInputPrimaryGoal];
+
+
+export const OnboardingInputPrimaryGoal = {
+  weight_nutrition: 'weight_nutrition',
+  better_skin: 'better_skin',
+  daily_wellness: 'daily_wellness',
+  hormone_education: 'hormone_education',
+  maintain_results: 'maintain_results',
+} as const;
+
+export type OnboardingInputDailyActionsItem = typeof OnboardingInputDailyActionsItem[keyof typeof OnboardingInputDailyActionsItem];
+
+
+export const OnboardingInputDailyActionsItem = {
+  weigh_in: 'weigh_in',
+  log_meal: 'log_meal',
+  glow_checkin: 'glow_checkin',
+  mind_checkin: 'mind_checkin',
+  move: 'move',
+  skincare: 'skincare',
+} as const;
+
+export interface OnboardingInput {
+  primaryGoal: OnboardingInputPrimaryGoal;
+  /**
+     * @minItems 1
+     * @maxItems 5
+     */
+  dailyActions: OnboardingInputDailyActionsItem[];
+}
+
+export interface OnboardingResponse {
+  user: Me;
+  /** Welcome points awarded by this call (0 if already awarded before) */
+  welcomePoints: number;
+}
+
+export interface TodayFocus {
+  title: string;
+  message: string;
+  /**
+     * Daily action key this focus points at
+     * @nullable
+     */
+  actionKey: string | null;
+}
+
+export interface TodayCheckin {
+  key: string;
+  label: string;
+  done: boolean;
+}
+
+export interface TodayNextReward {
+  title: string;
+  points: number;
+  pointsAway: number;
+}
+
+export interface TodayResponse {
+  focus: TodayFocus;
+  checkins: TodayCheckin[];
+  /** Whether every selected daily action is done today */
+  allDone: boolean;
+  /** Whether today's loop points were already claimed */
+  completedToday: boolean;
+  /** Points awarded for completing the daily loop */
+  completePoints: number;
+  /** Current points balance */
+  points: number;
+  nextReward: TodayNextReward | null;
+  /**
+     * One encouraging, deterministic trend or milestone line
+     * @nullable
+     */
+  trend: string | null;
+}
+
+export interface CompleteTodayResult {
+  /** True if points were just awarded (false if already claimed today) */
+  awarded: boolean;
+  /** Updated points balance */
+  points: number;
+}
+
+export type RoutineItemPeriod = typeof RoutineItemPeriod[keyof typeof RoutineItemPeriod];
+
+
+export const RoutineItemPeriod = {
+  am: 'am',
+  pm: 'pm',
+} as const;
+
+export interface RoutineItem {
+  id: number;
+  period: RoutineItemPeriod;
+  position: number;
+  productName: string;
+  /** @nullable */
+  ingredientScanId: number | null;
+}
+
+export interface RoutineCheckinState {
+  amDone: boolean;
+  pmDone: boolean;
+  sunscreenUsed: boolean;
+}
+
+export interface RoutineResponse {
+  items: RoutineItem[];
+  today: RoutineCheckinState;
+  /** True when no progress photo has been added in the last 7 days */
+  photoDue: boolean;
+}
+
+export interface RoutineUpdateItemInput {
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  productName: string;
+  /** @nullable */
+  ingredientScanId?: number | null;
+}
+
+export interface RoutineUpdateInput {
+  /** @maxItems 10 */
+  am: RoutineUpdateItemInput[];
+  /** @maxItems 10 */
+  pm: RoutineUpdateItemInput[];
+}
+
+export interface RoutineCheckinInput {
+  amDone?: boolean;
+  pmDone?: boolean;
+  sunscreenUsed?: boolean;
 }
 
 export type SearchMenuItemsParams = {

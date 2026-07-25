@@ -16,6 +16,7 @@ import {
 
 import { MembershipGate } from "@/components/MembershipGate";
 import { PrivacyAckModal } from "@/components/PrivacyAckModal";
+import { OnboardingWizard } from "@/components/OnboardingWizard";
 import { ErrorView, LoadingView, LuxeButton } from "@/components/ui";
 import { useColors } from "@/hooks/useColors";
 
@@ -228,6 +229,10 @@ function Gate({ children }: { children: React.ReactElement }) {
   }
 
   if (!me.data.privacyAcknowledged) return <PrivacyAckModal />;
+
+  if (me.data.role === "patient" && !me.data.onboarded) {
+    return <OnboardingWizard />;
+  }
 
   const b = billing.data;
   // Past-due grace: the server keeps access for a few days after a failed

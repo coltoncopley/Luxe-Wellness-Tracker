@@ -12,9 +12,12 @@ import { ScoreRing } from "@/components/ScoreRing";
 import { Card, LuxeButton, SectionTitle, Stepper } from "@/components/ui";
 import { useColors } from "@/hooks/useColors";
 import { fmtDate } from "@/lib/luxe";
+import { useRouter } from "expo-router";
+import { Feather } from "@expo/vector-icons";
 
 export function GlowTab() {
   const c = useColors();
+  const router = useRouter();
   const queryClient = useQueryClient();
   const summary = useGetGlowSummary();
   const upsert = useUpsertGlowCheckin();
@@ -145,6 +148,17 @@ export function GlowTab() {
             thumbColor={c.switchThumb}
           />
         </View>
+
+        <Pressable
+          onPress={() => router.push("/explore/routine")}
+          style={{ flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 12 }}
+          hitSlop={8}
+        >
+          <Text style={{ fontFamily: "Inter_500Medium", fontSize: 12, color: c.primary }}>
+            Manage routine
+          </Text>
+          <Feather name="chevron-right" size={14} color={c.primary} />
+        </Pressable>
 
         <View style={{ marginTop: 8 }}>
           <LuxeButton label="Save check-in" onPress={handleSave} loading={upsert.isPending} />

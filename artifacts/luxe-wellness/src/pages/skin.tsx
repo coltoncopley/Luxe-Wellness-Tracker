@@ -98,7 +98,7 @@ export default function Skin() {
           <ScanFace className="h-8 w-8" /> Skin Scan
         </h1>
         <p className="text-muted-foreground text-lg">
-          A weekly AI check-in on your skin — hydration, texture, tone, and glow.
+          Educational skincare insights — not a medical evaluation.
         </p>
         <p className="text-sm text-muted-foreground mt-2 flex items-center gap-1.5">
           <Lock className="h-3.5 w-3.5" /> Your scans are private to you — never shared with

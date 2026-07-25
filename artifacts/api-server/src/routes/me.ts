@@ -47,6 +47,10 @@ import {
   mealPlanGroceryChecksTable,
   weeklyReportsTable,
   challengeParticipantsTable,
+  routineItemsTable,
+  routineCheckinsTable,
+  rewardEventsTable as rewardEvents,
+  type User,
 } from "@workspace/db";
 import {
   GetMeResponse,
@@ -55,11 +59,15 @@ import {
   AcknowledgePrivacyNoticeResponse,
   UpdateBirthdayBody,
   UpdateBirthdayResponse,
+  CompleteOnboardingBody,
+  CompleteOnboardingResponse,
 } from "@workspace/api-zod";
 import { userIdOf, forgetUser } from "../middlewares/auth";
 import { getUncachableStripeClient } from "../lib/stripeClient";
 import { clearSubscriptionCache } from "../middlewares/subscription";
 import { ObjectStorageService } from "../lib/objectStorage";
+import { POINTS } from "../lib/rewards";
+import { todayET } from "../lib/dates";
 
 const router: IRouter = Router();
 
@@ -85,6 +93,21 @@ function rateLimitActivation(req: Request, res: Response, next: NextFunction): v
   next();
 }
 
+/** Shared shape for every Me-schema response (GET /me, privacy-ack, staff-access, onboarding). */
+function meShape(user: User): Record<string, unknown> {
+  return {
+    id: user.id,
+    email: user.email,
+    firstName: user.firstName,
+    role: user.role,
+    privacyAcknowledged: user.privacyAckAt !== null,
+    onboarded: user.onboardedAt !== null,
+    primaryGoal: user.primaryGoal,
+    dailyActions: user.dailyActions ?? [],
+    birthday: user.birthday,
+  };
+}
+
 router.get("/me", async (_req, res): Promise<void> => {
   const userId = userIdOf(res);
   const [user] = await db.select().from(usersTable).where(eq(usersTable.id, userId));
@@ -92,16 +115,53 @@ router.get("/me", async (_req, res): Promise<void> => {
     res.status(401).json({ error: "Not signed in" });
     return;
   }
-  res.json(
-    GetMeResponse.parse({
-      id: user.id,
-      email: user.email,
-      firstName: user.firstName,
-      role: user.role,
-      privacyAcknowledged: user.privacyAckAt !== null,
-      birthday: user.birthday,
-    }),
-  );
+  res.json(GetMeResponse.parse(meShape(user)));
+});
+
+/**
+ * Finish the welcome wizard: store the member's "personal why" and chosen
+ * daily actions, stamp onboarded_at, and (patients only) award the one-time
+ * welcome points. Idempotent: re-running updates choices but the welcome
+ * award's dedupe key ("welcome:once") guarantees at most one grant ever.
+ */
+router.post("/me/onboarding", async (req, res): Promise<void> => {
+  const userId = userIdOf(res);
+  const body = CompleteOnboardingBody.safeParse(req.body);
+  if (!body.success) {
+    res.status(400).json({ error: "Pick a goal and at least one daily action" });
+    return;
+  }
+  const dailyActions = [...new Set(body.data.dailyActions)];
+  const [user] = await db
+    .update(usersTable)
+    .set({
+      primaryGoal: body.data.primaryGoal,
+      dailyActions,
+      onboardedAt: new Date(),
+    })
+    .where(eq(usersTable.id, userId))
+    .returning();
+  if (!user) {
+    res.status(401).json({ error: "Not signed in" });
+    return;
+  }
+  let welcomePoints = 0;
+  if (user.role === "patient") {
+    const inserted = await db
+      .insert(rewardEvents)
+      .values({
+        userId,
+        type: "welcome",
+        date: todayET(),
+        points: POINTS.welcome,
+        description: "Welcome to LUXE — setup complete",
+        dedupeKey: "welcome:once",
+      })
+      .onConflictDoNothing({ target: [rewardEvents.userId, rewardEvents.dedupeKey] })
+      .returning({ id: rewardEvents.id });
+    if (inserted.length > 0) welcomePoints = POINTS.welcome;
+  }
+  res.json(CompleteOnboardingResponse.parse({ user: meShape(user), welcomePoints }));
 });
 
 router.put("/me/birthday", async (req, res): Promise<void> => {
@@ -134,15 +194,7 @@ router.post("/me/privacy-ack", async (_req, res): Promise<void> => {
     res.status(401).json({ error: "Not signed in" });
     return;
   }
-  res.json(
-    AcknowledgePrivacyNoticeResponse.parse({
-      id: user.id,
-      email: user.email,
-      firstName: user.firstName,
-      role: user.role,
-      privacyAcknowledged: true,
-    }),
-  );
+  res.json(AcknowledgePrivacyNoticeResponse.parse(meShape(user)));
 });
 
 /**
@@ -168,15 +220,7 @@ router.post("/me/staff-access", rateLimitActivation, async (req, res): Promise<v
   }
 
   const respond = (user: typeof current): void => {
-    res.json(
-      ActivateStaffAccessResponse.parse({
-        privacyAcknowledged: user.privacyAckAt !== null,
-        id: user.id,
-        email: user.email,
-        firstName: user.firstName,
-        role: user.role,
-      }),
-    );
+    res.json(ActivateStaffAccessResponse.parse(meShape(user)));
   };
 
   // Already staff/admin: nothing to activate. Short-circuit BEFORE any code
@@ -351,6 +395,9 @@ router.delete("/me", async (req, res, next): Promise<void> => {
       await tx.delete(appointmentsTable).where(eq(appointmentsTable.userId, userId));
       await tx.delete(foodLogsTable).where(eq(foodLogsTable.userId, userId));
       await tx.delete(glowCheckinsTable).where(eq(glowCheckinsTable.userId, userId));
+      // Routine items FK-reference ingredient_scans, so they go first.
+      await tx.delete(routineCheckinsTable).where(eq(routineCheckinsTable.userId, userId));
+      await tx.delete(routineItemsTable).where(eq(routineItemsTable.userId, userId));
       await tx.delete(ingredientScansTable).where(eq(ingredientScansTable.userId, userId));
       await tx.delete(mindCheckinsTable).where(eq(mindCheckinsTable.userId, userId));
       await tx.delete(notificationPrefsTable).where(eq(notificationPrefsTable.userId, userId));

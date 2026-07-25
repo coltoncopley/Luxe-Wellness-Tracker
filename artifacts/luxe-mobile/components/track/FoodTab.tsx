@@ -185,6 +185,13 @@ export function FoodTab() {
   const [scanning, setScanning] = useState(false);
   const [scanResult, setScanResult] = useState<MealPhotoAnalysis | null>(null);
 
+  const calorieRange = (cal: number, conf: string) => {
+    const c = String(conf).toLowerCase();
+    if (c === "high") return `${Math.round(cal * 0.9)}–${Math.round(cal * 1.1)}`;
+    if (c === "medium") return `${Math.round(cal * 0.8)}–${Math.round(cal * 1.2)}`;
+    return `${Math.round(cal * 0.7)}–${Math.round(cal * 1.3)}`;
+  };
+
   const invalidate = () => {
     void queryClient.invalidateQueries({ queryKey: getGetDailySummaryQueryKey({ date }) });
     void queryClient.invalidateQueries({ queryKey: getListFoodLogsQueryKey({ date }) });
@@ -397,7 +404,7 @@ export function FoodTab() {
                   {scanResult.name}
                 </Text>
                 <Text style={{ fontFamily: "Inter_400Regular", fontSize: 12, color: c.mutedForeground, marginTop: 2 }}>
-                  {scanResult.confidence} confidence estimate
+                  {calorieRange(scanResult.calories, scanResult.confidence)} kcal · estimate from your photo
                 </Text>
               </View>
               <Text style={{ fontFamily: "PlayfairDisplay_600SemiBold", fontSize: 18, color: c.primary }}>

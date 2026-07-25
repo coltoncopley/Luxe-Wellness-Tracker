@@ -2,6 +2,7 @@ import {
   useGetDashboardSummary,
   useGetDailyTip,
   useGetBriefing,
+  getGetBriefingQueryKey,
   useListAnnouncements,
   useGetCurrentDoctorTip,
   useListOffers,
@@ -9,6 +10,10 @@ import {
   useClaimOffer,
   useGetMe,
   useGetStreak,
+  useGetToday,
+  getGetTodayQueryKey,
+  useCompleteToday,
+  getGetRewardsSummaryQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -28,6 +33,7 @@ import {
   Stethoscope,
   BadgePercent,
   Ticket,
+  Gift,
 } from "lucide-react";
 import { Link } from "wouter";
 
@@ -138,6 +144,120 @@ function OffersCard() {
   );
 }
 
+function TodayAtLuxeCard() {
+  const queryClient = useQueryClient();
+  const { data: today, isLoading } = useGetToday({ query: { queryKey: getGetTodayQueryKey() } });
+  const complete = useCompleteToday();
+
+  if (isLoading || !today) return null;
+
+  const DESTINATIONS: Record<string, string> = {
+    weigh_in: "/weight",
+    log_meal: "/food",
+    glow_checkin: "/glow",
+    mind_checkin: "/mind",
+    move: "/activity",
+    skincare: "/routine",
+  };
+
+  const handleClaim = () => {
+    complete.mutate(undefined, {
+      onSuccess: (res) => {
+        if (res.awarded) {
+          toast.success(`Today complete! You earned ${res.points} points`);
+          queryClient.invalidateQueries({ queryKey: getGetTodayQueryKey() });
+          queryClient.invalidateQueries({ queryKey: getGetBriefingQueryKey() });
+          queryClient.invalidateQueries({ queryKey: getGetRewardsSummaryQueryKey() });
+        }
+      },
+      onError: () => toast.error("Could not claim points. Make sure all actions are done."),
+    });
+  };
+
+  return (
+    <Card className="bg-primary/5 border-primary/20 shadow-md mb-8">
+      <CardContent className="p-6 md:p-8 space-y-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-border/50 pb-6">
+          <div>
+            <h2 className="text-2xl font-serif text-primary mb-1">Today at LUXE</h2>
+            <p className="font-serif text-lg text-foreground">{today.focus.title}</p>
+            <p className="text-sm text-muted-foreground mt-1">{today.focus.message}</p>
+          </div>
+          {today.focus.actionKey && DESTINATIONS[today.focus.actionKey] && (
+            <Link href={DESTINATIONS[today.focus.actionKey]}>
+              <Button variant="outline" className="shrink-0 rounded-full">
+                Focus Action <ChevronRight className="h-4 w-4 ml-1" />
+              </Button>
+            </Link>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-3">
+            <h3 className="text-sm font-medium text-muted-foreground">Your Daily Habits</h3>
+            <div className="space-y-2">
+              {today.checkins.map((checkin) => (
+                <Link key={checkin.key} href={DESTINATIONS[checkin.key] || "/"}>
+                  <div className="flex items-center gap-3 p-3 rounded-xl bg-card border border-border hover:border-primary/30 transition-colors cursor-pointer">
+                    {checkin.done ? (
+                      <CheckCircle2 className="h-5 w-5 text-emerald-500 shrink-0" />
+                    ) : (
+                      <Circle className="h-5 w-5 text-muted-foreground/40 shrink-0" />
+                    )}
+                    <span className={`text-sm font-medium flex-1 ${checkin.done ? "line-through text-muted-foreground" : "text-foreground"}`}>
+                      {checkin.label}
+                    </span>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground/40 shrink-0" />
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+
+          <div className="flex flex-col justify-center space-y-6 bg-card rounded-2xl p-6 border border-border">
+            <div className="text-center">
+              <div className="inline-flex items-center justify-center p-3 rounded-full bg-primary/10 mb-3">
+                <Gift className="h-6 w-6 text-primary" />
+              </div>
+              <h3 className="font-medium text-lg mb-1">Daily Reward</h3>
+              <p className="text-sm text-muted-foreground mb-4">Complete all habits to earn +{today.completePoints} pts</p>
+              
+              {today.completedToday ? (
+                <div className="py-2 px-4 bg-emerald-500/10 text-emerald-600 rounded-full text-sm font-medium inline-flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4" /> Claimed today!
+                </div>
+              ) : (
+                <Button 
+                  className="w-full rounded-full h-12" 
+                  disabled={!today.allDone || complete.isPending}
+                  onClick={handleClaim}
+                >
+                  {complete.isPending ? "Claiming..." : today.allDone ? "Claim Points" : "Complete habits to claim"}
+                </Button>
+              )}
+            </div>
+
+            {(today.nextReward || today.trend) && (
+              <div className="pt-4 border-t border-border/50 space-y-2">
+                {today.nextReward && (
+                  <p className="text-sm text-center text-muted-foreground">
+                    You are <span className="font-medium text-foreground">{today.nextReward.pointsAway} pts</span> away from <span className="font-medium text-foreground">{today.nextReward.title}</span>!
+                  </p>
+                )}
+                {today.trend && (
+                  <p className="text-xs text-center text-primary/80 font-medium">
+                    {today.trend}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function Dashboard() {
   const { data: summary, isLoading: summaryLoading } = useGetDashboardSummary();
   const { data: briefing, isLoading: briefingLoading } = useGetBriefing();
@@ -168,8 +288,10 @@ export default function Dashboard() {
           {greetingForNow()}
           {briefing.firstName ? `, ${briefing.firstName}` : ""}
         </h1>
-        <p className="text-muted-foreground text-lg">Here's your briefing for today.</p>
+        <p className="text-muted-foreground text-lg mb-8">Here's your briefing for today.</p>
       </div>
+
+      <TodayAtLuxeCard />
 
       {/* Morning briefing + wellness score */}
       <Card className="bg-gradient-to-br from-primary/5 via-card to-accent/5 border-border shadow-sm">
@@ -181,6 +303,7 @@ export default function Dashboard() {
                 <Sparkles className="h-4 w-4" />
                 Today's Wellness Score
               </div>
+              <p className="text-xs text-muted-foreground md:text-left text-center mt-0 pt-0">A consistency score — not a medical assessment.</p>
               {briefing.aiBriefing ? (
                 <p className="text-lg leading-relaxed font-serif" data-testid="text-ai-briefing">
                   {briefing.aiBriefing}
@@ -253,47 +376,6 @@ export default function Dashboard() {
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Today's to-dos */}
-        <div className="space-y-4">
-          <div className="flex items-baseline justify-between">
-            <h2 className="text-2xl">Today's To-Dos</h2>
-            <span className="text-sm text-muted-foreground" data-testid="text-todos-progress">
-              {todosDone}/{briefing.todos.length} done
-            </span>
-          </div>
-          <Card className="shadow-sm border-border">
-            <CardContent className="p-2">
-              <ul className="divide-y divide-border">
-                {briefing.todos.map((todo) => (
-                  <li key={todo.id}>
-                    <Link
-                      href={todo.href}
-                      className="flex items-center gap-3 p-3 rounded-xl hover:bg-secondary/50 transition-colors cursor-pointer"
-                      data-testid={`todo-${todo.id}`}
-                    >
-                      {todo.done ? (
-                        <CheckCircle2 className="h-5 w-5 text-primary shrink-0" />
-                      ) : (
-                        <Circle className="h-5 w-5 text-muted-foreground/40 shrink-0" />
-                      )}
-                      <span
-                        className={
-                          todo.done ? "line-through text-muted-foreground flex-1" : "flex-1"
-                        }
-                      >
-                        {todo.label}
-                      </span>
-                      {!todo.done && (
-                        <ChevronRight className="h-4 w-4 text-muted-foreground/50 shrink-0" />
-                      )}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </CardContent>
-          </Card>
-        </div>
-
         {/* Yesterday recap + tip */}
         <div className="space-y-4">
           <h2 className="text-2xl">Yesterday's Recap</h2>

@@ -42,6 +42,18 @@ if (process.env.NODE_ENV === "production") {
     .then(() => logger.info("Core data seed check complete"))
     .catch((err: unknown) => logger.error({ err }, "Failed to seed core data"));
 
+  // Accounts created before the welcome wizard existed are marked onboarded
+  // so they never see it. Idempotent; runs on every boot.
+  Promise.all([import("@workspace/db"), import("drizzle-orm")])
+    .then(([{ db, usersTable }, { and, isNull, isNotNull, sql }]) =>
+      db
+        .update(usersTable)
+        .set({ onboardedAt: sql`privacy_ack_at` })
+        .where(and(isNull(usersTable.onboardedAt), isNotNull(usersTable.privacyAckAt))),
+    )
+    .then(() => logger.info("Onboarding backfill check complete"))
+    .catch((err: unknown) => logger.error({ err }, "Failed to backfill onboarded_at"));
+
   import("./lib/billing")
     .then(({ ensureMembershipProduct }) => ensureMembershipProduct())
     .then(() => logger.info("Membership product ensured in Stripe"))

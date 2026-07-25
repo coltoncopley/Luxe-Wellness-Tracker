@@ -23,6 +23,17 @@ import { NutritionFactsLabel } from "@/components/nutrition-facts-label";
 
 const MAX_DIMENSION = 1280;
 
+function calorieRange(calories: number, confidence: string): string {
+  const c = confidence.toLowerCase();
+  let pct = 0.3;
+  if (c === "high") pct = 0.1;
+  else if (c === "medium") pct = 0.2;
+  
+  const min = Math.round(calories * (1 - pct));
+  const max = Math.round(calories * (1 + pct));
+  return `${min}–${max} kcal`;
+}
+
 type Analysis = {
   name: string;
   calories: number;
@@ -146,8 +157,8 @@ export function MealScanner({
                 <div className="flex items-start justify-between gap-2">
                   <div>
                     <div className="font-medium">{analysis.name}</div>
-                    <div className="text-xs text-muted-foreground capitalize">
-                      {analysis.confidence} confidence estimate
+                    <div className="text-xs text-muted-foreground">
+                      {calorieRange(analysis.calories, analysis.confidence)} · estimate from your photo
                     </div>
                   </div>
                 </div>

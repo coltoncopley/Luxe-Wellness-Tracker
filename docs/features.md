@@ -4,7 +4,7 @@ Full per-page detail. The always-loaded summary lives in `replit.md`; mobile par
 
 ## Home `/`
 
-Greeting, Wellness Score, AI morning briefing (cached per user/day), to-do checklist, recap, announcements card, weekly "tip from Dr. Copley" card, limited-time offers card (patients claim one code per offer, OFR-XXXX-XXXX shown inline).
+Greeting, Wellness Score (with qualifier "A consistency score — not a medical assessment."), AI morning briefing (cached per user/day), "Today at LUXE" daily-loop card (see Daily loop section), to-do checklist, recap, announcements card, weekly "tip from Dr. Copley" card, limited-time offers card (patients claim one code per offer, OFR-XXXX-XXXX shown inline).
 
 ## Book `/book`
 
@@ -30,7 +30,7 @@ Weigh-ins, measurements, goal, chart.
 
 ## Glow `/glow` and Mind `/mind`
 
-- Glow: daily habit check-in → 0-100 score, streak, trend.
+- Glow: daily habit check-in → 0-100 score, streak, trend. "Manage routine" link to `/routine` (web + mobile GlowTab).
 - Mind: daily mood check-in → Calm Score, journal/gratitude (never fed to Luxe AI, strictly own-user-scoped), breathing exercise. Disclaimer keeps the 988 crisis line ("self-care, not mental health care").
 
 ## Activity & Sleep `/activity` (2026-07)
@@ -90,6 +90,12 @@ Static educational page (Worldlink/Rouzier "Normal isn't optimal" framing, discl
   - **Per-meal swap** (`/meal/suggest` → `/meal/apply`): remove a meal → Grok returns 3 fresh alternatives (transient `pending_suggestions` on the plan, keyed by date+mealType) → patient picks one → applied in place; **only on that confirmed pick** is the removed dish name appended to `avoidDishes` so future plans/suggestions skip it (opening the swap and canceling without picking learns nothing). Rate-limited to 10 swaps/ET day (`suggest_count`/`suggest_date`); AI failure → 503, never burns quota; expired/stale suggestion set → 409.
   - **Shopping list** (`shoppingList` — aggregated from meal `ingredients[]` by name|unit, summed × `people`, rounded to 0.25, units never converted; categories Produce/Protein/Dairy/Grains/Pantry/Frozen/Other). Legacy names-only `grocery` kept for back-compat. Per-item check-off persisted in `meal_plan_grocery_checks` (`/shopping-list/check`, keyed by stable `itemKey`; checks cleared on regen, kept on meal swap). `/shopping-list/email` sends the list to the account email (Resend, 5/day in-memory limit); web/mobile also offer native Share / clipboard.
   - Patient-private, premium-gated, disclaimer footer. Both web (`pages/meal-plan.tsx`) and mobile (`app/explore/meal-plan.tsx`) have full parity: preferences dialog, per-meal swap, servings stepper, checkable list, email + share.
+
+## Onboarding, Today at LUXE & Skincare Routine (2026-07)
+
+- **2-minute onboarding wizard** (web `components/OnboardingWizard.tsx` full-screen takeover, renders only for `patient && privacyAcknowledged && !onboarded`; mobile `components/OnboardingWizard.tsx` in gate order privacy → onboarding → membership): pick one primary goal (weight_nutrition / better_skin / daily_wellness / hormone_education / maintain_results) then 1+ daily actions (weigh_in / log_meal / glow_checkin / mind_checkin / move / skincare; per-goal recommendations pre-selected). POST /me/onboarding sets `users.primary_goal` + `daily_actions` + `onboarded_at` and awards +50 pts dedupe `welcome:once` (patient-only). Skip submits daily_wellness defaults so it never nags. Auth-only, NOT premium-gated (runs before the membership gate). Existing users backfilled as onboarded.
+- **"Today at LUXE" daily loop** (`routes/today.ts`, premium-gated): GET /today returns a rotating daily focus (with actionKey deep-link), a checklist derived from the user's chosen `daily_actions` with done-state computed live from today's ET data (weigh-in, meal log, glow check-in, mind check-in, activity, skincare routine check-off), points balance, nextReward, allDone/completedToday, and a trend line. POST /today/complete re-verifies all actions server-side (409 if incomplete) and awards +20 pts once/day, dedupe `daily_loop:<YYYY-MM-DD>` (ET). Card on web dashboard + mobile home; items deep-link to their pages.
+- **Skincare Routine Builder `/routine`** (`routes/routine.ts`, premium-gated; web `pages/routine.tsx`, mobile `app/explore/routine.tsx`): AM/PM product lists (`routine_items`: period, position, product_name, optional `ingredient_scan_id` link to a Product Scan — ownership-verified on save, 400 on foreign scans). PUT /routine replaces both arrays (am+pm both required). PATCH /routine/checkin upserts today's `routine_checkins` (am_done/pm_done/sunscreen_used, unique user+date); checking AM or PM mirrors `glow_checkins.skincare_done=true` for today (raw upsert, NO points — glow points only come from a real glow check-in POST). Patient-private, user_id-scoped throughout.
 
 ## Workouts `/workouts` (2026-07)
 

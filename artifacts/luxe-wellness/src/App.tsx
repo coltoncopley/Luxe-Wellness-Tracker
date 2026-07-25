@@ -12,6 +12,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { Layout } from "@/components/layout/Layout";
 import { SubscriptionGate } from "@/components/SubscriptionGate";
 import { PrivacyAckDialog } from "@/components/PrivacyAckDialog";
+import { OnboardingWizard } from "@/components/OnboardingWizard";
 import Landing from "@/pages/landing";
 import Dashboard from "@/pages/dashboard";
 import Book from "@/pages/book";
@@ -29,6 +30,7 @@ import WeeklyReport from "@/pages/weekly-report";
 import MealPlan from "@/pages/meal-plan";
 import Workouts from "@/pages/workouts";
 import Skin from "@/pages/skin";
+import Routine from "@/pages/routine";
 import Ingredients from "@/pages/ingredients";
 import Passport from "@/pages/passport";
 import Mind from "@/pages/mind";
@@ -284,6 +286,7 @@ function ClerkProviderWithRoutes() {
         <Show when="signed-in">
           <ReferralClaimer />
           <PrivacyAckDialog />
+          <OnboardingWizard />
         </Show>
         <TooltipProvider>
           <Switch>
@@ -304,6 +307,7 @@ function ClerkProviderWithRoutes() {
             <Route path="/weekly-report">{() => <Protected component={WeeklyReport} />}</Route>
             <Route path="/meal-plan">{() => <Protected component={MealPlan} />}</Route>
             <Route path="/skin">{() => <Protected component={Skin} />}</Route>
+            <Route path="/routine">{() => <Protected component={Routine} />}</Route>
             <Route path="/ingredients">{() => <Protected component={Ingredients} />}</Route>
             <Route path="/passport">{() => <Protected component={Passport} />}</Route>
             <Route path="/mind">{() => <Protected component={Mind} />}</Route>
