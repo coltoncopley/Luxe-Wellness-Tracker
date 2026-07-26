@@ -1,6 +1,6 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { createHmac, timingSafeEqual } from "node:crypto";
-import { eq } from "drizzle-orm";
+import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
+import { and, eq } from "drizzle-orm";
 import { z } from "zod/v4";
 import { db, krogerTokensTable } from "@workspace/db";
 import { userIdOf } from "../middlewares/auth";
@@ -59,6 +59,8 @@ interface StatePayload {
   u: string;
   p: "web" | "mobile";
   e: number;
+  /** One-time-use nonce (jti). */
+  j: string;
 }
 
 function signState(payload: StatePayload): string {
@@ -85,10 +87,28 @@ function verifyState(state: string): StatePayload | null {
     if (typeof parsed.u !== "string") return null;
     if (parsed.p !== "web" && parsed.p !== "mobile") return null;
     if (typeof parsed.e !== "number" || parsed.e < Date.now()) return null;
+    if (typeof parsed.j !== "string" || parsed.j.length < 8) return null;
     return parsed as StatePayload;
   } catch {
     return null;
   }
+}
+
+/* One-time use: a verified state may complete the callback only once, so a
+ * leaked/replayed link is dead after first use (defense-in-depth on top of the
+ * HMAC + 10-minute expiry; Kroger's auth code is single-use anyway). In-memory
+ * is fine — the app deploys as a single always-on VM and states are ephemeral. */
+const usedStates = new Map<string, number>(); // jti -> state expiry
+function stateAlreadyUsed(state: StatePayload): boolean {
+  if (usedStates.size > 1_000) {
+    const now = Date.now();
+    for (const [jti, exp] of usedStates) {
+      if (exp < now) usedStates.delete(jti);
+    }
+  }
+  if (usedStates.has(state.j)) return true;
+  usedStates.set(state.j, state.e);
+  return false;
 }
 
 /* ---------- Kroger HTTP plumbing ---------- */
@@ -109,20 +129,29 @@ interface TokenGrant {
   expires_in: number;
 }
 
-async function exchangeToken(params: Record<string, string>): Promise<TokenGrant | null> {
+/** "denied" = Kroger rejected the grant itself (revoked/expired/invalid) — the
+ * stored tokens are dead. "unavailable" = transient trouble (network, timeout,
+ * 5xx, rate limit) — do NOT touch stored tokens. */
+async function exchangeToken(
+  params: Record<string, string>,
+): Promise<TokenGrant | "denied" | "unavailable"> {
   const basic = Buffer.from(`${clientId()}:${clientSecret()}`).toString("base64");
-  const resp = await krogerFetch(KROGER_TOKEN_URL, {
-    method: "POST",
-    headers: {
-      Authorization: `Basic ${basic}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: new URLSearchParams(params).toString(),
-  });
-  if (!resp.ok) return null;
-  const data = (await resp.json()) as Partial<TokenGrant>;
-  if (!data.access_token || !data.refresh_token || !data.expires_in) return null;
-  return data as TokenGrant;
+  try {
+    const resp = await krogerFetch(KROGER_TOKEN_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Basic ${basic}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams(params).toString(),
+    });
+    if (!resp.ok) return resp.status === 400 || resp.status === 401 ? "denied" : "unavailable";
+    const data = (await resp.json()) as Partial<TokenGrant>;
+    if (!data.access_token || !data.refresh_token || !data.expires_in) return "unavailable";
+    return data as TokenGrant;
+  } catch {
+    return "unavailable";
+  }
 }
 
 async function saveGrant(userId: string, grant: TokenGrant): Promise<void> {
@@ -138,27 +167,80 @@ async function saveGrant(userId: string, grant: TokenGrant): Promise<void> {
     .onConflictDoUpdate({ target: krogerTokensTable.userId, set });
 }
 
-/** Valid access token for the member, refreshing when stale. null = not connected / must reconnect. */
-async function freshAccessToken(userId: string): Promise<string | null> {
+type FreshToken = { kind: "ok"; token: string } | { kind: "reconnect" } | { kind: "unavailable" };
+
+async function currentTokenRow(userId: string) {
   const [row] = await db
     .select()
     .from(krogerTokensTable)
     .where(eq(krogerTokensTable.userId, userId))
     .limit(1);
-  if (!row) return null;
-  if (row.expiresAt.getTime() > Date.now() + 60_000) return row.accessToken;
-  const grant = await exchangeToken({
-    grant_type: "refresh_token",
-    refresh_token: row.refreshToken,
-  });
-  if (!grant) {
-    // Refresh token revoked or expired — drop the row so clients fall back
-    // to the "Connect Kroger" state instead of failing forever.
-    await db.delete(krogerTokensTable).where(eq(krogerTokensTable.userId, userId));
-    return null;
+  return row;
+}
+
+/* Refreshes are serialized per user in-process AND compare-and-swapped against
+ * the refresh token they started from, so a request that loses the race can
+ * never delete or overwrite tokens a parallel request just rotated. */
+const refreshInflight = new Map<string, Promise<FreshToken>>();
+
+/** Valid access token for the member, refreshing when stale.
+ * reconnect = not connected / grant revoked; unavailable = Kroger unreachable. */
+async function freshAccessToken(userId: string): Promise<FreshToken> {
+  const inflight = refreshInflight.get(userId);
+  if (inflight) return inflight;
+  const task = (async (): Promise<FreshToken> => {
+    const row = await currentTokenRow(userId);
+    if (!row) return { kind: "reconnect" };
+    if (row.expiresAt.getTime() > Date.now() + 60_000) {
+      return { kind: "ok", token: row.accessToken };
+    }
+    const grant = await exchangeToken({
+      grant_type: "refresh_token",
+      refresh_token: row.refreshToken,
+    });
+    if (grant === "unavailable") return { kind: "unavailable" };
+    if (grant === "denied") {
+      // Drop the row ONLY if it still holds the refresh token Kroger denied —
+      // a parallel request may have rotated it successfully already.
+      await db
+        .delete(krogerTokensTable)
+        .where(
+          and(
+            eq(krogerTokensTable.userId, userId),
+            eq(krogerTokensTable.refreshToken, row.refreshToken),
+          ),
+        );
+      const survivor = await currentTokenRow(userId);
+      return survivor ? { kind: "ok", token: survivor.accessToken } : { kind: "reconnect" };
+    }
+    const updated = await db
+      .update(krogerTokensTable)
+      .set({
+        accessToken: grant.access_token,
+        refreshToken: grant.refresh_token,
+        expiresAt: new Date(Date.now() + grant.expires_in * 1000),
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(krogerTokensTable.userId, userId),
+          eq(krogerTokensTable.refreshToken, row.refreshToken),
+        ),
+      )
+      .returning({ id: krogerTokensTable.id });
+    if (updated.length === 0) {
+      // Lost the race to a parallel refresh — use whatever it saved.
+      const winner = await currentTokenRow(userId);
+      return winner ? { kind: "ok", token: winner.accessToken } : { kind: "reconnect" };
+    }
+    return { kind: "ok", token: grant.access_token };
+  })();
+  refreshInflight.set(userId, task);
+  try {
+    return await task;
+  } finally {
+    refreshInflight.delete(userId);
   }
-  await saveGrant(userId, grant);
-  return grant.access_token;
 }
 
 async function mapLimit<T, R>(arr: T[], limit: number, fn: (t: T) => Promise<R>): Promise<R[]> {
@@ -175,18 +257,23 @@ async function mapLimit<T, R>(arr: T[], limit: number, fn: (t: T) => Promise<R>)
   return out;
 }
 
-/** Best product match for a shopping-list line; null when Kroger has nothing. */
-async function findUpc(token: string, name: string): Promise<string | null> {
+type UpcLookup = { upc: string | null } | "auth" | "down";
+
+/** Best product match for a shopping-list line. { upc: null } = Kroger truly
+ * has nothing; "auth" = token rejected (drive reconnect); "down" = transient
+ * upstream trouble (must never be misreported as "not found"). */
+async function findUpc(token: string, name: string): Promise<UpcLookup> {
   try {
     const resp = await krogerFetch(
       `${KROGER_API_URL}/products?filter.term=${encodeURIComponent(name)}&filter.limit=1`,
       { headers: { Authorization: `Bearer ${token}` } },
     );
-    if (!resp.ok) return null;
+    if (resp.status === 401 || resp.status === 403) return "auth";
+    if (!resp.ok) return "down";
     const data = (await resp.json()) as { data?: Array<{ upc?: string; productId?: string }> };
-    return data.data?.[0]?.upc ?? data.data?.[0]?.productId ?? null;
+    return { upc: data.data?.[0]?.upc ?? data.data?.[0]?.productId ?? null };
   } catch {
-    return null;
+    return "down";
   }
 }
 
@@ -209,7 +296,12 @@ router.get("/kroger/connect-url", (req, res): void => {
     return;
   }
   const platform = req.query["platform"] === "mobile" ? "mobile" : "web";
-  const state = signState({ u: userId, p: platform, e: Date.now() + STATE_TTL_MS });
+  const state = signState({
+    u: userId,
+    p: platform,
+    e: Date.now() + STATE_TTL_MS,
+    j: randomBytes(12).toString("base64url"),
+  });
   const params = new URLSearchParams({
     scope: KROGER_SCOPES,
     response_type: "code",
@@ -247,18 +339,43 @@ router.post("/kroger/cart", async (req, res): Promise<void> => {
     res.status(429).json({ error: "That's a lot of shopping for one day — try again tomorrow." });
     return;
   }
-  const token = await freshAccessToken(userId);
-  if (!token) {
+  const fresh = await freshAccessToken(userId);
+  if (fresh.kind === "unavailable") {
+    res.status(503).json({ error: "Couldn't reach Kroger. Please try again." });
+    return;
+  }
+  if (fresh.kind === "reconnect") {
     res.status(409).json({ error: "Connect your Kroger account first." });
     return;
   }
+  const token = fresh.token;
 
   const names = parsed.data.items.map((i) => i.name);
-  const upcs = await mapLimit(names, SEARCH_CONCURRENCY, (n) => findUpc(token, n));
+  let searchAuthFailed = false;
+  const lookups = await mapLimit(names, SEARCH_CONCURRENCY, async (n): Promise<UpcLookup> => {
+    if (searchAuthFailed) return "auth"; // stop burning calls once the token is dead
+    const result = await findUpc(token, n);
+    if (result === "auth") searchAuthFailed = true;
+    return result;
+  });
+  if (searchAuthFailed) {
+    // Token rejected mid-search — clear it (only if unrotated) and flip clients to "Connect".
+    await db
+      .delete(krogerTokensTable)
+      .where(and(eq(krogerTokensTable.userId, userId), eq(krogerTokensTable.accessToken, token)));
+    res.status(409).json({ error: "Your Kroger connection expired — please reconnect." });
+    return;
+  }
+  if (lookups.some((r) => r === "down")) {
+    // Transient Kroger trouble — surface it honestly instead of "items not found".
+    res.status(503).json({ error: "Couldn't reach Kroger. Please try again." });
+    return;
+  }
   const found: { upc: string; name: string }[] = [];
   const missed: string[] = [];
   names.forEach((n, i) => {
-    const upc = upcs[i];
+    const result = lookups[i];
+    const upc = typeof result === "object" && result !== null ? result.upc : null;
     if (upc) found.push({ upc, name: n });
     else missed.push(n);
   });
@@ -271,7 +388,11 @@ router.post("/kroger/cart", async (req, res): Promise<void> => {
         body: JSON.stringify({ items: found.map((f) => ({ upc: f.upc, quantity: 1 })) }),
       });
       if (resp.status === 401 || resp.status === 403) {
-        await db.delete(krogerTokensTable).where(eq(krogerTokensTable.userId, userId));
+        await db
+          .delete(krogerTokensTable)
+          .where(
+            and(eq(krogerTokensTable.userId, userId), eq(krogerTokensTable.accessToken, token)),
+          );
         res.status(409).json({ error: "Your Kroger connection expired — please reconnect." });
         return;
       }
@@ -313,6 +434,11 @@ export async function krogerCallback(req: Request, res: Response): Promise<void>
     if (state.p === "web") res.redirect("/meal-plan?kroger=error");
     else res.status(200).send(mobileHtml(false));
   };
+  if (stateAlreadyUsed(state)) {
+    // One-time use: a replayed (or refreshed) callback link must start over.
+    fail();
+    return;
+  }
   const code = typeof req.query["code"] === "string" ? req.query["code"] : null;
   if (!code || !krogerConfigured()) {
     // Includes the member tapping "deny" on Kroger's consent screen.
@@ -325,8 +451,8 @@ export async function krogerCallback(req: Request, res: Response): Promise<void>
       code,
       redirect_uri: redirectUri() as string,
     });
-    if (!grant) {
-      req.log.error("kroger code exchange failed");
+    if (typeof grant === "string") {
+      req.log.error({ reason: grant }, "kroger code exchange failed");
       fail();
       return;
     }
