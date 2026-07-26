@@ -50,6 +50,59 @@ export function krogerConfigured(): boolean {
   return Boolean(clientId() && clientSecret() && redirectUri() && process.env.SESSION_SECRET);
 }
 
+/* Presence ≠ validity: certification-environment keys pass krogerConfigured()
+ * but api.kroger.com rejects them ("invalid credentials"), which would put a
+ * broken "Connect Kroger" button in front of members. Probe the production
+ * token endpoint once (client_credentials) and hide the feature on a definitive
+ * rejection; transient trouble (network/5xx/429) never flips the feature off. */
+let credsProbe: { ok: boolean; at: number; keyId: string } | null = null;
+
+async function credentialsUsable(log?: {
+  warn: (obj: object, msg: string) => void;
+}): Promise<boolean> {
+  if (!krogerConfigured()) return false;
+  const keyId = clientId() as string;
+  const now = Date.now();
+  if (
+    credsProbe &&
+    credsProbe.keyId === keyId &&
+    (credsProbe.ok || now - credsProbe.at < 10 * 60_000)
+  ) {
+    return credsProbe.ok;
+  }
+  const basic = Buffer.from(`${clientId()}:${clientSecret()}`).toString("base64");
+  try {
+    const resp = await krogerFetch(KROGER_TOKEN_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Basic ${basic}`,
+        "Content-Type": "application/x-www-form-urlencoded",
+      },
+      body: new URLSearchParams({
+        grant_type: "client_credentials",
+        scope: "product.compact",
+      }).toString(),
+    });
+    if (resp.ok) {
+      credsProbe = { ok: true, at: now, keyId };
+      return true;
+    }
+    if (resp.status === 401) {
+      // Definitive: Kroger's production servers don't know these keys
+      // (classic cause: certification-environment keys pasted by mistake).
+      credsProbe = { ok: false, at: now, keyId };
+      log?.warn({ status: resp.status }, "kroger keys rejected by production — feature hidden");
+      return false;
+    }
+    // Ambiguous (5xx/429/etc) — assume usable rather than hiding the feature.
+    credsProbe = { ok: true, at: now, keyId };
+    return true;
+  } catch {
+    // Network hiccup — keep whatever we knew; default to usable.
+    return credsProbe?.keyId === keyId ? credsProbe.ok : true;
+  }
+}
+
 /* ---------- Signed state ----------
  * The OAuth callback arrives in a bare browser (on mobile it is the system
  * browser with no app session at all), so the member's identity travels
@@ -286,12 +339,12 @@ router.get("/kroger/status", async (req, res): Promise<void> => {
     .from(krogerTokensTable)
     .where(eq(krogerTokensTable.userId, userId))
     .limit(1);
-  res.json({ enabled: krogerConfigured(), connected: Boolean(row) });
+  res.json({ enabled: await credentialsUsable(req.log), connected: Boolean(row) });
 });
 
-router.get("/kroger/connect-url", (req, res): void => {
+router.get("/kroger/connect-url", async (req, res): Promise<void> => {
   const userId = userIdOf(res);
-  if (!krogerConfigured()) {
+  if (!(await credentialsUsable(req.log))) {
     res.status(503).json({ error: "Kroger shopping isn't set up yet." });
     return;
   }
