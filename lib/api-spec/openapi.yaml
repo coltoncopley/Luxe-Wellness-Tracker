@@ -3749,6 +3749,36 @@ paths:
       responses:
         "204":
           description: Unsubscribed
+  /notifications/expo-token/register:
+    post:
+      operationId: registerExpoPushToken
+      tags: [notifications]
+      summary: Register this phone's Expo push token for native push notifications
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExpoPushTokenInput"
+      responses:
+        "204":
+          description: Registered
+        "409":
+          description: Token registered to another account
+  /notifications/expo-token/unregister:
+    post:
+      operationId: unregisterExpoPushToken
+      tags: [notifications]
+      summary: Remove this phone's Expo push token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ExpoPushTokenInput"
+      responses:
+        "204":
+          description: Unregistered
   /notifications/test:
     post:
       operationId: sendTestNotification
@@ -4338,6 +4368,14 @@ components:
             auth:
               type: string
               maxLength: 500
+    ExpoPushTokenInput:
+      type: object
+      required: [token]
+      properties:
+        token:
+          type: string
+          maxLength: 500
+          description: Expo push token, e.g. ExponentPushToken[xxxx]
     AdminMetrics:
       type: object
       required: [membership, patients, engagement, rewards]

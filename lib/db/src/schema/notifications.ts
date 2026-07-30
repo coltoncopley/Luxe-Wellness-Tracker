@@ -47,6 +47,22 @@ export const pushSubscriptionsTable = pgTable(
   (t) => [uniqueIndex("push_subscriptions_endpoint_unique").on(t.endpoint)],
 );
 
+/** Native (Expo) push tokens — one row per device, alongside web-push subscriptions. */
+export const expoPushTokensTable = pgTable(
+  "expo_push_tokens",
+  {
+    id: serial("id").primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => usersTable.id),
+    token: text("token").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [uniqueIndex("expo_push_tokens_token_unique").on(t.token)],
+);
+
 export const notificationSendsTable = pgTable(
   "notification_sends",
   {
@@ -64,3 +80,4 @@ export const notificationSendsTable = pgTable(
 
 export type NotificationPrefs = typeof notificationPrefsTable.$inferSelect;
 export type PushSubscription = typeof pushSubscriptionsTable.$inferSelect;
+export type ExpoPushToken = typeof expoPushTokensTable.$inferSelect;

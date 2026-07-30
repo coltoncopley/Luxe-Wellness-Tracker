@@ -102,6 +102,7 @@ export * from './excludedMeal';
 export * from './excludedMealMealType';
 export * from './exercise';
 export * from './exerciseSuggestion';
+export * from './expoPushTokenInput';
 export * from './followActionResult';
 export * from './followActionResultStatus';
 export * from './followEntry';

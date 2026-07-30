@@ -14,6 +14,7 @@ import {
   useGetMe,
 } from "@workspace/api-client-react";
 
+import { AutoPushEnroll } from "@/components/AutoPushEnroll";
 import { MembershipGate } from "@/components/MembershipGate";
 import { PrivacyAckModal } from "@/components/PrivacyAckModal";
 import { OnboardingWizard } from "@/components/OnboardingWizard";
@@ -265,6 +266,11 @@ export default function TabLayout() {
   if (!tokenReady) return <LoadingView />;
 
   return (
-    <Gate>{isLiquidGlassAvailable() ? <NativeTabLayout /> : <ClassicTabLayout />}</Gate>
+    <Gate>
+      <>
+        <AutoPushEnroll />
+        {isLiquidGlassAvailable() ? <NativeTabLayout /> : <ClassicTabLayout />}
+      </>
+    </Gate>
   );
 }

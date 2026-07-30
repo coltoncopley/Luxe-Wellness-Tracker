@@ -6,6 +6,7 @@ import {
   usersTable,
   notificationPrefsTable,
   pushSubscriptionsTable,
+  expoPushTokensTable,
   notificationSendsTable,
   type NotificationPrefs,
 } from "@workspace/db";
@@ -283,6 +284,61 @@ async function sendPushToUser(userId: string, message: NotificationMessage): Pro
   return anySent;
 }
 
+/**
+ * Send to the user's registered native devices via the Expo push service.
+ * Invalid/unregistered tokens are cleaned up.
+ */
+async function sendExpoPushToUser(userId: string, message: NotificationMessage): Promise<boolean> {
+  const tokens = await db
+    .select()
+    .from(expoPushTokensTable)
+    .where(eq(expoPushTokensTable.userId, userId));
+  if (tokens.length === 0) return false;
+  const messages = tokens.map((t) => ({
+    to: t.token,
+    title: message.title,
+    body: message.body,
+    sound: "default" as const,
+    data: { url: message.url ?? "/" },
+  }));
+  let anySent = false;
+  // Expo accepts up to 100 messages per request
+  for (let i = 0; i < messages.length; i += 100) {
+    const chunk = messages.slice(i, i + 100);
+    try {
+      const response = await fetch("https://exp.host/--/api/v2/push/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify(chunk),
+      });
+      if (!response.ok) {
+        const text = await response.text();
+        logger.warn({ status: response.status, text }, "Expo push send failed");
+        continue;
+      }
+      const result = (await response.json()) as {
+        data?: Array<{ status: string; details?: { error?: string } }>;
+      };
+      for (let j = 0; j < (result.data?.length ?? 0); j++) {
+        const ticket = result.data![j]!;
+        if (ticket.status === "ok") {
+          anySent = true;
+        } else if (ticket.details?.error === "DeviceNotRegistered") {
+          // Token invalid or app uninstalled — clean it up
+          await db
+            .delete(expoPushTokensTable)
+            .where(eq(expoPushTokensTable.token, chunk[j]!.to));
+        } else {
+          logger.warn({ ticket }, "Expo push ticket error");
+        }
+      }
+    } catch (err) {
+      logger.warn({ err }, "Expo push send errored");
+    }
+  }
+  return anySent;
+}
+
 /* ---------- High-level notify ---------- */
 
 export interface NotifyResult {
@@ -313,7 +369,11 @@ export async function notifyUser(
 
   const result: NotifyResult = { push: false, email: false };
   if (prefs.pushEnabled) {
-    result.push = await sendPushToUser(userId, message);
+    const [web, native] = await Promise.all([
+      sendPushToUser(userId, message),
+      sendExpoPushToUser(userId, message),
+    ]);
+    result.push = web || native;
   }
   if (prefs.emailEnabled) {
     const to = prefs.emailOverride ?? (await getAccountEmail(userId));
@@ -341,7 +401,11 @@ export async function sendDirect(
   const prefs = await getOrCreatePrefs(userId);
   const result: NotifyResult = { push: false, email: false };
   if (prefs.pushEnabled) {
-    result.push = await sendPushToUser(userId, message);
+    const [web, native] = await Promise.all([
+      sendPushToUser(userId, message),
+      sendExpoPushToUser(userId, message),
+    ]);
+    result.push = web || native;
   }
   if (prefs.emailEnabled) {
     const to = prefs.emailOverride ?? (await getAccountEmail(userId));

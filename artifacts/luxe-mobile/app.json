@@ -32,6 +32,7 @@
         }
       ],
       "expo-font",
+      "expo-notifications",
       "expo-web-browser",
       "@clerk/expo",
       [

@@ -542,6 +542,14 @@ export interface PushSubscriptionInput {
   keys: PushSubscriptionInputKeys;
 }
 
+export interface ExpoPushTokenInput {
+  /**
+     * Expo push token, e.g. ExponentPushToken[xxxx]
+     * @maxLength 500
+     */
+  token: string;
+}
+
 export type AdminMetricsMembership = {
   /** Paying members (active subscriptions) */
   activeMembers: number;

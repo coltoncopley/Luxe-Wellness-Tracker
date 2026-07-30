@@ -1,6 +1,11 @@
 import { Router, type IRouter } from "express";
 import { and, eq } from "drizzle-orm";
-import { db, notificationPrefsTable, pushSubscriptionsTable } from "@workspace/db";
+import {
+  db,
+  notificationPrefsTable,
+  pushSubscriptionsTable,
+  expoPushTokensTable,
+} from "@workspace/db";
 import {
   GetNotificationPrefsResponse,
   UpdateNotificationPrefsBody,
@@ -8,6 +13,8 @@ import {
   GetVapidPublicKeyResponse,
   SubscribePushBody,
   UnsubscribePushBody,
+  RegisterExpoPushTokenBody,
+  UnregisterExpoPushTokenBody,
   SendTestNotificationResponse,
 } from "@workspace/api-zod";
 import { userIdOf } from "../middlewares/auth";
@@ -128,6 +135,53 @@ router.post("/notifications/push/unsubscribe", async (req, res): Promise<void> =
       and(
         eq(pushSubscriptionsTable.endpoint, body.data.endpoint),
         eq(pushSubscriptionsTable.userId, userId),
+      ),
+    );
+  res.status(204).end();
+});
+
+router.post("/notifications/expo-token/register", async (req, res): Promise<void> => {
+  const userId = userIdOf(res);
+  const body = RegisterExpoPushTokenBody.safeParse(req.body);
+  if (!body.success) {
+    res.status(400).json({ error: "Invalid token" });
+    return;
+  }
+  const token = body.data.token.trim();
+  if (token === "") {
+    res.status(400).json({ error: "Invalid token" });
+    return;
+  }
+  // Never transfer a token owned by a different user (ownership takeover guard).
+  const [existing] = await db
+    .select({ userId: expoPushTokensTable.userId })
+    .from(expoPushTokensTable)
+    .where(eq(expoPushTokensTable.token, token))
+    .limit(1);
+  if (existing && existing.userId !== userId) {
+    res.status(409).json({ error: "This device is registered to another account" });
+    return;
+  }
+  await db
+    .insert(expoPushTokensTable)
+    .values({ userId, token })
+    .onConflictDoNothing({ target: expoPushTokensTable.token });
+  res.status(204).end();
+});
+
+router.post("/notifications/expo-token/unregister", async (req, res): Promise<void> => {
+  const userId = userIdOf(res);
+  const body = UnregisterExpoPushTokenBody.safeParse(req.body);
+  if (!body.success) {
+    res.status(400).json({ error: "Invalid request" });
+    return;
+  }
+  await db
+    .delete(expoPushTokensTable)
+    .where(
+      and(
+        eq(expoPushTokensTable.token, body.data.token.trim()),
+        eq(expoPushTokensTable.userId, userId),
       ),
     );
   res.status(204).end();

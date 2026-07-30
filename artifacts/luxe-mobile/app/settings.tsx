@@ -21,6 +21,7 @@ import {
 } from "@workspace/api-client-react";
 
 import { Card, LuxeButton, LuxeInput, SectionTitle } from "@/components/ui";
+import { pushSupported, registerDevice, unregisterDevice } from "@/lib/push";
 import { DeleteAccountButton } from "@/components/DeleteAccountButton";
 import { useColors } from "@/hooks/useColors";
 import { webUrl } from "@/lib/luxe";
@@ -133,6 +134,7 @@ function NotificationsSection() {
   const queryClient = useQueryClient();
   const prefsQuery = useGetNotificationPrefs();
   const [emailDraft, setEmailDraft] = useState<string | null>(null);
+  const [pushBusy, setPushBusy] = useState(false);
 
   const updatePrefs = useUpdateNotificationPrefs({
     mutation: {
@@ -149,7 +151,7 @@ function NotificationsSection() {
         if (result.email || result.push) {
           Alert.alert("Test sent", "Check your enabled channels.");
         } else {
-          Alert.alert("Nothing sent", "Turn on email notifications first.");
+          Alert.alert("Nothing sent", "Turn on push or email notifications first.");
         }
       },
       onError: () => Alert.alert("Couldn't send", "Could not send the test. Please try again."),
@@ -174,6 +176,46 @@ function NotificationsSection() {
   const effectiveEmail = prefs.emailOverride ?? prefs.accountEmail ?? "";
   const emailValue = emailDraft ?? effectiveEmail;
 
+  const handlePushToggle = async (checked: boolean) => {
+    setPushBusy(true);
+    try {
+      if (checked) {
+        const result = await registerDevice();
+        if (result === "denied") {
+          Alert.alert(
+            "Notifications are off",
+            "Allow notifications for LUXE in your phone's Settings, then try again.",
+          );
+          return;
+        }
+        if (result === "conflict") {
+          Alert.alert(
+            "Device in use",
+            "This phone is registered for push by another LUXE account.",
+          );
+          return;
+        }
+        if (result === "unsupported") {
+          Alert.alert(
+            "Not available",
+            "Push isn't available in this build. Install the App Store version to get reminders.",
+          );
+          return;
+        }
+        if (result === "failed") {
+          Alert.alert("Couldn't enable push", "Something went wrong. Please try again.");
+          return;
+        }
+        updatePrefs.mutate({ data: { pushEnabled: true } });
+      } else {
+        await unregisterDevice();
+        updatePrefs.mutate({ data: { pushEnabled: false } });
+      }
+    } finally {
+      setPushBusy(false);
+    }
+  };
+
   const saveEmail = () => {
     const value = emailDraft?.trim() ?? "";
     updatePrefs.mutate(
@@ -193,11 +235,27 @@ function NotificationsSection() {
             Push notifications
           </Text>
         </View>
-        <ToggleRow label="Push is off" value={false} disabled />
-        <Text style={{ fontFamily: "Inter_400Regular", fontSize: 12, color: c.mutedForeground, marginTop: 6 }}>
-          Push notifications are available on the LUXE web app. Open it in your browser and add it
-          to your home screen to enable them.
-        </Text>
+        {pushSupported() ? (
+          <>
+            <ToggleRow
+              label={prefs.pushEnabled ? "Push is on" : "Push is off"}
+              value={prefs.pushEnabled}
+              disabled={pushBusy}
+              onValueChange={(checked) => void handlePushToggle(checked)}
+            />
+            <Text style={{ fontFamily: "Inter_400Regular", fontSize: 12, color: c.mutedForeground, marginTop: 6 }}>
+              Habit reminders, streak alerts, and spa news, right on this phone.
+            </Text>
+          </>
+        ) : (
+          <>
+            <ToggleRow label="Push is off" value={false} disabled />
+            <Text style={{ fontFamily: "Inter_400Regular", fontSize: 12, color: c.mutedForeground, marginTop: 6 }}>
+              Push isn't available in the browser preview. Use the iPhone app or the LUXE web app
+              to enable push notifications.
+            </Text>
+          </>
+        )}
       </Card>
 
       <Card style={{ marginTop: 12 }}>
@@ -281,7 +339,7 @@ function NotificationsSection() {
             small
             onPress={() => sendTest.mutate()}
             loading={sendTest.isPending}
-            disabled={!prefs.emailEnabled}
+            disabled={!prefs.emailEnabled && !prefs.pushEnabled}
           />
         </View>
       </Card>

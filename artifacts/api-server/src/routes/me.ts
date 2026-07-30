@@ -21,6 +21,7 @@ import {
   mindCheckinsTable,
   notificationPrefsTable,
   pushSubscriptionsTable,
+  expoPushTokensTable,
   notificationSendsTable,
   passportEntriesTable,
   passportProfilesTable,
@@ -404,6 +405,7 @@ router.delete("/me", async (req, res, next): Promise<void> => {
       await tx.delete(mindCheckinsTable).where(eq(mindCheckinsTable.userId, userId));
       await tx.delete(notificationPrefsTable).where(eq(notificationPrefsTable.userId, userId));
       await tx.delete(pushSubscriptionsTable).where(eq(pushSubscriptionsTable.userId, userId));
+      await tx.delete(expoPushTokensTable).where(eq(expoPushTokensTable.userId, userId));
       await tx.delete(notificationSendsTable).where(eq(notificationSendsTable.userId, userId));
       await tx.delete(passportEntriesTable).where(eq(passportEntriesTable.userId, userId));
       await tx.delete(passportProfilesTable).where(eq(passportProfilesTable.userId, userId));

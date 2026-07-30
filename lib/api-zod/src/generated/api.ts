@@ -4794,6 +4794,34 @@ export const UnsubscribePushResponse = zod.void()
 
 
 /**
+ * @summary Register this phone's Expo push token for native push notifications
+ */
+export const registerExpoPushTokenBodyTokenMax = 500;
+
+
+
+export const RegisterExpoPushTokenBody = zod.object({
+  "token": zod.string().max(registerExpoPushTokenBodyTokenMax).describe('Expo push token, e.g. ExponentPushToken[xxxx]')
+})
+
+export const RegisterExpoPushTokenResponse = zod.void()
+
+
+/**
+ * @summary Remove this phone's Expo push token
+ */
+export const unregisterExpoPushTokenBodyTokenMax = 500;
+
+
+
+export const UnregisterExpoPushTokenBody = zod.object({
+  "token": zod.string().max(unregisterExpoPushTokenBodyTokenMax).describe('Expo push token, e.g. ExponentPushToken[xxxx]')
+})
+
+export const UnregisterExpoPushTokenResponse = zod.void()
+
+
+/**
  * @summary Send a test notification via the user's enabled channels
  */
 export const SendTestNotificationResponse = zod.object({
