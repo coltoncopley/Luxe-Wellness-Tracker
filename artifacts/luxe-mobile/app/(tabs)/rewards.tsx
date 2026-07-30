@@ -223,6 +223,11 @@ function RewardsBody({
                     <Text style={{ fontFamily: "Inter_600SemiBold", fontSize: 14, color: c.tint }}>
                       {item.points} pts
                     </Text>
+                    {item.oneTime ? (
+                      <Text style={{ fontFamily: "Inter_400Regular", fontSize: 10, color: c.mutedForeground }}>
+                        One-time
+                      </Text>
+                    ) : null}
                     <LuxeButton
                       label="Redeem"
                       small
@@ -234,6 +239,18 @@ function RewardsBody({
               </Card>
             );
           })}
+          <Text
+            style={{
+              fontFamily: "Inter_400Regular",
+              fontSize: 12,
+              color: c.mutedForeground,
+              textAlign: "center",
+              marginTop: 2,
+              paddingHorizontal: 8,
+            }}
+          >
+            Limit one reward redemption per visit — rewards cannot be combined or used together.
+          </Text>
         </View>
       )}
 

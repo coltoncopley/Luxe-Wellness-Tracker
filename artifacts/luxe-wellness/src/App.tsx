@@ -37,6 +37,7 @@ import Mind from "@/pages/mind";
 import ActivityPage from "@/pages/activity";
 import Community from "@/pages/community";
 import Settings from "@/pages/settings";
+import { AutoPushEnroll } from "@/components/AutoPushEnroll";
 import StaffVerify from "@/pages/staff-verify";
 import Privacy from "@/pages/privacy";
 import Terms from "@/pages/terms";
@@ -287,6 +288,7 @@ function ClerkProviderWithRoutes() {
           <ReferralClaimer />
           <PrivacyAckDialog />
           <OnboardingWizard />
+          <AutoPushEnroll />
         </Show>
         <TooltipProvider>
           <Switch>

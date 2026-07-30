@@ -1182,6 +1182,8 @@ export interface RewardCatalogItem {
   title: string;
   description: string;
   points: number;
+  /** True when each member can claim this reward only once */
+  oneTime: boolean;
 }
 
 /**
@@ -2095,6 +2097,7 @@ export interface RewardItem {
   points: number;
   active: boolean;
   sortOrder: number;
+  oneTime: boolean;
 }
 
 export interface RewardItemInput {
@@ -2106,6 +2109,7 @@ export interface RewardItemInput {
   points: number;
   active?: boolean;
   sortOrder?: number;
+  oneTime?: boolean;
 }
 
 export interface RewardItemUpdate {
@@ -2117,6 +2121,7 @@ export interface RewardItemUpdate {
   points?: number;
   active?: boolean;
   sortOrder?: number;
+  oneTime?: boolean;
 }
 
 export interface AdminRedemption {

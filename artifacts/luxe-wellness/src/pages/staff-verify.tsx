@@ -953,9 +953,16 @@ type RewardFormState = {
   description: string;
   points: string;
   sortOrder: string;
+  oneTime: boolean;
 };
 
-const emptyRewardForm: RewardFormState = { title: "", description: "", points: "", sortOrder: "0" };
+const emptyRewardForm: RewardFormState = {
+  title: "",
+  description: "",
+  points: "",
+  sortOrder: "0",
+  oneTime: false,
+};
 
 function RewardsTab() {
   const queryClient = useQueryClient();
@@ -977,6 +984,7 @@ function RewardsTab() {
       description: item.description,
       points: String(item.points),
       sortOrder: String(item.sortOrder),
+      oneTime: item.oneTime,
     });
   }
 
@@ -992,6 +1000,7 @@ function RewardsTab() {
       description: form.description.trim(),
       points,
       sortOrder: Number(form.sortOrder) || 0,
+      oneTime: form.oneTime,
     };
     if (editingId === "new") {
       createItem.mutate(
@@ -1100,6 +1109,16 @@ function RewardsTab() {
                   onChange={(e) => setForm({ ...form, sortOrder: e.target.value })}
                 />
               </div>
+              <div className="flex items-center gap-3">
+                <Switch
+                  id="rw-onetime"
+                  checked={form.oneTime}
+                  onCheckedChange={(v) => setForm({ ...form, oneTime: v })}
+                />
+                <Label htmlFor="rw-onetime" className="font-normal">
+                  One-time reward — each member can claim it once, then it disappears for them
+                </Label>
+              </div>
               <div className="flex gap-2">
                 <Button type="submit" disabled={saving}>
                   {saving ? "Saving..." : "Save"}
@@ -1125,6 +1144,7 @@ function RewardsTab() {
                     <Gift className="h-4 w-4 text-primary shrink-0" />
                     <span className="font-medium">{item.title}</span>
                     <Badge variant="secondary">{item.points.toLocaleString()} pts</Badge>
+                    {item.oneTime && <Badge variant="outline">One-time</Badge>}
                     {!item.active && <Badge variant="outline">Hidden</Badge>}
                   </div>
                   <p className="text-sm text-muted-foreground mt-1 line-clamp-2">

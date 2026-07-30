@@ -5041,11 +5041,15 @@ components:
           type: string
         points:
           type: integer
+        oneTime:
+          type: boolean
+          description: True when each member can claim this reward only once
       required:
         - id
         - title
         - description
         - points
+        - oneTime
     RewardsSummary:
       type: object
       properties:
@@ -6222,7 +6226,7 @@ components:
         bookingUrl: { type: string }
     RewardItem:
       type: object
-      required: [id, title, description, points, active, sortOrder]
+      required: [id, title, description, points, active, sortOrder, oneTime]
       properties:
         id: { type: integer }
         title: { type: string }
@@ -6230,6 +6234,7 @@ components:
         points: { type: integer }
         active: { type: boolean }
         sortOrder: { type: integer }
+        oneTime: { type: boolean }
     RewardItemInput:
       type: object
       required: [title, description, points]
@@ -6239,6 +6244,7 @@ components:
         points: { type: integer, minimum: 1 }
         active: { type: boolean }
         sortOrder: { type: integer }
+        oneTime: { type: boolean }
     RewardItemUpdate:
       type: object
       properties:
@@ -6247,6 +6253,7 @@ components:
         points: { type: integer, minimum: 1 }
         active: { type: boolean }
         sortOrder: { type: integer }
+        oneTime: { type: boolean }
     AdminRedemption:
       type: object
       required: [code, title, points, date, usedAt, patientEmail, patientName]

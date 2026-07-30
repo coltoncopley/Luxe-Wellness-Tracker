@@ -15,4 +15,5 @@ export interface RewardItemInput {
   points: number;
   active?: boolean;
   sortOrder?: number;
+  oneTime?: boolean;
 }

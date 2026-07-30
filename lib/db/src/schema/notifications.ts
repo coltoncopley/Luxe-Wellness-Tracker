@@ -15,7 +15,7 @@ export const notificationPrefsTable = pgTable(
     userId: text("user_id")
       .notNull()
       .references(() => usersTable.id),
-    pushEnabled: boolean("push_enabled").notNull().default(false),
+    pushEnabled: boolean("push_enabled").notNull().default(true),
     emailEnabled: boolean("email_enabled").notNull().default(false),
     emailOverride: text("email_override"),
     announcements: boolean("announcements").notNull().default(true),

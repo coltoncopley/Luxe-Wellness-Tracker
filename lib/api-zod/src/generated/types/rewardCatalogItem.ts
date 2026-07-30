@@ -11,4 +11,6 @@ export interface RewardCatalogItem {
   title: string;
   description: string;
   points: number;
+  /** True when each member can claim this reward only once */
+  oneTime: boolean;
 }

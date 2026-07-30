@@ -3270,7 +3270,8 @@ export const GetRewardsSummaryResponse = zod.object({
   "id": zod.string(),
   "title": zod.string(),
   "description": zod.string(),
-  "points": zod.number()
+  "points": zod.number(),
+  "oneTime": zod.boolean().describe('True when each member can claim this reward only once')
 })),
   "tier": zod.object({
   "name": zod.enum(['Bronze', 'Silver', 'Gold', 'Platinum']).describe('Current status tier based on lifetime points earned'),
@@ -3294,7 +3295,8 @@ export const RedeemRewardResponse = zod.object({
   "id": zod.string(),
   "title": zod.string(),
   "description": zod.string(),
-  "points": zod.number()
+  "points": zod.number(),
+  "oneTime": zod.boolean().describe('True when each member can claim this reward only once')
 }),
   "balance": zod.number()
 })
@@ -3955,7 +3957,8 @@ export const AdminListRewardItemsResponseItem = zod.object({
   "description": zod.string(),
   "points": zod.number(),
   "active": zod.boolean(),
-  "sortOrder": zod.number()
+  "sortOrder": zod.number(),
+  "oneTime": zod.boolean()
 })
 export const AdminListRewardItemsResponse = zod.array(AdminListRewardItemsResponseItem)
 
@@ -3973,7 +3976,8 @@ export const AdminCreateRewardItemBody = zod.object({
   "description": zod.string().min(1),
   "points": zod.number().min(1),
   "active": zod.boolean().optional(),
-  "sortOrder": zod.number().optional()
+  "sortOrder": zod.number().optional(),
+  "oneTime": zod.boolean().optional()
 })
 
 export const AdminCreateRewardItemResponse = zod.object({
@@ -3982,7 +3986,8 @@ export const AdminCreateRewardItemResponse = zod.object({
   "description": zod.string(),
   "points": zod.number(),
   "active": zod.boolean(),
-  "sortOrder": zod.number()
+  "sortOrder": zod.number(),
+  "oneTime": zod.boolean()
 })
 
 
@@ -4003,7 +4008,8 @@ export const AdminUpdateRewardItemBody = zod.object({
   "description": zod.string().min(1).optional(),
   "points": zod.number().min(1).optional(),
   "active": zod.boolean().optional(),
-  "sortOrder": zod.number().optional()
+  "sortOrder": zod.number().optional(),
+  "oneTime": zod.boolean().optional()
 })
 
 export const AdminUpdateRewardItemResponse = zod.object({
@@ -4012,7 +4018,8 @@ export const AdminUpdateRewardItemResponse = zod.object({
   "description": zod.string(),
   "points": zod.number(),
   "active": zod.boolean(),
-  "sortOrder": zod.number()
+  "sortOrder": zod.number(),
+  "oneTime": zod.boolean()
 })
 
 

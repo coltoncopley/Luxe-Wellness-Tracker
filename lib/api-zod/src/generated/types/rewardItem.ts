@@ -13,4 +13,5 @@ export interface RewardItem {
   points: number;
   active: boolean;
   sortOrder: number;
+  oneTime: boolean;
 }

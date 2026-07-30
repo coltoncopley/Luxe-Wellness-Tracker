@@ -4,10 +4,8 @@ import {
   useGetNotificationPrefs,
   getGetNotificationPrefsQueryKey,
   useUpdateNotificationPrefs,
-  useSubscribePush,
   useUnsubscribePush,
   useSendTestNotification,
-  getVapidPublicKey,
   useGetMe,
   getGetMeQueryKey,
   useUpdateBirthday,
@@ -28,6 +26,7 @@ import {
 import { toast } from "sonner";
 import { DeleteAccountButton } from "@/components/DeleteAccountButton";
 import { Bell, Mail, Smartphone, Loader2, Send, Cake, Trash2 } from "lucide-react";
+import { pushSupported, subscribeDevice } from "@/lib/push";
 
 const MONTHS = [
   "January",
@@ -184,20 +183,6 @@ function DangerZoneCard() {
   );
 }
 
-function urlBase64ToUint8Array(base64String: string): Uint8Array {
-  const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
-  const rawData = window.atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
-  for (let i = 0; i < rawData.length; ++i) {
-    outputArray[i] = rawData.charCodeAt(i);
-  }
-  return outputArray;
-}
-
-function pushSupported(): boolean {
-  return "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
-}
 
 export default function Settings() {
   const queryClient = useQueryClient();
@@ -215,7 +200,6 @@ export default function Settings() {
       onError: () => toast.error("Could not save your preferences. Please try again."),
     },
   });
-  const subscribePush = useSubscribePush();
   const unsubscribePush = useUnsubscribePush();
   const sendTest = useSendTestNotification({
     mutation: {
@@ -240,54 +224,14 @@ export default function Settings() {
     }
     setPushBusy(true);
     try {
-      const permission = await Notification.requestPermission();
-      if (permission !== "granted") {
+      const result = await subscribeDevice();
+      if (result === "denied") {
         toast.error("Notifications are blocked. Allow them in your browser settings to enable push.");
         return;
       }
-      const registration = await navigator.serviceWorker.register("/sw.js");
-      await navigator.serviceWorker.ready;
-      const { publicKey } = await getVapidPublicKey();
-      let subscription = await registration.pushManager.getSubscription();
-      if (!subscription) {
-        subscription = await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(publicKey) as BufferSource,
-        });
-      }
-      let json = subscription.toJSON();
-      if (!json.endpoint || !json.keys?.p256dh || !json.keys?.auth) {
+      if (result === "failed") {
         toast.error("Could not set up push on this device.");
         return;
-      }
-      try {
-        await subscribePush.mutateAsync({
-          data: {
-            endpoint: json.endpoint,
-            keys: { p256dh: json.keys.p256dh, auth: json.keys.auth },
-          },
-        });
-      } catch (err: unknown) {
-        const status = (err as { status?: number } | null)?.status;
-        if (status !== 409) throw err;
-        // Endpoint belonged to a different account (shared device) — create a
-        // fresh browser subscription and register that instead.
-        await subscription.unsubscribe();
-        subscription = await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(publicKey) as BufferSource,
-        });
-        json = subscription.toJSON();
-        if (!json.endpoint || !json.keys?.p256dh || !json.keys?.auth) {
-          toast.error("Could not set up push on this device.");
-          return;
-        }
-        await subscribePush.mutateAsync({
-          data: {
-            endpoint: json.endpoint,
-            keys: { p256dh: json.keys.p256dh, auth: json.keys.auth },
-          },
-        });
       }
       await updatePrefs.mutateAsync({ data: { pushEnabled: true } });
       toast.success("Push notifications are on for this device!");

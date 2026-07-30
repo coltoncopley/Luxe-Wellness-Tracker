@@ -313,6 +313,11 @@ export default function Rewards() {
                   <div className="text-sm font-semibold text-primary">
                     {reward.points.toLocaleString()} pts
                   </div>
+                  {reward.oneTime && (
+                    <div className="text-[11px] uppercase tracking-wide text-muted-foreground">
+                      One-time reward
+                    </div>
+                  )}
                   {!affordable && <Progress value={progress} className="h-1.5" />}
                   <Button
                     className="w-full rounded-full"

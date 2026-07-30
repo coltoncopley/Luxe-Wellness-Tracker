@@ -15,4 +15,5 @@ export interface RewardItemUpdate {
   points?: number;
   active?: boolean;
   sortOrder?: number;
+  oneTime?: boolean;
 }

@@ -76,6 +76,21 @@ export async function getActiveCatalog(): Promise<RewardItem[]> {
     .orderBy(asc(rewardItemsTable.sortOrder), asc(rewardItemsTable.points));
 }
 
+/**
+ * Catalog as a specific member should see it: one-time rewards they've
+ * already claimed are excluded entirely ("disappear" after redemption).
+ */
+export async function getActiveCatalogFor(userId: string): Promise<RewardItem[]> {
+  const items = await getActiveCatalog();
+  if (!items.some((i) => i.oneTime)) return items;
+  const claimed = await db
+    .select({ rewardId: redemptionsTable.rewardId })
+    .from(redemptionsTable)
+    .where(eq(redemptionsTable.userId, userId));
+  const claimedIds = new Set(claimed.map((r) => r.rewardId));
+  return items.filter((i) => !i.oneTime || !claimedIds.has(String(i.id)));
+}
+
 export async function getBalance(userId: string): Promise<number> {
   const [row] = await db
     .select({ total: sum(rewardEventsTable.points) })
@@ -148,7 +163,10 @@ export async function redeemPoints(
   reward: RewardItem,
   date: string,
   code: string,
-): Promise<{ ok: true; balance: number } | { ok: false; balance: number }> {
+): Promise<
+  | { ok: true; balance: number }
+  | { ok: false; reason: "insufficient" | "alreadyClaimed"; balance: number }
+> {
   return db.transaction(async (tx) => {
     await tx.execute(
       sql`SELECT pg_advisory_xact_lock(hashtext(${`reward_redemption:${userId}`}))`,
@@ -158,8 +176,23 @@ export async function redeemPoints(
       .from(rewardEventsTable)
       .where(eq(rewardEventsTable.userId, userId));
     const balance = Number(row?.total ?? 0);
+    if (reward.oneTime) {
+      const [existing] = await tx
+        .select({ id: redemptionsTable.id })
+        .from(redemptionsTable)
+        .where(
+          and(
+            eq(redemptionsTable.userId, userId),
+            eq(redemptionsTable.rewardId, String(reward.id)),
+          ),
+        )
+        .limit(1);
+      if (existing) {
+        return { ok: false as const, reason: "alreadyClaimed" as const, balance };
+      }
+    }
     if (balance < reward.points) {
-      return { ok: false as const, balance };
+      return { ok: false as const, reason: "insufficient" as const, balance };
     }
     await tx.insert(rewardEventsTable).values({
       userId,

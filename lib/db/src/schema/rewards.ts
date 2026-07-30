@@ -63,6 +63,7 @@ export const rewardItemsTable = pgTable("reward_items", {
   points: integer("points").notNull(),
   active: boolean("active").notNull().default(true),
   sortOrder: integer("sort_order").notNull().default(0),
+  oneTime: boolean("one_time").notNull().default(false),
 });
 
 export const insertRewardEventSchema = createInsertSchema(rewardEventsTable).omit({

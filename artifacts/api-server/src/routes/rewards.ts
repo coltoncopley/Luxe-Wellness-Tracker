@@ -8,7 +8,14 @@ import {
   RedeemRewardResponse,
   LookupRedemptionResponse,
 } from "@workspace/api-zod";
-import { getActiveCatalog, getBalance, getTierInfo, getTotalEarned, redeemPoints } from "../lib/rewards";
+import {
+  getActiveCatalog,
+  getActiveCatalogFor,
+  getBalance,
+  getTierInfo,
+  getTotalEarned,
+  redeemPoints,
+} from "../lib/rewards";
 import { requireStaff, userIdOf } from "../middlewares/auth";
 
 const router: IRouter = Router();
@@ -34,11 +41,12 @@ router.get("/rewards/summary", async (_req, res): Promise<void> => {
   const totalEarned = await getTotalEarned(userId);
   const tier = getTierInfo(totalEarned);
 
-  const catalog = (await getActiveCatalog()).map((item) => ({
+  const catalog = (await getActiveCatalogFor(userId)).map((item) => ({
     id: String(item.id),
     title: item.title,
     description: item.description,
     points: item.points,
+    oneTime: item.oneTime,
   }));
 
   res.json(
@@ -83,7 +91,12 @@ router.post("/rewards/redeem", async (req, res): Promise<void> => {
     return;
   }
   if (!result.ok) {
-    res.status(400).json({ error: "Not enough points for this reward" });
+    res.status(400).json({
+      error:
+        result.reason === "alreadyClaimed"
+          ? "This one-time reward has already been claimed"
+          : "Not enough points for this reward",
+    });
     return;
   }
 
@@ -95,6 +108,7 @@ router.post("/rewards/redeem", async (req, res): Promise<void> => {
         title: reward.title,
         description: reward.description,
         points: reward.points,
+        oneTime: reward.oneTime,
       },
       balance: result.balance,
     }),
