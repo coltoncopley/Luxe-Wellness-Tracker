@@ -118,6 +118,64 @@ export async function unregisterDevice(): Promise<void> {
 }
 
 /**
+ * Maps a server push `data.url` (web-app route) to the matching expo-router
+ * route. Unknown/legacy URLs fall back to the home tab.
+ */
+export function routeForNotificationUrl(url: unknown): string {
+  if (typeof url !== "string") return "/(tabs)";
+  // Strip query/hash and trailing slash so legacy variants still match.
+  const path = url.split(/[?#]/)[0]!.replace(/\/+$/, "") || "/";
+  switch (path) {
+    case "/glow":
+      return "/(tabs)/track";
+    case "/passport":
+      return "/explore/passport";
+    case "/rewards":
+      return "/(tabs)/rewards";
+    default:
+      return "/(tabs)";
+  }
+}
+
+function extractUrl(response: {
+  notification: { request: { content: { data?: Record<string, unknown> } } };
+}): unknown {
+  return response.notification.request.content.data?.url;
+}
+
+/**
+ * Wires up notification-tap handling: taps while the app is running (foreground
+ * or background) navigate immediately, and the cold-start tap (the notification
+ * that launched the app) is replayed once. Returns a cleanup function.
+ */
+export async function setupNotificationTapHandling(
+  navigate: (route: string) => void,
+): Promise<(() => void) | undefined> {
+  const notifications = await loadNotifications();
+  if (!notifications) return undefined;
+
+  const sub = notifications.addNotificationResponseReceivedListener((response) => {
+    navigate(routeForNotificationUrl(extractUrl(response)));
+  });
+
+  try {
+    // Cold start: the tap that launched the app fires before any listener is
+    // attached, so replay it from the last stored response.
+    const initial = await notifications.getLastNotificationResponseAsync();
+    if (initial) {
+      const route = routeForNotificationUrl(extractUrl(initial));
+      if (route !== "/(tabs)") navigate(route);
+      // Consume it so a remount doesn't re-navigate.
+      await notifications.clearLastNotificationResponseAsync?.();
+    }
+  } catch {
+    // Best-effort — worst case the app just opens on the home tab.
+  }
+
+  return () => sub.remove();
+}
+
+/**
  * Foreground presentation: show banners even while the app is open, so test
  * notifications and daytime reminders are visible.
  */
