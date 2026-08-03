@@ -2,6 +2,7 @@ import { runMigrations } from "stripe-replit-sync";
 import app from "./app";
 import { logger } from "./lib/logger";
 import { getStripeSync } from "./lib/stripeClient";
+import { runSchemaMigrations } from "@workspace/db";
 
 async function initStripe(): Promise<void> {
   const databaseUrl = process.env.DATABASE_URL;
@@ -24,6 +25,15 @@ async function initStripe(): Promise<void> {
     .syncBackfill()
     .then(() => logger.info("Stripe data synced"))
     .catch((err: unknown) => logger.error({ err }, "Error syncing Stripe data"));
+}
+
+try {
+  logger.info("Running schema migrations...");
+  await runSchemaMigrations();
+  logger.info("Schema migrations complete");
+} catch (err) {
+  logger.error({ err }, "Schema migrations failed");
+  process.exit(1);
 }
 
 try {
