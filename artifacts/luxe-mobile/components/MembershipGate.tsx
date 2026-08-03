@@ -1,4 +1,3 @@
-import { useAuth } from "@clerk/expo";
 import { useQueryClient } from "@tanstack/react-query";
 import React, { useState } from "react";
 import { Platform, ScrollView, StyleSheet, Text, View } from "react-native";
@@ -12,12 +11,13 @@ import {
 import { Card, LuxeButton, LuxeInput } from "@/components/ui";
 import { DeleteAccountButton } from "@/components/DeleteAccountButton";
 import { useColors } from "@/hooks/useColors";
+import { useSignOut } from "@/hooks/useSignOut";
 
 export function MembershipGate() {
   const c = useColors();
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
-  const { signOut } = useAuth();
+  const signOut = useSignOut();
 
   const [showCode, setShowCode] = useState(false);
   const [code, setCode] = useState("");

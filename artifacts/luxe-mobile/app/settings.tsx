@@ -22,6 +22,7 @@ import {
 
 import { Card, LuxeButton, LuxeInput, SectionTitle } from "@/components/ui";
 import { pushSupported, registerDevice, unregisterDevice } from "@/lib/push";
+import { useSignOut } from "@/hooks/useSignOut";
 import { DeleteAccountButton } from "@/components/DeleteAccountButton";
 import { useColors } from "@/hooks/useColors";
 import { webUrl } from "@/lib/luxe";
@@ -544,7 +545,7 @@ export default function SettingsScreen() {
   const c = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { signOut } = useAuth();
+  const signOut = useSignOut();
   const me = useGetMe();
   const billing = useGetBillingStatus();
 

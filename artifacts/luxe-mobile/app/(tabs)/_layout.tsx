@@ -20,6 +20,7 @@ import { PrivacyAckModal } from "@/components/PrivacyAckModal";
 import { OnboardingWizard } from "@/components/OnboardingWizard";
 import { ErrorView, LoadingView, LuxeButton } from "@/components/ui";
 import { useColors } from "@/hooks/useColors";
+import { useSignOut } from "@/hooks/useSignOut";
 
 /** True when the API rejected the sign-in because this email already belongs
  *  to another account (one-email-one-account guard). The generated client
@@ -32,7 +33,7 @@ function isDuplicateEmailError(err: unknown): boolean {
 
 function DuplicateEmailView() {
   const c = useColors();
-  const { signOut } = useAuth();
+  const signOut = useSignOut();
   return (
     <View
       style={{
